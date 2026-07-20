@@ -101,6 +101,39 @@ abstract class ApiTestCase extends WebTestCase
         return $entry;
     }
 
+    /**
+     * Legt eine nie freigegebene, abgelehnte Junk-Einreichung an: Entry
+     * deleted, Version rejected, currentVersion bleibt null. Dient dem
+     * Test, dass solche Einreichungen weder fremden Content-Hash noch
+     * fremde formatId dauerhaft blockieren dürfen.
+     *
+     * @param array<string, mixed> $payloadOverrides
+     */
+    protected function createRejectedJunkEntry(
+        string $formatId,
+        array $payloadOverrides = [],
+        ?Submitter $submitter = null,
+    ): Entry {
+        if ($submitter === null) {
+            [$submitter] = $this->createSubmitterWithToken();
+        }
+        $payload = $this->menuPayload(['id' => $formatId] + $payloadOverrides);
+        $analyzer = new PayloadAnalyzer();
+
+        $entry = new Entry($formatId, EntryType::Menu, $submitter);
+        $entry->status = EntryStatus::Deleted;
+        $entry->setCategories([Category::Shopping]);
+
+        $version = new EntryVersion($entry, $payload['version'], $payload, $analyzer->contentHash($payload));
+        $version->status = VersionStatus::Rejected;
+
+        $this->em->persist($entry);
+        $this->em->persist($version);
+        $this->em->flush();
+
+        return $entry;
+    }
+
     /** @param array<string, mixed>|null $body */
     protected function api(string $method, string $uri, ?array $body = null, ?string $token = null): void
     {

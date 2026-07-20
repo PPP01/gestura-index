@@ -7,9 +7,11 @@ namespace App\Controller\Api;
 use App\Entity\Entry;
 use App\Entity\EntryVersion;
 use App\Entity\Submitter;
+use App\Enum\EntryStatus;
 use App\Enum\EntryType;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
+use App\Repository\EntryVersionRepository;
 use App\Service\EditTokenService;
 use App\Service\PayloadAnalyzer;
 use App\Service\RateLimitGuard;
@@ -31,6 +33,7 @@ final class EntrySubmitController
         EditTokenService $tokens,
         PayloadAnalyzer $analyzer,
         EntryRepository $entries,
+        EntryVersionRepository $versions,
         EntityManagerInterface $em,
         RateLimitGuard $guard,
         RateLimiterFactoryInterface $submitLimiter,
@@ -47,8 +50,27 @@ final class EntrySubmitController
         $payload = $result->payload;
         $formatId = $payload['id'];
 
-        if ($entries->findOneBy(['formatId' => $formatId]) !== null) {
-            throw new ApiProblem(409, 'formatId is already taken');
+        $existing = $entries->findOneBy(['formatId' => $formatId]);
+        if ($existing !== null) {
+            // Nie publizierte, abgelehnte Junk-Einreichungen dürfen eine
+            // formatId nicht dauerhaft "verbrennen": ein harter Löschvorgang
+            // räumt Platz für die echte Neuanlage. Publizierte (auch später
+            // gelöschte) Einträge bleiben für die Admin-Nachvollziehbarkeit
+            // erhalten und blockieren die formatId weiterhin.
+            if ($existing->status === EntryStatus::Deleted && $existing->currentVersion === null) {
+                // Die Versionen explizit per ORM entfernen: die DB-seitige
+                // ON DELETE CASCADE räumt zwar die Zeilen auf, ließe aber
+                // die EntryVersion-Objekte als "managed" im Identity-Map
+                // zurück und bricht damit den nächsten flush() (verwaiste
+                // Assoziation auf den nun wieder als neu geltenden Entry).
+                foreach ($versions->findBy(['entry' => $existing]) as $orphanedVersion) {
+                    $em->remove($orphanedVersion);
+                }
+                $em->remove($existing);
+                $em->flush();
+            } else {
+                throw new ApiProblem(409, 'formatId is already taken');
+            }
         }
         $hash = $submission->assertNoDuplicate($payload, null);
 

@@ -119,4 +119,41 @@ final class SubmitTest extends ApiTestCase
         $this->api('POST', '/api/v1/entries', ['payload' => $this->menuPayload(), 'categories' => ['shopping']], token: $token);
         self::assertResponseStatusCodeSame(403);
     }
+
+    public function testRejectedDeletedContentDoesNotBlockResubmission(): void
+    {
+        // Eine nie freigegebene, abgelehnte Junk-Einreichung darf keinen
+        // fremden contentHash dauerhaft "verbrennen".
+        $this->createRejectedJunkEntry('com.example.junk');
+
+        $this->api('POST', '/api/v1/entries', [
+            'payload' => $this->menuPayload(['id' => 'com.example.neuanlage']),
+            'categories' => ['shopping'],
+        ]);
+        self::assertResponseStatusCodeSame(201);
+    }
+
+    public function testFormatIdOfNeverPublishedDeletedEntryIsReusable(): void
+    {
+        $this->createRejectedJunkEntry('com.example.junk');
+
+        $this->api('POST', '/api/v1/entries', [
+            'payload' => $this->menuPayload(['id' => 'com.example.junk']),
+            'categories' => ['shopping'],
+        ]);
+        self::assertResponseStatusCodeSame(201);
+    }
+
+    public function testFormatIdOfPublishedThenDeletedEntryStays409(): void
+    {
+        $entry = $this->createPublishedEntry('com.example.shop');
+        $entry->status = EntryStatus::Deleted;
+        $this->em->flush();
+
+        $this->api('POST', '/api/v1/entries', [
+            'payload' => $this->menuPayload(['id' => 'com.example.shop']),
+            'categories' => ['shopping'],
+        ]);
+        self::assertResponseStatusCodeSame(409);
+    }
 }

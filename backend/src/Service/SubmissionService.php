@@ -6,7 +6,9 @@ namespace App\Service;
 
 use App\Entity\Entry;
 use App\Enum\Category;
+use App\Enum\EntryStatus;
 use App\Enum\EntryType;
+use App\Enum\VersionStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryVersionRepository;
 use Symfony\Component\HttpFoundation\Request;
@@ -125,9 +127,17 @@ final class SubmissionService
     {
         $hash = $this->analyzer->contentHash($payload);
         foreach ($this->versions->findBy(['contentHash' => $hash]) as $existing) {
-            if ($ignoreEntry === null || $existing->entry->id !== $ignoreEntry->id) {
-                throw new ApiProblem(409, 'Identical content already exists in the index');
+            if ($ignoreEntry !== null && $existing->entry->id === $ignoreEntry->id) {
+                continue;
             }
+            // Abgelehnte Versionen und Versionen gelöschter Einträge
+            // dürfen einen contentHash nicht dauerhaft blockieren —
+            // sonst könnte eine abgelehnte Junk-Einreichung fremden
+            // Content für immer "verbrennen".
+            if ($existing->status === VersionStatus::Rejected || $existing->entry->status === EntryStatus::Deleted) {
+                continue;
+            }
+            throw new ApiProblem(409, 'Identical content already exists in the index');
         }
 
         return $hash;
