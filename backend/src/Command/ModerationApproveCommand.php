@@ -9,7 +9,6 @@ use App\Enum\VersionStatus;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
 use App\Service\ModerationService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -24,7 +23,6 @@ final class ModerationApproveCommand extends Command
         private readonly EntryRepository $entries,
         private readonly EntryVersionRepository $versions,
         private readonly ModerationService $moderation,
-        private readonly EntityManagerInterface $em,
     ) {
         parent::__construct();
     }
@@ -69,9 +67,13 @@ final class ModerationApproveCommand extends Command
         // Freigabe per index:approve — ohne diesen Zweig gäbe es dafür
         // keinen Weg (die zuvor genehmigte currentVersion bleibt gültig).
         if ($entry->status === EntryStatus::Hidden) {
-            $entry->status = EntryStatus::Published;
-            $entry->touch();
-            $this->em->flush();
+            try {
+                $this->moderation->publishEntry($entry);
+            } catch (\RuntimeException $e) {
+                $io->error($e->getMessage());
+
+                return Command::FAILURE;
+            }
             $io->success($entry->formatId . ' veröffentlicht');
 
             return Command::SUCCESS;

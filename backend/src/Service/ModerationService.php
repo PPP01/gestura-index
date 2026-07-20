@@ -39,6 +39,23 @@ final class ModerationService
         $this->em->flush();
     }
 
+    /**
+     * Veröffentlicht einen hidden-Eintrag ohne wartende Version (Seitenpfad
+     * von index:approve nach Ban/Auto-Hide durch Meldungen). Ohne den Guard
+     * gegen fehlende currentVersion ließe sich ein Eintrag veröffentlichen,
+     * der nie eine freigegebene Version hatte.
+     */
+    public function publishEntry(Entry $entry): void
+    {
+        if ($entry->currentVersion === null) {
+            throw new \RuntimeException('Eintrag hat keine freigegebene Version — erst Version freigeben');
+        }
+        $entry->status = EntryStatus::Published;
+        $this->resolveOpenReports($entry);
+        $entry->touch();
+        $this->em->flush();
+    }
+
     public function rejectEntry(Entry $entry): void
     {
         foreach ($this->versions->findBy(['entry' => $entry, 'status' => VersionStatus::Pending]) as $version) {
@@ -76,15 +93,21 @@ final class ModerationService
         $report->entry->touch();
 
         if ($publish) {
-            // Ohne dies würde die nächste einzelne neue Meldung sofort
-            // wieder den Hide-Threshold erreichen, weil die übrigen
-            // offenen Meldungen desselben Vorfalls weiter mitzählen.
-            foreach ($this->reports->findBy(['entry' => $report->entry, 'status' => ReportStatus::Open]) as $open) {
-                $open->status = ReportStatus::Resolved;
-            }
+            $this->resolveOpenReports($report->entry);
         }
 
         $this->em->flush();
+    }
+
+    // Ohne dies würde die nächste einzelne neue Meldung sofort wieder den
+    // Hide-Threshold erreichen, weil die übrigen offenen Meldungen desselben
+    // Vorfalls weiter mitzählen — gilt für resolveReport(publish) genauso
+    // wie für den hidden-Branch von index:approve (publishEntry).
+    private function resolveOpenReports(Entry $entry): void
+    {
+        foreach ($this->reports->findBy(['entry' => $entry, 'status' => ReportStatus::Open]) as $open) {
+            $open->status = ReportStatus::Resolved;
+        }
     }
 
     public function ban(Submitter $submitter): void

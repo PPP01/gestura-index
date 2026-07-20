@@ -6,11 +6,15 @@ namespace App\Tests\Command;
 
 use App\Entity\Entry;
 use App\Entity\EntryVersion;
+use App\Entity\Report;
 use App\Entity\Submitter;
 use App\Enum\Category;
 use App\Enum\EntryStatus;
 use App\Enum\EntryType;
+use App\Enum\ReportReason;
+use App\Enum\ReportStatus;
 use App\Enum\VersionStatus;
+use App\Repository\ReportRepository;
 use App\Service\PayloadAnalyzer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
@@ -107,6 +111,52 @@ final class ModerationCommandsTest extends KernelTestCase
         $this->em->clear();
         $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.neu']);
         self::assertSame(EntryStatus::Published, $entry->status);
+    }
+
+    public function testApproveOfHiddenEntryResolvesOpenReportsAndPreventsImmediateReHide(): void
+    {
+        $entry = $this->createPendingEntry();
+        $version = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $version->status = VersionStatus::Approved;
+        $entry->currentVersion = $version;
+        $entry->status = EntryStatus::Hidden;
+        for ($i = 0; $i < 3; ++$i) { // REPORT_HIDE_THRESHOLD = 3
+            $this->em->persist(new Report($entry, ReportReason::Spam, null));
+        }
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:approve', ['formatId' => 'com.example.neu']);
+
+        $tester->assertCommandIsSuccessful();
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.neu']);
+        self::assertSame(EntryStatus::Published, $entry->status);
+        foreach ($this->em->getRepository(Report::class)->findBy(['entry' => $entry]) as $report) {
+            self::assertSame(ReportStatus::Resolved, $report->status);
+        }
+
+        // Ohne die Report-Auflösung im hidden-Branch von index:approve würde
+        // dieser Seitenpfad den Re-Hide-Loop aus Fix 2 wieder öffnen: eine
+        // einzelne neue Meldung (< Threshold 3) darf den Eintrag NICHT
+        // erneut verstecken.
+        $this->em->persist(new Report($entry, ReportReason::Spam, null));
+        $this->em->flush();
+        $reports = self::getContainer()->get(ReportRepository::class);
+        self::assertSame(1, $reports->countOpenFor($entry));
+    }
+
+    public function testApproveFailsCleanlyForHiddenEntryWithoutCurrentVersion(): void
+    {
+        $entry = $this->createPendingEntry();
+        $version = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $version->status = VersionStatus::Rejected; // keine pending-Version mehr vorhanden
+        $entry->status = EntryStatus::Hidden; // currentVersion bleibt null
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:approve', ['formatId' => 'com.example.neu']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('keine freigegebene Version', $tester->getDisplay());
     }
 
     public function testRejectDeletesEntry(): void
