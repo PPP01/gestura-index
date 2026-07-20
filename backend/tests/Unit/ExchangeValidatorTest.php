@@ -131,7 +131,12 @@ final class ExchangeValidatorTest extends TestCase
     {
         $menu = $this->validMenu();
         $menu['version'] = '1.0.0.0';
-        self::assertFalse($this->check($menu)->ok);
+        $result = $this->check($menu);
+        self::assertFalse($result->ok);
+        // Typspezifische Validierung: kein Cross-Typ-Rauschen des jeweils
+        // anderen Formats (z.B. "gesturaEngine fehlt") in der öffentlichen
+        // Fehlerliste eines erkannten Menüs.
+        self::assertNotContains('schema:/', $result->errors);
 
         $menu['version'] = '123456.0.0'; // SemVer-Overflow (>5 Stellen)
         self::assertFalse($this->check($menu)->ok);

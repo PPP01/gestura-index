@@ -17,14 +17,27 @@ final class ExchangeValidator
         'newTab', 'scrollUp', 'scrollDown', 'scrollToTop', 'scrollToBottom',
     ];
 
-    private string $schemaJson;
+    private string $menuSchemaJson;
+    private string $engineSchemaJson;
 
     public function __construct(
         #[Autowire('%kernel.project_dir%/../schema/exchange-schema.json')]
         string $schemaPath,
     ) {
-        $this->schemaJson = file_get_contents($schemaPath)
+        $schemaJson = file_get_contents($schemaPath)
             ?: throw new \RuntimeException('exchange-schema.json nicht lesbar: ' . $schemaPath);
+
+        // Das Rohschema ist ein oneOf(menu, engine): Würde $data unverändert
+        // dagegen validiert, tauchen bei jedem ungültigen Payload zusätzlich
+        // die "required properties fehlen"-Fehler des jeweils ANDEREN Typs
+        // auf, obwohl detectType() den Typ längst kennt. Da errors der
+        // öffentliche Vertrag gegenüber Einreichern ist, bauen wir hier zwei
+        // typspezifische Teilschemata und validieren gezielt gegen das
+        // passende — $ref + $defs teilen sich die Definitionen aus dem
+        // unveränderten Original.
+        $schema = json_decode($schemaJson);
+        $this->menuSchemaJson = json_encode(['$ref' => '#/$defs/menu', '$defs' => $schema->{'$defs'}]);
+        $this->engineSchemaJson = json_encode(['$ref' => '#/$defs/engine', '$defs' => $schema->{'$defs'}]);
     }
 
     public function validate(string $rawJson): ValidationResult
@@ -46,7 +59,8 @@ final class ExchangeValidator
 
         $errors = [];
 
-        $result = (new Validator())->validate($data, $this->schemaJson);
+        $typeSchemaJson = $type === 'menu' ? $this->menuSchemaJson : $this->engineSchemaJson;
+        $result = (new Validator())->validate($data, $typeSchemaJson);
         if (!$result->isValid()) {
             foreach (array_keys((new ErrorFormatter())->format($result->error())) as $pointer) {
                 $errors[] = 'schema:' . $pointer;
