@@ -92,6 +92,23 @@ final class ModerationCommandsTest extends KernelTestCase
         self::assertStringContainsString('Keine wartende Version für com.example.neu', $tester->getDisplay());
     }
 
+    public function testApprovePublishesHiddenEntryWithoutPendingVersion(): void
+    {
+        $entry = $this->createPendingEntry();
+        $version = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $version->status = VersionStatus::Approved;
+        $entry->currentVersion = $version;
+        $entry->status = EntryStatus::Hidden;
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:approve', ['formatId' => 'com.example.neu']);
+
+        $tester->assertCommandIsSuccessful();
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.neu']);
+        self::assertSame(EntryStatus::Published, $entry->status);
+    }
+
     public function testRejectDeletesEntry(): void
     {
         $this->createPendingEntry();
