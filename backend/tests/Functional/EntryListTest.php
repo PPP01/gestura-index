@@ -70,6 +70,20 @@ final class EntryListTest extends ApiTestCase
         self::assertSame(2, $data['total']);
     }
 
+    public function testLikeWildcardsInFiltersAreLiteral(): void
+    {
+        $this->createPublishedEntry('com.example.one');
+
+        $this->api('GET', '/api/v1/entries?q=%');
+        self::assertSame(0, $this->json()['total']);
+
+        $this->api('GET', '/api/v1/entries?site=%');
+        self::assertSame(0, $this->json()['total']);
+
+        $this->api('GET', '/api/v1/entries?tag=_');
+        self::assertSame(0, $this->json()['total']);
+    }
+
     public function testEtagYields304(): void
     {
         $this->createPublishedEntry('com.example.one');

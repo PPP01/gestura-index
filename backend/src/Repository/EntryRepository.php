@@ -44,18 +44,18 @@ class EntryRepository extends ServiceEntityRepository
         }
         if ($q !== null && $q !== '') {
             $qb->andWhere('e.searchText LIKE :q')
-                ->setParameter('q', '%' . mb_strtolower($q) . '%');
+                ->setParameter('q', '%' . self::escapeLike(mb_strtolower($q)) . '%');
         }
         // tags/domains sind JSON-Arrays normalisierter Strings; das
         // LIKE auf den kodierten Wert ersetzt JSON_CONTAINS, das DQL
         // ohne Zusatzbundle nicht kennt.
         if ($site !== null && $site !== '') {
             $qb->andWhere('e.domains LIKE :site')
-                ->setParameter('site', '%' . json_encode(mb_strtolower($site)) . '%');
+                ->setParameter('site', '%' . self::escapeLike(json_encode(mb_strtolower($site))) . '%');
         }
         if ($tag !== null && $tag !== '') {
             $qb->andWhere('e.tags LIKE :tag')
-                ->setParameter('tag', '%' . json_encode(mb_strtolower($tag)) . '%');
+                ->setParameter('tag', '%' . self::escapeLike(json_encode(mb_strtolower($tag))) . '%');
         }
 
         $total = (int) (clone $qb)->select('COUNT(DISTINCT e.id)')->getQuery()->getSingleScalarResult();
@@ -66,5 +66,14 @@ class EntryRepository extends ServiceEntityRepository
             ->setMaxResults($perPage);
 
         return ['items' => $qb->getQuery()->getResult(), 'total' => $total];
+    }
+
+    // MariaDB nutzt Backslash als Default-Escape-Zeichen in LIKE; ein
+    // ESCAPE-Zusatz in DQL ist daher nicht nötig. Ohne dieses Escaping
+    // würden Nutzereingaben wie "%" oder "_" den Filter faktisch
+    // außer Kraft setzen (matcht dann fast alles statt nichts).
+    private static function escapeLike(string $value): string
+    {
+        return addcslashes($value, '%_\\');
     }
 }
