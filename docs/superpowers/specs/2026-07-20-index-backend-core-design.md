@@ -210,6 +210,13 @@ Schwellwerte als Env-Parameter: `TRUST_THRESHOLD` (Default 3), `REPORT_HIDE_THRE
 - 400 (Schema-/Regelverletzung, mit Pointer-Liste), 401 (Token fehlt/ungültig), 403 (fremder Eintrag, gesperrt), 404 (unbekannt oder nicht `published` für anonyme Leser), 409 (Duplikat, SemVer-Konflikt, `formatId` vergeben), 413 (Body-Limit), 429 (Rate-Limit, mit `Retry-After`).
 - 404 statt 403 für fremde nicht-öffentliche Einträge bei Lese-Endpunkten (kein Existenz-Leak).
 
+## Präzisierungen aus der Umsetzung (Final-Review, 2026-07-20)
+
+Zwei bewusste Trade-offs, die der Spec-Text bisher nicht abdeckte:
+
+- **formatId-Recycling:** Ein Entry mit Status `deleted`, der **nie** eine freigegebene Version hatte (abgelehnte Junk-Einreichung), gibt seine `formatId` wieder frei — bei einer Neueinreichung unter derselben Kennung wird der Junk-Datensatz hart entfernt. Verhindert das »Verbrennen« fremder Reverse-Domain-Kennungen durch absichtliche Müll-Einreichungen. Publizierte, später gelöschte Einträge bleiben dagegen erhalten (Admin-Nachvollzug) und blockieren ihre Kennung weiterhin. Die Duplikat-Erkennung ignoriert entsprechend Versionen mit Status `rejected` sowie Versionen gelöschter Einträge.
+- **Screenshot-Löschung nur bei endgültigen Übergängen:** Die Bilddatei wird bei `DELETE` (Besitzer), `index:reject` und `index:resolve --action=delete` gelöscht — **nicht** bei reversiblen Übergängen (Ban, Auto-Hide). Da der Server nie das Original speichert, wäre eine Löschung dort unwiederbringlich; drei Griefing-Meldungen könnten sonst einen legitimen Screenshot vernichten.
+
 ## Nicht-Ziele dieses Sub-Projekts
 
 - Kein HTTP-Admin, keine Passkey/2FA-Auth (→ Sub-Projekt 4), keine Konten, keine Sterne-Bewertungen, kein Settings-Sync (→ Phase 3), kein Frontend (→ Sub-Projekt 3), kein Deploy-Skript (→ Sub-Projekt 2), keine Extension-Änderungen (eigene Pläne im Extension-Repo).
