@@ -28,4 +28,20 @@ class EntryVersionRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['entry' => $entry, 'semver' => $semver, 'status' => VersionStatus::Approved]);
     }
+
+    public function maxSemver(Entry $entry): ?string
+    {
+        $semvers = array_column(
+            $this->createQueryBuilder('v')->select('v.semver')
+                ->andWhere('v.entry = :entry')->setParameter('entry', $entry)
+                ->getQuery()->getArrayResult(),
+            'semver',
+        );
+        if ($semvers === []) {
+            return null;
+        }
+        usort($semvers, static fn (string $a, string $b): int => version_compare($a, $b));
+
+        return end($semvers);
+    }
 }

@@ -26,10 +26,10 @@ final class SubmissionService
     }
 
     /**
-     * @return array{payloadJson: string, categories: list<Category>, tags: list<string>,
+     * @return array{payloadJson: string, categories: ?list<Category>, tags: ?list<string>,
      *               changelog: ?string, deprecated: ?bool, successorFormatId: ?string}
      */
-    public function parseSubmissionBody(Request $request): array
+    public function parseSubmissionBody(Request $request, bool $categoriesRequired = true): array
     {
         $raw = $request->getContent();
         if (\strlen($raw) > self::BODY_MAX) {
@@ -92,8 +92,8 @@ final class SubmissionService
 
         return [
             'payloadJson' => json_encode($body['payload'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
-            'categories' => $categories ?? throw new ApiProblem(400, 'Between 1 and 3 categories required'),
-            'tags' => $tags,
+            'categories' => $categories ?? ($categoriesRequired ? throw new ApiProblem(400, 'Between 1 and 3 categories required') : null),
+            'tags' => \array_key_exists('tags', $body) ? $tags : null,
             'changelog' => $changelog,
             'deprecated' => isset($body['deprecated']) ? (bool) $body['deprecated'] : null,
             'successorFormatId' => $successor,
@@ -133,13 +133,15 @@ final class SubmissionService
         return $hash;
     }
 
-    /** @param array{categories: ?list<Category>, tags: list<string>, deprecated: ?bool, successorFormatId: ?string} $meta */
+    /** @param array{categories: ?list<Category>, tags: ?list<string>, deprecated: ?bool, successorFormatId: ?string} $meta */
     public function applyMetadata(Entry $entry, array $meta): void
     {
         if ($meta['categories'] !== null) {
             $entry->setCategories($meta['categories']);
         }
-        $entry->tags = $meta['tags'];
+        if ($meta['tags'] !== null) {
+            $entry->tags = $meta['tags'];
+        }
         if ($meta['deprecated'] !== null) {
             $entry->deprecated = $meta['deprecated'];
         }
