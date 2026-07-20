@@ -13,6 +13,12 @@ use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
 final class SubmitterResolver
 {
+    /**
+     * Argon2id-Hash eines Zufallswerts: erzwingt konstante Rechenzeit,
+     * damit unbekannte Selectors nicht per Timing erkennbar sind.
+     */
+    private const DUMMY_HASH = '$argon2id$v=19$m=65536,t=4,p=1$QVEua0R0WlVBVUwzbG9UNg$3HdEGtQyGMrgXeKEroenDHXyp6drNFUfnpnvSMZs0YA';
+
     public function __construct(
         private readonly EditTokenService $tokens,
         private readonly SubmitterRepository $submitters,
@@ -35,8 +41,13 @@ final class SubmitterResolver
         // Fehlversuche pro IP+Selector drosseln (Brute-Force-Schutz)
         $this->guard->consume($this->tokenAuthLimiter, ($request->getClientIp() ?? 'unknown') . '|' . $parsed['selector']);
 
+        // verify() wird IMMER aufgerufen (auch bei unbekanntem Selector, dann
+        // gegen DUMMY_HASH) — sonst ließe sich über die Antwortzeit erkennen,
+        // ob ein Selector existiert (Timing-Oracle: Argon2id-Hashing kostet
+        // spürbar Rechenzeit, ein reines "Submitter nicht gefunden" nicht).
         $submitter = $this->submitters->findOneBy(['tokenSelector' => $parsed['selector']]);
-        if ($submitter === null || !$this->tokens->verify($parsed['verifier'], $submitter->tokenHash)) {
+        $hash = $submitter?->tokenHash ?? self::DUMMY_HASH;
+        if (!$this->tokens->verify($parsed['verifier'], $hash) || $submitter === null) {
             throw new ApiProblem(401, 'Invalid token');
         }
 
