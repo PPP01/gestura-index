@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Enum\EntryStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
+use App\Service\ScreenshotStorage;
 use App\Service\SubmitterResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,7 @@ final class EntryDeleteController
         EntryRepository $entries,
         SubmitterResolver $resolver,
         EntityManagerInterface $em,
+        ScreenshotStorage $screenshots,
     ): Response {
         $entry = $entries->findOneBy(['formatId' => $formatId]);
         if ($entry === null || $entry->status === EntryStatus::Deleted) {
@@ -30,6 +32,7 @@ final class EntryDeleteController
         $resolver->requireOwner($request, $entry);
 
         $entry->status = EntryStatus::Deleted;
+        $screenshots->remove($entry);
         $em->flush();
 
         return new Response('', 204);

@@ -84,4 +84,26 @@ final class ScreenshotTest extends ApiTestCase
         );
         self::assertResponseStatusCodeSame(400);
     }
+
+    public function testDeleteRemovesScreenshotFile(): void
+    {
+        [$submitter, $token] = $this->createSubmitterWithToken();
+        $this->createPublishedEntry('com.example.shop', submitter: $submitter);
+
+        $this->client->request('POST', '/api/v1/entries/com.example.shop/screenshot',
+            files: ['screenshot' => $this->makePngUpload()],
+            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
+        );
+        self::assertResponseIsSuccessful();
+        $file = static::getContainer()->getParameter('kernel.project_dir') . '/public/media/screenshots/com.example.shop.webp';
+        self::assertFileExists($file);
+
+        $this->api('DELETE', '/api/v1/entries/com.example.shop', token: $token);
+        self::assertResponseStatusCodeSame(204);
+
+        self::assertFileDoesNotExist($file);
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.shop']);
+        self::assertNull($entry->screenshotPath);
+    }
 }

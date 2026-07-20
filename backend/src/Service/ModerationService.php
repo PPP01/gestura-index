@@ -24,6 +24,7 @@ final class ModerationService
         private readonly EntryVersionRepository $versions,
         private readonly SubmissionService $submission,
         private readonly ReportRepository $reports,
+        private readonly ScreenshotStorage $screenshots,
     ) {
     }
 
@@ -44,6 +45,7 @@ final class ModerationService
             $version->status = VersionStatus::Rejected;
         }
         $entry->status = EntryStatus::Deleted;
+        $this->screenshots->remove($entry);
         $entry->touch();
         $this->em->flush();
     }
@@ -68,6 +70,9 @@ final class ModerationService
     {
         $report->status = ReportStatus::Resolved;
         $report->entry->status = $publish ? EntryStatus::Published : EntryStatus::Deleted;
+        if (!$publish) {
+            $this->screenshots->remove($report->entry);
+        }
         $report->entry->touch();
 
         if ($publish) {
