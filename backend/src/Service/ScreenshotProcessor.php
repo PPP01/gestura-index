@@ -16,12 +16,26 @@ final class ScreenshotProcessor
     private const MAX_WIDTH = 1280;
     private const MAX_HEIGHT = 800;
     private const WEBP_QUALITY = 82;
+    private const MAX_SOURCE_WIDTH = 4000;
+    private const MAX_SOURCE_HEIGHT = 4000;
 
     /** @return string WebP-Binärdaten */
     public function process(string $sourcePath): string
     {
         $raw = @file_get_contents($sourcePath);
-        $image = $raw === false ? false : @imagecreatefromstring($raw);
+        if ($raw === false) {
+            throw new ApiProblem(400, 'File is not a decodable image');
+        }
+
+        // Nur den Header lesen (kein Bitmap-Alloc) — verhindert, dass eine
+        // hochkomprimierte Riesen-Datei beim Dekodieren Breite×Höhe×4 Bytes
+        // alloziert (Decompression-Bomb / Memory-DoS).
+        $info = @getimagesizefromstring($raw);
+        if ($info === false || $info[0] > self::MAX_SOURCE_WIDTH || $info[1] > self::MAX_SOURCE_HEIGHT) {
+            throw new ApiProblem(400, 'Image dimensions not supported');
+        }
+
+        $image = @imagecreatefromstring($raw);
         if ($image === false) {
             throw new ApiProblem(400, 'File is not a decodable image');
         }
@@ -31,7 +45,6 @@ final class ScreenshotProcessor
         $scale = min(self::MAX_WIDTH / $width, self::MAX_HEIGHT / $height, 1.0);
         if ($scale < 1.0) {
             $scaled = imagescale($image, (int) round($width * $scale), (int) round($height * $scale), IMG_BICUBIC);
-            imagedestroy($image);
             if ($scaled === false) {
                 throw new ApiProblem(400, 'Image could not be processed');
             }
@@ -41,7 +54,6 @@ final class ScreenshotProcessor
         ob_start();
         $ok = imagewebp($image, null, self::WEBP_QUALITY);
         $webp = (string) ob_get_clean();
-        imagedestroy($image);
         if (!$ok || $webp === '') {
             throw new ApiProblem(400, 'Image could not be encoded');
         }

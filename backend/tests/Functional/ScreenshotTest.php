@@ -15,7 +15,6 @@ final class ScreenshotTest extends ApiTestCase
         imagefill($img, 0, 0, (int) imagecolorallocate($img, 90, 156, 246));
         $path = tempnam(sys_get_temp_dir(), 'shot') . '.png';
         imagepng($img, $path);
-        imagedestroy($img);
 
         return new UploadedFile($path, 'screenshot.png', 'image/png', test: true);
     }
@@ -72,5 +71,17 @@ final class ScreenshotTest extends ApiTestCase
             files: ['screenshot' => $this->makePngUpload(100, 100)],
         );
         self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testOversizedDimensionsYield400(): void
+    {
+        [$submitter, $token] = $this->createSubmitterWithToken();
+        $this->createPublishedEntry('com.example.shop', submitter: $submitter);
+
+        $this->client->request('POST', '/api/v1/entries/com.example.shop/screenshot',
+            files: ['screenshot' => $this->makePngUpload(4100, 50)],
+            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
+        );
+        self::assertResponseStatusCodeSame(400);
     }
 }
