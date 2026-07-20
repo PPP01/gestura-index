@@ -13,6 +13,7 @@ use App\Enum\ReportStatus;
 use App\Enum\VersionStatus;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
+use App\Repository\ReportRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class ModerationService
@@ -22,6 +23,7 @@ final class ModerationService
         private readonly EntryRepository $entries,
         private readonly EntryVersionRepository $versions,
         private readonly SubmissionService $submission,
+        private readonly ReportRepository $reports,
     ) {
     }
 
@@ -67,6 +69,16 @@ final class ModerationService
         $report->status = ReportStatus::Resolved;
         $report->entry->status = $publish ? EntryStatus::Published : EntryStatus::Deleted;
         $report->entry->touch();
+
+        if ($publish) {
+            // Ohne dies würde die nächste einzelne neue Meldung sofort
+            // wieder den Hide-Threshold erreichen, weil die übrigen
+            // offenen Meldungen desselben Vorfalls weiter mitzählen.
+            foreach ($this->reports->findBy(['entry' => $report->entry, 'status' => ReportStatus::Open]) as $open) {
+                $open->status = ReportStatus::Resolved;
+            }
+        }
+
         $this->em->flush();
     }
 
