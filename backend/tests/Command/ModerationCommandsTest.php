@@ -79,6 +79,19 @@ final class ModerationCommandsTest extends KernelTestCase
         self::assertNotSame('', $entry->searchText);
     }
 
+    public function testApproveHandlesMissingPendingVersionGracefully(): void
+    {
+        $entry = $this->createPendingEntry();
+        $version = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $version->status = VersionStatus::Rejected;
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:approve', ['formatId' => 'com.example.neu']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Keine wartende Version für com.example.neu', $tester->getDisplay());
+    }
+
     public function testRejectDeletesEntry(): void
     {
         $this->createPendingEntry();

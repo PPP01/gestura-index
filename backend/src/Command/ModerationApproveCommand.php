@@ -43,7 +43,13 @@ final class ModerationApproveCommand extends Command
         }
 
         if ($entry->status === EntryStatus::Pending) {
-            $this->moderation->approveEntry($entry);
+            try {
+                $this->moderation->approveEntry($entry);
+            } catch (\RuntimeException $e) {
+                $io->error($e->getMessage());
+
+                return Command::FAILURE;
+            }
             $io->success($entry->formatId . ' veröffentlicht');
 
             return Command::SUCCESS;
