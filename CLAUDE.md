@@ -32,7 +32,7 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 # Backend
 composer --working-dir=backend install
 php -S localhost:8000 -t backend/public          # Dev-Server
-backend/bin/phpunit                               # Tests (sobald eingerichtet)
+php backend/bin/phpunit                           # Tests (sobald eingerichtet)
 
 # Frontend
 npm --prefix frontend run dev                     # Dev-Server
