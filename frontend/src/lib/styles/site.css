@@ -1,0 +1,40 @@
+/*
+ * Web-spezifische Ergänzungen zum Gestura-Design (gestura-common.css).
+ * Wichtigste Abweichung zur Extension: eine durchgehende Max-Width-Shell,
+ * damit die Seite auf großen Monitoren (4K) nicht zerfällt – Navigation
+ * und Inhalt bleiben zusammen zentriert statt an den Rändern zu kleben.
+ */
+
+:root {
+	--page-max-width: 1200px;
+	--content-max-width: 900px; /* wie .container der Extension-Options-Seite */
+}
+
+body {
+	/* Font-Stack der Extension, ergänzt um system-ui für Nicht-Windows */
+	font-family: 'Segoe UI', system-ui, sans-serif;
+	font-size: 14px;
+	padding: 20px;
+}
+
+/* Äußere Shell: alles (Header, Navigation, Inhalt) innerhalb einer Max-Width */
+.page-shell {
+	max-width: var(--page-max-width);
+	margin: 0 auto;
+}
+
+/* Inhalts-Container wie in der Extension (option.css .container) */
+.container {
+	max-width: var(--content-max-width);
+	margin: 0 auto;
+}
+
+/* Karten-Grundform der Extension (option.css .section-body) */
+.card {
+	background: var(--bg-secondary);
+	border-radius: 20px;
+	border: 1px solid var(--section-border);
+	box-shadow: var(--section-shadow) 0px 1px 3px 0px;
+	padding: 20px 26px;
+	margin-bottom: 20px;
+}

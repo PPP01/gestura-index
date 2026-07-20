@@ -4,6 +4,23 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// No-Flash-Theme-Init (Muster der Extension: data-theme, 'auto' folgt dem System).
+			// Muss vor dem ersten Paint laufen, deshalb inline im <head>.
+			(function () {
+				var theme = 'auto';
+				try {
+					theme = localStorage.getItem('gestura_index_theme') || 'auto';
+				} catch (e) {}
+				var actual =
+					theme === 'auto'
+						? matchMedia('(prefers-color-scheme: light)').matches
+							? 'light'
+							: 'dark'
+						: theme;
+				document.documentElement.setAttribute('data-theme', actual);
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

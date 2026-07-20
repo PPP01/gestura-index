@@ -1,5 +1,7 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
+	import '$lib/styles/gestura-common.css';
+	import '$lib/styles/site.css';
+	import favicon from '$lib/assets/logo/icon32.png';
 
 	let { children } = $props();
 </script>
@@ -8,4 +10,6 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children()}
+<div class="page-shell">
+	{@render children()}
+</div>

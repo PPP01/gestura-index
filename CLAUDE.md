@@ -11,6 +11,8 @@ Vollständiges Kontext-Briefing (was Gestura ist, was dieses Projekt ist, alle f
 
 Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension).
 
+**Design:** Die Website übernimmt das Design der Extension (Tokens, Hell/Dunkel, Karten, Lucide-Icons, Logo) – Regeln und übernommene Dateien: @docs/design-system.md. Einzige gewollte Abweichung: Max-Width-Shell (4K). Keine gestalterischen Alleingänge.
+
 ## Wichtige Referenzen (Extension-Repo, aus WSL)
 
 - Design-Spec (freigegeben): `/mnt/c/Programme.alt/Gestura/docs/superpowers/specs/2026-07-19-menu-index-design.md`
