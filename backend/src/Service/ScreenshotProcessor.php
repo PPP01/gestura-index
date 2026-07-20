@@ -18,6 +18,11 @@ final class ScreenshotProcessor
     private const WEBP_QUALITY = 82;
     private const MAX_SOURCE_WIDTH = 4000;
     private const MAX_SOURCE_HEIGHT = 4000;
+    // Zusätzlich zu den Einzeldimensionen: ein Bild, das in beiden
+    // Achsen knapp unter dem jeweiligen Limit bleibt (z.B. 3999×3999,
+    // ~16 MP), würde beim Dekodieren trotzdem ein Vielfaches des
+    // erwarteten Speichers allozieren (Breite × Höhe × Bytes/Pixel).
+    private const MAX_SOURCE_PIXELS = 8_000_000;
 
     /** @return string WebP-Binärdaten */
     public function process(string $sourcePath): string
@@ -31,7 +36,8 @@ final class ScreenshotProcessor
         // hochkomprimierte Riesen-Datei beim Dekodieren Breite×Höhe×4 Bytes
         // alloziert (Decompression-Bomb / Memory-DoS).
         $info = @getimagesizefromstring($raw);
-        if ($info === false || $info[0] > self::MAX_SOURCE_WIDTH || $info[1] > self::MAX_SOURCE_HEIGHT) {
+        if ($info === false || $info[0] > self::MAX_SOURCE_WIDTH || $info[1] > self::MAX_SOURCE_HEIGHT
+            || ($info[0] * $info[1]) > self::MAX_SOURCE_PIXELS) {
             throw new ApiProblem(400, 'Image dimensions not supported');
         }
 
