@@ -1,5 +1,15 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hero_title": "Gestura Index",
-	"nav_browse": "Browse"
+	"nav_browse": "Browse",
+	"cat_dev": "Development",
+	"cat_shopping": "Shopping",
+	"cat_video": "Video",
+	"cat_news": "News",
+	"cat_social": "Social",
+	"cat_productivity": "Productivity",
+	"cat_search": "Search",
+	"cat_reference": "Reference",
+	"cat_entertainment": "Entertainment",
+	"cat_other": "Other"
 }
