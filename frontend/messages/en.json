@@ -34,5 +34,13 @@
 	"hero_sub": "The extension works entirely without this index — it is an optional, free add-on.",
 	"search_placeholder": "Search menus and engines…",
 	"home_categories": "Categories",
-	"home_docs_cta": "How the exchange format works"
+	"home_docs_cta": "How the exchange format works",
+	"browse_title": "Browse",
+	"filter_type_all": "All types",
+	"filter_category_all": "All categories",
+	"filter_site": "Domain",
+	"filter_tag": "Tag",
+	"sort_newest": "Newest",
+	"browse_empty_hint": "Try a different search or filter.",
+	"results_count": "{total} results"
 }

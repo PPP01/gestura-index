@@ -34,5 +34,13 @@
 	"hero_sub": "Die Erweiterung funktioniert vollständig ohne diesen Index – er ist ein optionales, kostenloses Zusatzangebot.",
 	"search_placeholder": "Menüs und Suchmaschinen suchen …",
 	"home_categories": "Kategorien",
-	"home_docs_cta": "Wie das Austauschformat funktioniert"
+	"home_docs_cta": "Wie das Austauschformat funktioniert",
+	"browse_title": "Stöbern",
+	"filter_type_all": "Alle Typen",
+	"filter_category_all": "Alle Kategorien",
+	"filter_site": "Domain",
+	"filter_tag": "Tag",
+	"sort_newest": "Neueste",
+	"browse_empty_hint": "Andere Suche oder anderen Filter versuchen.",
+	"results_count": "{total} Ergebnisse"
 }
