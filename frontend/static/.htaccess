@@ -1,0 +1,15 @@
+# Statisches SvelteKit-Frontend (adapter-static mit SPA-Fallback).
+Options -MultiViews
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+
+	# Vorhandene Dateien und Verzeichnisse direkt ausliefern.
+	RewriteCond %{REQUEST_FILENAME} -f [OR]
+	RewriteCond %{REQUEST_FILENAME} -d
+	RewriteRule ^ - [L]
+
+	# Alles andere (client-gerenderte Routen) auf die SPA-Fallback-Hülle.
+	RewriteRule ^ /200.html [L]
+</IfModule>

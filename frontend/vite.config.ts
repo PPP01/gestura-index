@@ -18,27 +18,6 @@ export default defineConfig({
 			// `fallback` liefert für nicht-prerenderte, dynamische Routen (Detailseiten,
 			// Sprach-Weiche) eine SPA-Hülle aus.
 			adapter: adapter({ fallback: '200.html' }),
-
-			prerender: {
-				// Header/Footer verlinken auf Routen, die erst in späteren SDD-Tasks entstehen:
-				// – »/browse«: bleibt client-rendered (SPA-Fallback über adapter-static)
-				// – »/docs«, »/about«, »/privacy«, »/imprint«: entstehen in späteren Tasks
-				// Der Crawler würde bei echten 404-Fehlern auf diesen Pfaden den Build mit
-				// harten Fehler abbrechen. Daher wird AUSSCHLIESSLICH ein 404-Status auf
-				// diesen bekannten, noch fehlenden Zielen zur Warnung downgegradet.
-				// WARNUNG: Diese Ausnahme MUSS in Task 13 (finale Integration) komplett
-				// entfernt werden, sobald alle Routen existieren. Jeden anderen
-				// HTTP-Fehler-Status (5xx, 3xx etc.) oder unerwartete Pfade führen zu
-				// Buildabbruch – kein stiller Fehler-Schlucker.
-				handleHttpError: ({ path, status, message }) => {
-					const pendingRoutes = ['/browse', '/docs', '/about', '/privacy', '/imprint'];
-					if (status === 404 && pendingRoutes.some((route) => path.endsWith(route))) {
-						console.warn(`[prerender] ${message} — Route folgt in einem späteren Task.`);
-						return;
-					}
-					throw new Error(message);
-				}
-			}
 		}),
 
 		// Paraglide: kompiliert die Übersetzungen (messages/*.json) zu tree-shakebaren
