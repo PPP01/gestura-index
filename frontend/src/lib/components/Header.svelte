@@ -20,6 +20,7 @@
 		<a href={localizeHref('/')}>{m.nav_home()}</a>
 		<a href={localizeHref('/browse')}>{m.nav_browse()}</a>
 		<a href={localizeHref('/docs')}>{m.nav_docs()}</a>
+		<a href={localizeHref('/gestura')}>{m.nav_get_gestura()}</a>
 	</nav>
 	<div class="header-actions">
 		<ThemeToggle />
