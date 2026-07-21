@@ -20,6 +20,7 @@ Die serverseitige Grundlage für ein Web-Admin-Panel: WebAuthn-basierte Anmeldun
 - **RP-ID `gestura.eu`:** Die WebAuthn-Ceremony läuft im Browser auf `gestura.eu` (dort wird SP4b ausgeliefert); die registrierbare Domain `gestura.eu` deckt auch `api.gestura.eu` ab. Die API validiert gegen RP-ID `gestura.eu`.
 - **Session:** Nach erfolgreichem Login setzt die API ein **httpOnly-Session-Cookie** (`Domain=.gestura.eu`, `Secure`, `SameSite=Strict`, Idle-TTL 30 min). Nicht per JavaScript lesbar (XSS-fest). Refresh bei Aktivität; nach Ablauf erneuter Passkey-Login.
 - **Bibliothek:** `web-auth/webauthn-symfony-bundle` (Standard für Symfony) für Registrierungs- und Assertion-Ceremonies.
+- **Backup-Passkey-Pflicht (≥ 2):** Jeder Admin-Account soll **zwei** registrierte Passkeys haben (z. B. Rechner + Handy), damit ein verlorenes/defektes Gerät nicht aussperrt. **Der Login braucht immer nur einen** beliebigen davon – nie beide gleichzeitig. Durchsetzung (bestätigt): Der Account ist nach dem **ersten** Passkey nutzbar (kein Aussperren beim Setup), aber ein zweiter wird **vor destruktiven Aktionen erzwungen** (siehe unten); ein Passkey lässt sich **nie unter 2** entfernen (sobald zwei existieren).
 
 ## 4. Rollen
 
@@ -42,7 +43,7 @@ Enums: `AdminRole` (`admin`, `moderator`), `AdminUserStatus` (`invited`, `active
 
 - **Bootstrap (erster Admin):** CLI `index:admin:create <displayName> <email> --role=admin` legt einen `invited` Admin an und **verschickt die Einladungs-E-Mail** (und druckt den Link zusätzlich in die Konsole als Fallback).
 - **Einladung durch Admins:** `POST /api/admin/users` (Rolle `admin`) mit `{ displayName, email, role }` → legt `invited`-Account + `AdminInvite` an und **versendet eine Einladungs-E-Mail** mit einmaligem, ablaufendem Link (Standard-Ablauf z. B. 72 h).
-- **Registrierung:** Invitee öffnet den Link auf `gestura.eu` → WebAuthn-Registrierung (Passkey) → Account wird `active`, Invite als `usedAt` markiert.
+- **Registrierung:** Invitee öffnet den Link auf `gestura.eu` → WebAuthn-Registrierung (erster Passkey) → Account wird `active`, Invite als `usedAt` markiert. Direkt danach fordert das Panel den **zweiten (Backup-)Passkey** an – ein Handy geht bequem per Cross-Device/QR vom selben Rechner, alternativ ein zweites Gerät/Hardware-Key.
 - **Recovery bei Passkey-Verlust:** Ein anderer Admin lädt denselben Nutzer erneut ein (neuer Passkey wird registriert); für den einzigen/ersten Admin dient die CLI (`index:admin:create` bzw. ein Re-Invite-Befehl) als Wiederherstellung.
 - **E-Mail-Versand:** Symfony Mailer; `MAILER_DSN` (SMTP des Hosters) ausschließlich in `.env.local` auf dem Server, nie im Repo. Einladungs-E-Mail schlicht und auf Deutsch (Betreiberkontext), mit dem Link und Ablaufhinweis.
 
@@ -57,6 +58,12 @@ Dünne Controller über `ModerationService` + Repository-Abfragen; jede zustands
 - `GET /api/admin/auth/me` – aktueller Nutzer + Rolle (für die SPA).
 - `POST /api/admin/register/options` + `POST /api/admin/register` – Passkey-Registrierung via gültigem Einladungs-Token.
 - `POST /api/admin/stepup/options` + `POST /api/admin/stepup` – frische Assertion für Step-up.
+
+**Passkey-Verwaltung (eigener Account, eingeloggt):**
+- `GET /api/admin/credentials` – eigene Passkeys auflisten (Label, angelegt/zuletzt genutzt).
+- `POST /api/admin/credentials/options` + `POST /api/admin/credentials` – weiteren Passkey zum eigenen Account hinzufügen (z. B. Handy/zweiter Rechner; Cross-Device unterstützt).
+- `PATCH /api/admin/credentials/{id}` – Label ändern.
+- `POST /api/admin/credentials/{id}/remove` – Passkey entfernen; **wird mit 409 abgelehnt, wenn danach < 2 übrig blieben** (Backup-Pflicht), und ist Step-up-geschützt.
 
 **Moderation (admin + moderator):**
 - `GET /api/admin/queue` – offene Einträge/Versionen (pending), transformCode-Einreichungen hervorgehoben.
@@ -77,6 +84,7 @@ Dünne Controller über `ModerationService` + Repository-Abfragen; jede zustands
 - **Credentialed CORS nur für `/api/admin`:** feste Origin `https://gestura.eu`, `Access-Control-Allow-Credentials: true`. Getrennt vom `*`-CORS der öffentlichen API (der bestehende `CorsSubscriber` unterscheidet Pfad-Präfix).
 - **Rate-Limiter:** Login, Registrierung und Einladung je eigener Limiter (mit großzügigem `when@test`-Block wie gehabt).
 - Step-up-Guard prüft die Frische der letzten Verifikation serverseitig (nicht clientseitig manipulierbar).
+- **Backup-Passkey-Gate:** Destruktive Aktionen (Ban/Unban, Ablehnen von Eintrag/Version, Nutzer einladen/deaktivieren) werden serverseitig mit 409 abgelehnt, solange der handelnde Account **weniger als 2** registrierte Passkeys hat. Die Anzahl wird aus den `WebAuthnCredential` abgeleitet (kein separates Flag).
 - CSRF: Da SameSite=Strict + eigener CORS-Origin, ist CSRF stark eingedämmt; zusätzlich für zustandsändernde Cookie-Requests ein CSRF-Token oder das Erzwingen eines Custom-Headers (z. B. `X-Requested-With`), den Cross-Site-Formulare nicht setzen können.
 
 ## 9. Tests
@@ -86,6 +94,7 @@ Dünne Controller über `ModerationService` + Repository-Abfragen; jede zustands
 - Jede Moderationsaktion end-to-end über HTTP (approve/reject Entry+Version, resolve Report, ban/unban) inkl. **Audit-Log-Schreibung**.
 - Einladungs-Flow: Invite anlegen → E-Mail via Symfony **Test-Transport** asserten → Registrierung mit gültigem/abgelaufenem/verbrauchtem Token.
 - Session: Zugriff ohne Cookie → 401; abgelaufene Session → 401; Step-up nötig, wenn Verifikation zu alt.
+- Backup-Passkey-Pflicht: zweiten Passkey hinzufügen; destruktive Aktion mit nur 1 Passkey → 409; Entfernen bis auf 2 ok, das Löschen unter 2 → 409; Login mit einem beliebigen der Passkeys.
 - PHPUnit läuft weiter mit `failOnDeprecation="true"` (Exit-Code prüfen).
 
 ## 10. Deployment-Notizen
