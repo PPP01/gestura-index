@@ -1,2 +1,7 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	// Platzhalter-Startseite. Die echte Startseite (Hero, Suche, Kategorien) und die
+	// Sprach-Weiche für die nackte Wurzel / entstehen in einem eigenen Task.
+	import { m } from '$lib/paraglide/messages.js';
+</script>
+
+<h1>{m.hero_title()}</h1>
