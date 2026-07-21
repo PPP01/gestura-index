@@ -13,11 +13,29 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 final class ReportTest extends ApiTestCase
 {
+    /**
+     * Meldet einen Eintrag von einer bestimmten Client-IP. Der per-Entry-Limiter
+     * ist auf IP+formatId gekeyt; distinkte IPs sind daher nötig, um den
+     * Hide-Schwellwert legitim (durch mehrere unabhängige Melder) zu erreichen.
+     */
+    private function reportFrom(string $ip, string $formatId, string $reason = 'spam'): void
+    {
+        $this->client->request(
+            'POST',
+            '/api/v1/entries/' . $formatId . '/report',
+            server: ['CONTENT_TYPE' => 'application/json', 'REMOTE_ADDR' => $ip],
+            content: json_encode(['reason' => $reason], JSON_THROW_ON_ERROR),
+        );
+    }
+
     public function testReportIsStoredAnonymously(): void
     {
         $this->createPublishedEntry('com.example.shop');
 
-        $this->api('POST', '/api/v1/entries/com.example.shop/report', ['reason' => 'broken_links', 'comment' => 'Link 404']);
+        $this->client->request('POST', '/api/v1/entries/com.example.shop/report',
+            server: ['CONTENT_TYPE' => 'application/json', 'REMOTE_ADDR' => '10.1.0.1'],
+            content: json_encode(['reason' => 'broken_links', 'comment' => 'Link 404'], JSON_THROW_ON_ERROR),
+        );
 
         self::assertResponseStatusCodeSame(204);
         $reports = $this->em->getRepository(Report::class)->findAll();
@@ -29,16 +47,32 @@ final class ReportTest extends ApiTestCase
     {
         $this->createPublishedEntry('com.example.shop');
 
-        $this->api('POST', '/api/v1/entries/com.example.shop/report', ['reason' => 'gefaellt-mir-nicht']);
+        $this->client->request('POST', '/api/v1/entries/com.example.shop/report',
+            server: ['CONTENT_TYPE' => 'application/json', 'REMOTE_ADDR' => '10.2.0.1'],
+            content: json_encode(['reason' => 'gefaellt-mir-nicht'], JSON_THROW_ON_ERROR),
+        );
         self::assertResponseStatusCodeSame(400);
     }
 
-    public function testThresholdHidesEntry(): void
+    public function testSingleIpCannotReportSameEntryTwice(): void
     {
         $this->createPublishedEntry('com.example.shop');
 
-        for ($i = 0; $i < 3; ++$i) { // REPORT_HIDE_THRESHOLD = 3
-            $this->api('POST', '/api/v1/entries/com.example.shop/report', ['reason' => 'spam']);
+        $this->reportFrom('10.5.0.1', 'com.example.shop');
+        self::assertResponseStatusCodeSame(204);
+
+        // Zweite Meldung derselben IP zum selben Eintrag: gedrosselt (429),
+        // damit eine einzelne IP den Hide-Schwellwert nicht allein erreicht.
+        $this->reportFrom('10.5.0.1', 'com.example.shop');
+        self::assertResponseStatusCodeSame(429);
+    }
+
+    public function testThresholdHidesEntryWithReportsFromDistinctIps(): void
+    {
+        $this->createPublishedEntry('com.example.shop');
+
+        foreach (['10.3.0.1', '10.3.0.2', '10.3.0.3'] as $ip) { // REPORT_HIDE_THRESHOLD = 3
+            $this->reportFrom($ip, 'com.example.shop');
             self::assertResponseStatusCodeSame(204);
         }
 
@@ -47,7 +81,7 @@ final class ReportTest extends ApiTestCase
         self::assertSame(EntryStatus::Hidden, $entry->status);
 
         // versteckte Einträge können nicht weiter gemeldet werden
-        $this->api('POST', '/api/v1/entries/com.example.shop/report', ['reason' => 'spam']);
+        $this->reportFrom('10.3.0.4', 'com.example.shop');
         self::assertResponseStatusCodeSame(404);
     }
 
@@ -55,8 +89,8 @@ final class ReportTest extends ApiTestCase
     {
         $this->createPublishedEntry('com.example.shop');
 
-        for ($i = 0; $i < 3; ++$i) { // REPORT_HIDE_THRESHOLD = 3
-            $this->api('POST', '/api/v1/entries/com.example.shop/report', ['reason' => 'spam']);
+        foreach (['10.4.0.1', '10.4.0.2', '10.4.0.3'] as $ip) { // REPORT_HIDE_THRESHOLD = 3
+            $this->reportFrom($ip, 'com.example.shop');
         }
         $this->em->clear();
         $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.shop']);
@@ -78,7 +112,7 @@ final class ReportTest extends ApiTestCase
         // Nur 1 neue Meldung (< Threshold 3) darf den Eintrag nicht
         // erneut verstecken — die alten offenen Meldungen dürfen dafür
         // nicht mehr mitzählen.
-        $this->api('POST', '/api/v1/entries/com.example.shop/report', ['reason' => 'spam']);
+        $this->reportFrom('10.4.0.9', 'com.example.shop');
         self::assertResponseStatusCodeSame(204);
 
         $this->em->clear();

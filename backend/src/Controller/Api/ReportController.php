@@ -45,9 +45,14 @@ final class ReportController
         EntityManagerInterface $em,
         RateLimitGuard $guard,
         RateLimiterFactoryInterface $reportLimiter,
+        RateLimiterFactoryInterface $reportPerEntryLimiter,
         #[Autowire('%app.report_hide_threshold%')] int $hideThreshold,
     ): Response {
-        $guard->consume($reportLimiter, $request->getClientIp() ?? 'unknown');
+        $ip = $request->getClientIp() ?? 'unknown';
+        $guard->consume($reportLimiter, $ip); // Anti-Spam pro IP über alle Einträge
+        // Anti-Hide: pro IP+Eintrag zählt höchstens eine Meldung — eine einzelne
+        // IP kann den Hide-Schwellwert damit nicht im Alleingang erreichen.
+        $guard->consume($reportPerEntryLimiter, $ip . '|' . $formatId);
 
         $entry = $entries->findOneBy(['formatId' => $formatId, 'status' => EntryStatus::Published])
             ?? throw new ApiProblem(404, 'Entry not found');

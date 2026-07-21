@@ -3,6 +3,10 @@ framework:
         submit:     { policy: sliding_window, limit: 5,  interval: '1 hour' }
         update:     { policy: sliding_window, limit: 10, interval: '1 hour' }
         report:     { policy: sliding_window, limit: 5,  interval: '1 hour' }
+        # Anti-Hide: höchstens eine gezählte Meldung pro IP UND Eintrag – eine
+        # einzelne IP kann den Hide-Schwellwert (3) so nicht allein erreichen.
+        # Auf IP+formatId gekeyt (nur Limiter-Cache, keine IP-Persistenz).
+        report_per_entry: { policy: fixed_window, limit: 1, interval: '1 day' }
         token_auth: { policy: sliding_window, limit: 10, interval: '1 hour' }
         # Selektorunabhängiges IP-Limit: deckelt die teure Argon2id-Verifikation
         # pro IP, damit Selector-Rotation keinen CPU-/Memory-DoS ermöglicht.
@@ -11,12 +15,16 @@ framework:
 
 # Funktionstests feuern viele Requests von 127.0.0.1 — dort großzügige
 # Limits; die Drosselung selbst testet RateLimitGuardTest isoliert.
+# AUSNAHME report_per_entry: dieser Limiter IST die zu testende Sicherheits-
+# kontrolle (Anti-Hide) und behält daher sein echtes Limit; ReportTest nutzt
+# dafür bewusst distinkte Client-IPs pro (IP,formatId)-Kombination.
 when@test:
     framework:
         rate_limiter:
             submit:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
             update:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
             report:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            report_per_entry: { policy: fixed_window, limit: 1, interval: '1 day' }
             token_auth: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             token_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }

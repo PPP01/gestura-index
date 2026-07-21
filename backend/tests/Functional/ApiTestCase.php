@@ -26,6 +26,13 @@ abstract class ApiTestCase extends WebTestCase
     {
         $this->client = static::createClient();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
+
+        // Rate-Limiter-Cache je Test zurücksetzen: die DB rollt per
+        // dama/doctrine-test-bundle zurück, der Limiter-Cache (eigener Pool)
+        // aber nicht — sonst würden Limiter-Zustände zwischen Tests (und
+        // Testläufen) durchschlagen. Erst dadurch sind Limiter mit echten
+        // Test-Limits (z.B. report_per_entry) deterministisch prüfbar.
+        static::getContainer()->get('cache.rate_limiter')->clear();
     }
 
     /** @return array{0: Submitter, 1: string} Submitter und Klartext-Token */
