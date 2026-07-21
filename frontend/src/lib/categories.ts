@@ -47,6 +47,6 @@ export function categoryIcon(key: string): Component {
 
 /** Lokalisiertes Label einer Kategorie (Fallback: der Key selbst). */
 export function categoryLabel(key: string): string {
-	const fn = (m as Record<string, () => string>)[`cat_${key}`];
+	const fn = (m as unknown as Record<string, () => string>)[`cat_${key}`];
 	return typeof fn === 'function' ? fn() : key;
 }

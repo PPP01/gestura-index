@@ -2,6 +2,7 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import { svelteTesting } from '@testing-library/svelte/vite';
 
 export default defineConfig({
 	plugins: [
@@ -36,7 +37,13 @@ export default defineConfig({
 					]
 				}
 			]
-		})
+		}),
+
+		// Sorgt dafür, dass Vitest Sveltes Browser-Build statt des SSR-Builds
+		// auflöst (nur aktiv unter VITEST) – sonst schlägt render() aus
+		// @testing-library/svelte mit "mount(...) is not available on the
+		// server" fehl.
+		svelteTesting()
 	],
 	test: {
 		environment: 'jsdom',

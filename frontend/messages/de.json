@@ -11,5 +11,15 @@
 	"cat_search": "Suche",
 	"cat_reference": "Nachschlagewerke",
 	"cat_entertainment": "Unterhaltung",
-	"cat_other": "Sonstiges"
+	"cat_other": "Sonstiges",
+	"badge_deprecated": "Veraltet",
+	"badge_transform": "Enthält Code",
+	"type_menu": "Menü",
+	"type_engine": "Suchmaschine",
+	"installs": "Installationen",
+	"pager_prev": "Zurück",
+	"pager_next": "Weiter",
+	"pager_info": "Seite {page} von {total}",
+	"state_empty_title": "Nichts gefunden",
+	"state_error_retry": "Erneut versuchen"
 }

@@ -11,5 +11,15 @@
 	"cat_search": "Search",
 	"cat_reference": "Reference",
 	"cat_entertainment": "Entertainment",
-	"cat_other": "Other"
+	"cat_other": "Other",
+	"badge_deprecated": "Deprecated",
+	"badge_transform": "Contains code",
+	"type_menu": "Menu",
+	"type_engine": "Engine",
+	"installs": "installs",
+	"pager_prev": "Previous",
+	"pager_next": "Next",
+	"pager_info": "Page {page} of {total}",
+	"state_empty_title": "Nothing found",
+	"state_error_retry": "Retry"
 }
