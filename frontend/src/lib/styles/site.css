@@ -38,3 +38,46 @@ body {
 	padding: 20px 26px;
 	margin-bottom: 20px;
 }
+
+/* Farbige Icon-Kachel nach dem Muster der Extension (option.css). */
+.icon-tile {
+	width: 40px;
+	height: 40px;
+	border-radius: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--icon-color, var(--accent-color));
+	background: oklch(from var(--icon-color, var(--accent-color)) l c h / 12%);
+	flex-shrink: 0;
+}
+
+/* Badge (Typ, Kategorie, Warnung). */
+.badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 0.8em;
+	background: var(--bg-tertiary);
+	color: var(--text-secondary);
+	border: 1px solid var(--border-color);
+}
+.badge.badge-warning {
+	color: var(--warning-color);
+	border-color: var(--warning-color);
+}
+
+/* Kartengitter und Filterleiste. */
+.grid-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 16px;
+}
+.filter-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+}

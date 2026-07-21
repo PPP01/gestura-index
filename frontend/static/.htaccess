@@ -1,0 +1,25 @@
+# Statisches SvelteKit-Frontend (adapter-static mit Prerender + SPA-Fallback).
+Options -MultiViews
+DirectoryIndex index.html
+DirectorySlash Off
+
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+
+	# 1. Vorhandene Dateien direkt ausliefern.
+	RewriteCond %{REQUEST_FILENAME} -f
+	RewriteRule ^ - [L]
+
+	# 2. Prerenderte Seiten ohne .html-Endung ausliefern (/en → /en.html,
+	#    /en/docs → /en/docs.html). MUSS vor der Verzeichnis-Regel stehen, damit
+	#    /en die Datei en.html liefert statt in das Verzeichnis en/ (→ 403) zu laufen.
+	RewriteCond %{REQUEST_FILENAME}.html -f
+	RewriteRule ^(.+?)/?$ /$1.html [L]
+
+	# 3. Vorhandene Verzeichnisse (z. B. die Wurzel → index.html).
+	RewriteCond %{REQUEST_FILENAME} -d
+	RewriteRule ^ - [L]
+
+	# 4. Alles andere (client-gerenderte Routen wie /en/browse, /en/entry/...) auf die SPA-Hülle.
+	RewriteRule ^ /200.html [L]
+</IfModule>
