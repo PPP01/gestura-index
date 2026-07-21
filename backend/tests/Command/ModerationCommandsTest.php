@@ -159,6 +159,59 @@ final class ModerationCommandsTest extends KernelTestCase
         self::assertStringContainsString('keine freigegebene Version', $tester->getDisplay());
     }
 
+    private function addVersion(Entry $entry, string $semver, VersionStatus $status): EntryVersion
+    {
+        $payload = ['gesturaMenu' => 1, 'id' => $entry->formatId, 'version' => $semver, 'name' => 'V' . $semver,
+            'items' => [['id' => 'a', 'label' => 'A', 'action' => 'newTab']]];
+        $version = new EntryVersion($entry, $semver, $payload, (new PayloadAnalyzer())->contentHash($payload));
+        $version->status = $status;
+        $this->em->persist($version);
+        $this->em->flush();
+
+        return $version;
+    }
+
+    public function testApprovingOlderPendingVersionDoesNotDowngradeCurrentVersion(): void
+    {
+        $entry = $this->createPendingEntry();
+        $current = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $current->status = VersionStatus::Approved;
+        $current->semver = '2.0.0';
+        $entry->currentVersion = $current;
+        $entry->status = EntryStatus::Published;
+        $this->em->flush();
+
+        // Eine ältere Transform-Version wartet weiter in der Queue.
+        $this->addVersion($entry, '1.5.0', VersionStatus::Pending);
+
+        $this->runCommand('index:approve', ['formatId' => 'com.example.neu'])->assertCommandIsSuccessful();
+
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.neu']);
+        // currentVersion darf NICHT auf die ältere 1.5.0 zurückfallen.
+        self::assertSame('2.0.0', $entry->currentVersion->semver);
+        $older = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry, 'semver' => '1.5.0']);
+        self::assertSame(VersionStatus::Approved, $older->status); // trotzdem als Version freigegeben
+    }
+
+    public function testApprovingNewerPendingVersionAdvancesCurrentVersion(): void
+    {
+        $entry = $this->createPendingEntry();
+        $current = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $current->status = VersionStatus::Approved;
+        $entry->currentVersion = $current; // 1.0.0
+        $entry->status = EntryStatus::Published;
+        $this->em->flush();
+
+        $this->addVersion($entry, '2.0.0', VersionStatus::Pending);
+
+        $this->runCommand('index:approve', ['formatId' => 'com.example.neu'])->assertCommandIsSuccessful();
+
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.neu']);
+        self::assertSame('2.0.0', $entry->currentVersion->semver);
+    }
+
     public function testRejectDeletesEntry(): void
     {
         $this->createPendingEntry();

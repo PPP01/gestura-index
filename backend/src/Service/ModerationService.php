@@ -95,8 +95,15 @@ final class ModerationService
     {
         $version->status = VersionStatus::Approved;
         $entry = $version->entry;
-        $entry->currentVersion = $version;
-        $this->submission->refreshDerived($entry, $version->payload);
+        // currentVersion darf nur vorwärts wandern: eine ältere, noch in der
+        // Queue liegende (Transform-)Version wird zwar freigegeben, ersetzt aber
+        // keine bereits veröffentlichte neuere Version. Ohne diesen Guard könnte
+        // die Freigabe-Reihenfolge currentVersion zurückstufen.
+        if ($entry->currentVersion === null
+            || version_compare($version->semver, $entry->currentVersion->semver, '>')) {
+            $entry->currentVersion = $version;
+            $this->submission->refreshDerived($entry, $version->payload);
+        }
         $entry->touch();
         $this->em->flush();
     }
