@@ -20,16 +20,19 @@ export default defineConfig({
 			adapter: adapter({ fallback: '200.html' }),
 
 			prerender: {
-				// Header/Footer verlinken bereits auf Routen (Stöbern, Format & Schema,
-				// Über/Datenschutz/Impressum), die erst in späteren SDD-Tasks entstehen.
-				// Der Crawler würde den Build sonst mit einem harten 404 abbrechen –
-				// diese konkreten, noch fehlenden Ziele werden bewusst nur als Warnung
-				// behandelt. Sobald die jeweilige Route existiert, greift diese
-				// Ausnahme nicht mehr (kein stiller Fehler-Schlucker für echte,
-				// unerwartete 404s).
-				handleHttpError: ({ path, message }) => {
+				// Header/Footer verlinken auf Routen, die erst in späteren SDD-Tasks entstehen:
+				// – »/browse«: bleibt client-rendered (SPA-Fallback über adapter-static)
+				// – »/docs«, »/about«, »/privacy«, »/imprint«: entstehen in späteren Tasks
+				// Der Crawler würde bei echten 404-Fehlern auf diesen Pfaden den Build mit
+				// harten Fehler abbrechen. Daher wird AUSSCHLIESSLICH ein 404-Status auf
+				// diesen bekannten, noch fehlenden Zielen zur Warnung downgegradet.
+				// WARNUNG: Diese Ausnahme MUSS in Task 13 (finale Integration) komplett
+				// entfernt werden, sobald alle Routen existieren. Jeden anderen
+				// HTTP-Fehler-Status (5xx, 3xx etc.) oder unerwartete Pfade führen zu
+				// Buildabbruch – kein stiller Fehler-Schlucker.
+				handleHttpError: ({ path, status, message }) => {
 					const pendingRoutes = ['/browse', '/docs', '/about', '/privacy', '/imprint'];
-					if (pendingRoutes.some((route) => path.endsWith(route))) {
+					if (status === 404 && pendingRoutes.some((route) => path.endsWith(route))) {
 						console.warn(`[prerender] ${message} — Route folgt in einem späteren Task.`);
 						return;
 					}
