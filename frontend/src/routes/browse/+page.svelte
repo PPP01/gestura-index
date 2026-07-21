@@ -23,6 +23,11 @@
 	// Aktueller Filter direkt aus der URL abgeleitet (Single Source of Truth).
 	const query = $derived<EntryQuery>(parseQuery(page.url.searchParams));
 
+	// Suchfeld nachziehen, wenn sich q extern ändert (Deep-Link, Zurück-Button).
+	$effect(() => {
+		qField = query.q ?? '';
+	});
+
 	async function load(q: EntryQuery) {
 		const ticket = seq.next();
 		loading = true;
@@ -76,16 +81,20 @@
 		placeholder={m.search_placeholder()}
 		aria-label={m.search_placeholder()}
 	/>
-	<select value={query.type ?? ''} onchange={(e) => setFilter({ type: (e.currentTarget.value || undefined) as EntryQuery['type'] })}>
+	<select value={query.type ?? ''} onchange={(e) => setFilter({ type: (e.currentTarget.value || undefined) as EntryQuery['type'] })} aria-label={m.filter_type_all()}>
 		<option value="">{m.filter_type_all()}</option>
 		<option value="menu">{m.type_menu()}</option>
 		<option value="engine">{m.type_engine()}</option>
 	</select>
-	<select value={query.category ?? ''} onchange={(e) => setFilter({ category: e.currentTarget.value || undefined })}>
+	<select value={query.category ?? ''} onchange={(e) => setFilter({ category: e.currentTarget.value || undefined })} aria-label={m.filter_category_all()}>
 		<option value="">{m.filter_category_all()}</option>
 		{#each CATEGORIES as cat}
 			<option value={cat}>{categoryLabel(cat)}</option>
 		{/each}
+	</select>
+	<select value={query.sort ?? 'newest'} onchange={(e) => setFilter({ sort: e.currentTarget.value || undefined })} aria-label={m.sort_label()}>
+		<option value="newest">{m.sort_newest()}</option>
+		<option value="installs">{m.sort_installs()}</option>
 	</select>
 	<input
 		type="text"
@@ -101,7 +110,7 @@
 		placeholder={m.filter_site()}
 		aria-label={m.filter_site()}
 	/>
-	{#if loading}<Spinner />{/if}
+	{#if loading && result}<Spinner />{/if}
 </div>
 
 {#if error}

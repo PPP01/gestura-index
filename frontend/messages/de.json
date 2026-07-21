@@ -41,6 +41,8 @@
 	"filter_site": "Domain",
 	"filter_tag": "Tag",
 	"sort_newest": "Neueste",
+	"sort_installs": "Beliebteste",
+	"sort_label": "Sortierung",
 	"browse_empty_hint": "Andere Suche oder anderen Filter versuchen.",
 	"results_count": "{total} Ergebnisse"
 }
