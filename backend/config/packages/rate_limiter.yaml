@@ -4,6 +4,9 @@ framework:
         update:     { policy: sliding_window, limit: 10, interval: '1 hour' }
         report:     { policy: sliding_window, limit: 5,  interval: '1 hour' }
         token_auth: { policy: sliding_window, limit: 10, interval: '1 hour' }
+        # Selektorunabhängiges IP-Limit: deckelt die teure Argon2id-Verifikation
+        # pro IP, damit Selector-Rotation keinen CPU-/Memory-DoS ermöglicht.
+        token_auth_ip: { policy: sliding_window, limit: 60, interval: '1 hour' }
         install:    { policy: fixed_window,   limit: 1,  interval: '1 day' }
 
 # Funktionstests feuern viele Requests von 127.0.0.1 — dort großzügige
@@ -15,4 +18,5 @@ when@test:
             update:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
             report:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
             token_auth: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            token_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }

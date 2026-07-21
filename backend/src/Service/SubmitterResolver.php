@@ -30,6 +30,7 @@ final class SubmitterResolver
         private readonly SubmitterRepository $submitters,
         private readonly RateLimitGuard $guard,
         private readonly RateLimiterFactoryInterface $tokenAuthLimiter,
+        private readonly RateLimiterFactoryInterface $tokenAuthIpLimiter,
     ) {
     }
 
@@ -48,8 +49,15 @@ final class SubmitterResolver
         $parsed = $this->tokens->parseAuthorizationHeader($header)
             ?? throw new ApiProblem(401, 'Invalid token');
 
-        // Fehlversuche pro IP+Selector drosseln (Brute-Force-Schutz)
-        $this->guard->consume($this->tokenAuthLimiter, ($request->getClientIp() ?? 'unknown') . '|' . $parsed['selector']);
+        $ip = $request->getClientIp() ?? 'unknown';
+        // Unabhängiges Per-IP-Limit VOR der teuren Argon2id-(Dummy-)Verifikation:
+        // Der Selector-Bucket allein reicht nicht, weil ein Angreifer pro Anfrage
+        // einen neuen Selector wählen und so je einen eigenen Bucket erzeugen
+        // könnte — die Hash-Prüfung ließe sich damit unbegrenzt auslösen
+        // (CPU-/Memory-DoS). Das IP-Limit deckelt Versuche selektorunabhängig.
+        $this->guard->consume($this->tokenAuthIpLimiter, $ip);
+        // Fehlversuche zusätzlich pro IP+Selector drosseln (Brute-Force-Schutz)
+        $this->guard->consume($this->tokenAuthLimiter, $ip . '|' . $parsed['selector']);
 
         // verify() wird IMMER aufgerufen (auch bei unbekanntem Selector, dann
         // gegen DUMMY_HASH) — sonst ließe sich über die Antwortzeit erkennen,
