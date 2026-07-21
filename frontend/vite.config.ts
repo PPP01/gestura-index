@@ -17,7 +17,25 @@ export default defineConfig({
 			// rein statisch und läuft auf klassischem Hosting ohne Node-SSR.
 			// `fallback` liefert für nicht-prerenderte, dynamische Routen (Detailseiten,
 			// Sprach-Weiche) eine SPA-Hülle aus.
-			adapter: adapter({ fallback: '200.html' })
+			adapter: adapter({ fallback: '200.html' }),
+
+			prerender: {
+				// Header/Footer verlinken bereits auf Routen (Stöbern, Format & Schema,
+				// Über/Datenschutz/Impressum), die erst in späteren SDD-Tasks entstehen.
+				// Der Crawler würde den Build sonst mit einem harten 404 abbrechen –
+				// diese konkreten, noch fehlenden Ziele werden bewusst nur als Warnung
+				// behandelt. Sobald die jeweilige Route existiert, greift diese
+				// Ausnahme nicht mehr (kein stiller Fehler-Schlucker für echte,
+				// unerwartete 404s).
+				handleHttpError: ({ path, message }) => {
+					const pendingRoutes = ['/browse', '/docs', '/about', '/privacy', '/imprint'];
+					if (pendingRoutes.some((route) => path.endsWith(route))) {
+						console.warn(`[prerender] ${message} — Route folgt in einem späteren Task.`);
+						return;
+					}
+					throw new Error(message);
+				}
+			}
 		}),
 
 		// Paraglide: kompiliert die Übersetzungen (messages/*.json) zu tree-shakebaren

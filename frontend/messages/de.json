@@ -1,7 +1,9 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hero_title": "Gestura Index",
+	"nav_home": "Start",
 	"nav_browse": "Stöbern",
+	"nav_docs": "Format & Schema",
 	"cat_dev": "Entwicklung",
 	"cat_shopping": "Shopping",
 	"cat_video": "Video",
@@ -22,5 +24,10 @@
 	"pager_nav_label": "Seitennavigation",
 	"pager_info": "Seite {page} von {total}",
 	"state_empty_title": "Nichts gefunden",
-	"state_error_retry": "Erneut versuchen"
+	"state_error_retry": "Erneut versuchen",
+	"footer_about": "Über",
+	"footer_privacy": "Datenschutz",
+	"footer_imprint": "Impressum",
+	"footer_works_with": "Funktioniert mit der Gestura-Erweiterung",
+	"theme_label": "Design"
 }
