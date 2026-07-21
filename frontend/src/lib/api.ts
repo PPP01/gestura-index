@@ -1,7 +1,7 @@
-import { PUBLIC_API_BASE } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 /** Basis-URL der Index-API; über PUBLIC_API_BASE überschreibbar. */
-export const API_BASE = PUBLIC_API_BASE || 'https://api.gestura.eu';
+export const API_BASE = env.PUBLIC_API_BASE || 'https://api.gestura.eu';
 
 export type EntryType = 'menu' | 'engine';
 export type ReportReason = 'spam' | 'broken_links' | 'misleading' | 'legal';

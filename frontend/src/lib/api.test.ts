@@ -1,4 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// Mock $env/dynamic/public für Tests
+vi.mock('$env/dynamic/public', () => ({
+	env: {
+		PUBLIC_API_BASE: undefined
+	}
+}));
+
 import {
 	listEntries,
 	getEntry,
@@ -94,5 +102,16 @@ describe('downloadVersionUrl', () => {
 		expect(downloadVersionUrl('a', '1.2.3', BASE)).toBe(
 			'https://api.test/api/v1/entries/a/versions/1.2.3'
 		);
+	});
+});
+
+describe('network errors', () => {
+	it('wickelt einen fetch-Ausfall in einen ApiError mit status 0', async () => {
+		const fetchMock = vi.fn().mockRejectedValue(new Error('boom'));
+		await expect(getEntry('a', { fetch: fetchMock, baseUrl: 'https://api.test' })).rejects.toMatchObject({
+			status: 0,
+			title: 'Network error',
+			detail: 'boom'
+		});
 	});
 });
