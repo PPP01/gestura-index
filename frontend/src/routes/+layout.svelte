@@ -4,7 +4,10 @@
 	import favicon from '$lib/assets/logo/icon32.png';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
-	import { getLocale } from '$lib/paraglide/runtime';
+	import { getLocale, localizeHref, locales } from '$lib/paraglide/runtime';
+	import { page } from '$app/state';
+
+	const SITE_URL = 'https://gestura.eu';
 
 	let { children } = $props();
 
@@ -18,6 +21,14 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	{#each locales as hreflangLocale}
+		<link
+			rel="alternate"
+			hreflang={hreflangLocale}
+			href={SITE_URL + localizeHref(page.url.pathname, { locale: hreflangLocale })}
+		/>
+	{/each}
+	<link rel="alternate" hreflang="x-default" href={SITE_URL + localizeHref(page.url.pathname, { locale: 'en' })} />
 </svelte:head>
 
 <div class="page-shell">
