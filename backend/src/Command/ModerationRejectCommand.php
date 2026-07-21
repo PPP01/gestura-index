@@ -16,9 +16,16 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * Konsolen-Command `index:reject` – lehnt einen wartenden Entry oder eine wartende
+ * EntryVersion ab; ein abgelehnter Erst-Entry wird vollständig gelöscht.
+ */
 #[AsCommand(name: 'index:reject', description: 'Lehnt einen wartenden Eintrag oder eine wartende Version ab')]
 final class ModerationRejectCommand extends Command
 {
+    /**
+     * Nimmt Entry-Repositories und ModerationService per Dependency Injection entgegen.
+     */
     public function __construct(
         private readonly EntryRepository $entries,
         private readonly EntryVersionRepository $versions,
@@ -27,11 +34,20 @@ final class ModerationRejectCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * Registriert das Pflichtargument `formatId` (reverse-domain-ID des Eintrags).
+     */
     protected function configure(): void
     {
         $this->addArgument('formatId', InputArgument::REQUIRED, 'formatId des Eintrags');
     }
 
+    /**
+     * Lehnt ab: pending Entry → rejectEntry() (löscht den Eintrag), pending Version →
+     * rejectVersion() (Version wird verworfen, Entry bleibt published).
+     * Gibt Command::FAILURE (1) zurück, wenn die formatId unbekannt ist oder nichts
+     * abzulehnen ist (Entry bereits published, keine pending Version vorhanden).
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

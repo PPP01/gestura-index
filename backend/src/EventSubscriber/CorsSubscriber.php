@@ -17,6 +17,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
  */
 final class CorsSubscriber implements EventSubscriberInterface
 {
+    /**
+     * Registriert den Subscriber auf REQUEST (Priorität 256, vor dem Router)
+     * für den OPTIONS-Preflight sowie auf RESPONSE zum Setzen der CORS-Header.
+     */
     public static function getSubscribedEvents(): array
     {
         return [
@@ -25,6 +29,10 @@ final class CorsSubscriber implements EventSubscriberInterface
         ];
     }
 
+    /**
+     * Beantwortet OPTIONS-Preflight-Anfragen unter /api/ sofort mit HTTP 204,
+     * damit der Preflight nicht in die Symfony-Routing-Kette gelangt.
+     */
     public function onKernelRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();
@@ -33,6 +41,10 @@ final class CorsSubscriber implements EventSubscriberInterface
         }
     }
 
+    /**
+     * Ergänzt jede Antwort auf /api/-Pfade um die CORS-Header, sodass Browser-
+     * Clients (Extension-Service-Worker, Svelte-Website) die Ressource lesen dürfen.
+     */
     public function onKernelResponse(ResponseEvent $event): void
     {
         if (str_starts_with($event->getRequest()->getPathInfo(), '/api/')) {
@@ -40,7 +52,12 @@ final class CorsSubscriber implements EventSubscriberInterface
         }
     }
 
-    /** @return array<string, string> */
+    /**
+     * Liefert das gemeinsame Set der CORS-Antwort-Header für öffentliche,
+     * cookielose API-Zugriffe ohne Origin-Einschränkung.
+     *
+     * @return array<string, string>
+     */
     private function corsHeaders(): array
     {
         return [

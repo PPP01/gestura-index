@@ -13,8 +13,22 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt für die paginierte und filterbare Eintragsliste.
+ *
+ * Unterstützt Freitextsuche sowie Filter nach Kategorie, Typ, Tag und
+ * Domain (site). Antwort ist öffentlich cachebar (ETag, max-age 300 s).
+ */
 final class EntryListController
 {
+    /**
+     * Liefert 200 mit einer paginierten Liste veröffentlichter Einträge.
+     *
+     * Akzeptiert die Query-Parameter q, site, category, tag, type, sort, page
+     * und perPage (max. 50 Einträge pro Seite). Wirft ApiProblem 400 bei
+     * ungültigem category-, type- oder sort-Wert. Gibt 304 zurück, wenn ETag
+     * unverändert.
+     */
     #[Route('/api/v1/entries', methods: ['GET'])]
     public function __invoke(Request $request, EntryRepository $entries, EntrySerializer $serializer): JsonResponse
     {

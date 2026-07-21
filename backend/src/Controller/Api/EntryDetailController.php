@@ -13,8 +13,20 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt für die Detailansicht eines einzelnen veröffentlichten Eintrags.
+ *
+ * Gibt Metadaten sowie alle freigegebenen Versionen zurück.
+ * Antwort ist öffentlich cachebar (ETag, max-age 300 s).
+ */
 final class EntryDetailController
 {
+    /**
+     * Liefert 200 mit dem vollständigen Eintrag inklusive aller genehmigten Versionen.
+     *
+     * Gibt 304 zurück, wenn ETag unverändert (bedingter GET). Wirft
+     * ApiProblem 404, wenn kein veröffentlichter Eintrag mit der formatId existiert.
+     */
     #[Route('/api/v1/entries/{formatId}', methods: ['GET'])]
     public function __invoke(
         string $formatId,

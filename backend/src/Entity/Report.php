@@ -9,6 +9,10 @@ use App\Enum\ReportStatus;
 use App\Repository\ReportRepository;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Nutzermeldung auf einen Entry (Spam, fehlerhafte Links, irreführende Inhalte, Rechtsverstoß).
+ * Startet immer mit Status {@see \App\Enum\ReportStatus::Open}.
+ */
 #[ORM\Entity(repositoryClass: ReportRepository::class)]
 class Report
 {
@@ -31,6 +35,9 @@ class Report
     #[ORM\Column]
     public \DateTimeImmutable $createdAt;
 
+    /**
+     * Erstellt eine neue Meldung und setzt createdAt auf den aktuellen Zeitpunkt.
+     */
     public function __construct(Entry $entry, ReportReason $reason, ?string $comment)
     {
         $this->entry = $entry;

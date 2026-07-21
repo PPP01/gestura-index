@@ -11,6 +11,12 @@ use App\Repository\SubmitterRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
+/**
+ * Löst anonyme Edit-Token-Authentifizierung auf: liest den Authorization-Header,
+ * prüft Selector und Verifier gegen gespeicherte Argon2id-Hashes und gibt den
+ * zugehörigen Submitter zurück. Timing-Oracle-Angriffe werden durch Dummy-Hash-
+ * Verifikation bei unbekanntem Selector verhindert.
+ */
 final class SubmitterResolver
 {
     /**
@@ -27,7 +33,11 @@ final class SubmitterResolver
     ) {
     }
 
-    /** Liefert null, wenn gar kein Authorization-Header gesendet wurde. */
+    /**
+     * Löst den Authorization-Header auf und gibt den zugehörigen Submitter zurück.
+     * Liefert null, wenn kein Header gesendet wurde. Drosselt Fehlversuche per
+     * IP+Selector (Rate-Limit). Wirft ApiProblem 401 bei ungültigem Token.
+     */
     public function resolve(Request $request): ?Submitter
     {
         $header = $request->headers->get('Authorization');
@@ -54,6 +64,11 @@ final class SubmitterResolver
         return $submitter;
     }
 
+    /**
+     * Wie resolve(), verlangt aber zwingend einen gültigen Token und prüft
+     * zusätzlich, ob der Submitter Eigentümer des Eintrags und nicht gesperrt ist.
+     * Wirft ApiProblem 401 ohne Token, 403 bei Sperre oder fremdem Eintrag.
+     */
     public function requireOwner(Request $request, Entry $entry): Submitter
     {
         $submitter = $this->resolve($request) ?? throw new ApiProblem(401, 'Token required');

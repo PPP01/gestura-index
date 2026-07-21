@@ -16,10 +16,24 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt zum Hochladen eines Screenshots für einen Eintrag.
+ *
+ * Nimmt ein Bild als Multipart-Upload entgegen, enkodiert es serverseitig
+ * als WebP (Sicherheitsregel: keine Fremd-URLs) und speichert es unter
+ * public/media/screenshots/{formatId}.webp.
+ */
 final class ScreenshotController
 {
     private const UPLOAD_MAX = 2 * 1024 * 1024; // 2 MB
 
+    /**
+     * Verarbeitet den Screenshot-Upload und liefert 200 mit der screenshotUrl.
+     *
+     * Wirft ApiProblem 400 bei fehlendem oder ungültigem Multipart-Feld
+     * »screenshot«, 404 wenn der Eintrag nicht existiert oder gelöscht ist,
+     * 403 bei fehlendem Eigentumsnachweis und 413 bei einem Upload über 2 MB.
+     */
     #[Route('/api/v1/entries/{formatId}/screenshot', methods: ['POST'])]
     public function __invoke(
         string $formatId,

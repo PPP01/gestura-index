@@ -20,8 +20,23 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt zum Aktualisieren eines bestehenden Eintrags.
+ *
+ * Fügt dem Eintrag eine neue EntryVersion hinzu. Bei pending-Einträgen
+ * wird die wartende Version ersetzt; Versionen mit transformCode gehen
+ * stets in die Moderations-Warteschlange (Supply-Chain-Schutz).
+ */
 final class EntryUpdateController
 {
+    /**
+     * Erstellt eine neue Version für den Eintrag und liefert 200 mit versionStatus.
+     *
+     * Wirft ApiProblem 404 bei fehlendem oder gelöschtem Eintrag, 403 bei
+     * fehlendem Eigentumsnachweis, 409 wenn der Eintrag hidden ist oder die
+     * neue Versionsnummer nicht größer als die bisherige Maximalversion ist,
+     * sowie 429 bei überschrittenem Rate-Limit.
+     */
     #[Route('/api/v1/entries/{formatId}', methods: ['PUT'])]
     public function __invoke(
         string $formatId,

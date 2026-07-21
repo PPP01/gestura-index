@@ -7,6 +7,12 @@ namespace App\Entity;
 use App\Repository\SubmitterRepository;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Anonymer Einreicher eines Entry – identifiziert über einen geheimen Edit-Token.
+ * Der Token selbst wird nie gespeichert; nur tokenSelector (öffentlich, 16 Zeichen)
+ * und tokenHash (Argon2id) werden persistiert. approvedCount steuert das Vertrauensniveau
+ * für die Moderationslogik.
+ */
 #[ORM\Entity(repositoryClass: SubmitterRepository::class)]
 class Submitter
 {
@@ -28,6 +34,9 @@ class Submitter
     #[ORM\Column]
     public \DateTimeImmutable $createdAt;
 
+    /**
+     * Erstellt einen neuen Submitter aus Selektor und Argon2id-Hash des Edit-Tokens.
+     */
     public function __construct(string $tokenSelector, string $tokenHash)
     {
         $this->tokenSelector = $tokenSelector;

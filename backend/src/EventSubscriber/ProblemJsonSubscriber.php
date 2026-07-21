@@ -12,13 +12,27 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
+/**
+ * Wandelt jede nicht behandelte Exception auf /api/-Pfaden in eine
+ * RFC 7807 »application/problem+json«-Antwort um und unterdrückt damit
+ * HTML-Fehlerseiten gegenüber API-Clients.
+ */
 final class ProblemJsonSubscriber implements EventSubscriberInterface
 {
+    /**
+     * Registriert den Subscriber auf KernelEvents::EXCEPTION.
+     */
     public static function getSubscribedEvents(): array
     {
         return [KernelEvents::EXCEPTION => 'onKernelException'];
     }
 
+    /**
+     * Fängt Exceptions auf /api/-Pfaden ab, bestimmt den HTTP-Statuscode
+     * (aus HttpExceptionInterface oder 500) und setzt eine problem+json-Antwort.
+     * ApiProblem-Instanzen können über das $extra-Array zusätzliche Felder
+     * (z. B. eine errors-Liste) einmischen.
+     */
     public function onKernelException(ExceptionEvent $event): void
     {
         if (!str_starts_with($event->getRequest()->getPathInfo(), '/api/')) {

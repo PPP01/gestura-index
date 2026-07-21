@@ -8,6 +8,11 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
+/**
+ * Validiert eingereichte Payloads gegen das Gestura-Austauschformat (exchange-schema.json)
+ * und erzwingt Zusatzregeln, die JSON-Schema nicht ausdrücken kann (eindeutige Item-IDs,
+ * Aktions-Whitelist, HTTPS-Pflicht für URLs). Liefert ein ValidationResult zurück.
+ */
 final class ExchangeValidator
 {
     private const BLOB_MAX = 102400;
@@ -20,6 +25,11 @@ final class ExchangeValidator
     private string $menuSchemaJson;
     private string $engineSchemaJson;
 
+    /**
+     * Lädt exchange-schema.json und baut daraus zwei typspezifische Teilschemata
+     * (menu / engine), um bei der Validierung präzise Fehlermeldungen ohne
+     * »required properties fehlen«-Rauschen des jeweils anderen Typs zu liefern.
+     */
     public function __construct(
         #[Autowire('%kernel.project_dir%/../schema/exchange-schema.json')]
         string $schemaPath,
@@ -40,6 +50,12 @@ final class ExchangeValidator
         $this->engineSchemaJson = json_encode(['$ref' => '#/$defs/engine', '$defs' => $schema->{'$defs'}]);
     }
 
+    /**
+     * Validiert rawJson vollständig: Größenlimit, JSON-Parsing, Typ-Erkennung,
+     * Schema-Prüfung und anschließend typspezifische Zusatzregeln.
+     * Gibt ValidationResult::fail() bei jedem Fehler zurück, oder ein
+     * ValidationResult mit dekodiertem Payload bei Erfolg.
+     */
     public function validate(string $rawJson): ValidationResult
     {
         if (\strlen($rawJson) > self::BLOB_MAX) {
@@ -81,6 +97,10 @@ final class ExchangeValidator
         return new ValidationResult(true, $type, [], $payload);
     }
 
+    /**
+     * Erkennt den Payload-Typ anhand der Sentinel-Properties »gesturaMenu« und
+     * »gesturaEngine«. Gibt null zurück, wenn keiner der Typen erkennbar ist.
+     */
     private function detectType(mixed $data): ?string
     {
         if (!\is_object($data)) {
@@ -141,6 +161,9 @@ final class ExchangeValidator
         }
     }
 
+    /**
+     * Prüft, ob value eine syntaktisch gültige HTTPS-URL mit nichtleerem Host ist.
+     */
     private function isHttpsUrl(mixed $value): bool
     {
         if (!\is_string($value) || $value === '') {

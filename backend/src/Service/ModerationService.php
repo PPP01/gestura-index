@@ -16,8 +16,17 @@ use App\Repository\EntryVersionRepository;
 use App\Repository\ReportRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
+/**
+ * Kapselt alle Admin-seitigen Statusübergänge für Entries, EntryVersions,
+ * Reports und Submitters. Hält folgende Statusmaschinen-Invarianten aufrecht:
+ * ein Entry mit Status »pending« hat nie eine gesetzte currentVersion;
+ * »published« impliziert currentVersion !== null (Guard in publishEntry()).
+ */
 final class ModerationService
 {
+    /**
+     * Bindet Repositories, SubmissionService und ScreenshotStorage per Dependency Injection.
+     */
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly EntryRepository $entries,
@@ -28,6 +37,12 @@ final class ModerationService
     ) {
     }
 
+    /**
+     * Genehmigt einen neuen Eintrag aus der Moderations-Warteschlange: setzt die
+     * wartende Version auf »approved«, trägt sie als currentVersion ein, erhöht
+     * den approvedCount des Submitters und markiert den Entry als »published«.
+     * Wirft RuntimeException, wenn keine wartende Version gefunden wird.
+     */
     public function approveEntry(Entry $entry): void
     {
         $pending = $this->versions->findOneBy(['entry' => $entry, 'status' => VersionStatus::Pending])
@@ -56,6 +71,10 @@ final class ModerationService
         $this->em->flush();
     }
 
+    /**
+     * Lehnt einen Eintrag endgültig ab: alle wartenden Versionen werden auf
+     * »rejected« gesetzt, der Entry auf »deleted« und der Screenshot entfernt.
+     */
     public function rejectEntry(Entry $entry): void
     {
         foreach ($this->versions->findBy(['entry' => $entry, 'status' => VersionStatus::Pending]) as $version) {
@@ -67,6 +86,11 @@ final class ModerationService
         $this->em->flush();
     }
 
+    /**
+     * Gibt eine einzelne Version frei: setzt ihren Status auf »approved«, trägt sie
+     * als currentVersion des Entries ein und aktualisiert abgeleitete Felder
+     * (Domains, Tags) via SubmissionService.
+     */
     public function approveVersion(EntryVersion $version): void
     {
         $version->status = VersionStatus::Approved;
@@ -77,12 +101,21 @@ final class ModerationService
         $this->em->flush();
     }
 
+    /**
+     * Lehnt eine einzelne Version ab, ohne den Entry-Status zu ändern.
+     */
     public function rejectVersion(EntryVersion $version): void
     {
         $version->status = VersionStatus::Rejected;
         $this->em->flush();
     }
 
+    /**
+     * Schließt eine Meldung ab und setzt den Entry-Status entsprechend.
+     * Bei publish=true werden zusätzlich alle offenen Meldungen desselben Eintrags
+     * aufgelöst, damit ein erneuter einzelner Report nicht sofort wieder den
+     * Hide-Threshold erreicht. Bei publish=false wird der Screenshot entfernt.
+     */
     public function resolveReport(Report $report, bool $publish): void
     {
         $report->status = ReportStatus::Resolved;
@@ -103,6 +136,9 @@ final class ModerationService
     // Hide-Threshold erreichen, weil die übrigen offenen Meldungen desselben
     // Vorfalls weiter mitzählen — gilt für resolveReport(publish) genauso
     // wie für den hidden-Branch von index:approve (publishEntry).
+    /**
+     * Setzt alle offenen Meldungen des Eintrags auf »resolved«.
+     */
     private function resolveOpenReports(Entry $entry): void
     {
         foreach ($this->reports->findBy(['entry' => $entry, 'status' => ReportStatus::Open]) as $open) {
@@ -110,6 +146,11 @@ final class ModerationService
         }
     }
 
+    /**
+     * Sperrt einen Submitter und versteckt alle seine nicht-gelöschten Einträge.
+     * Die Wiederveröffentlichung einzelner Einträge erfolgt anschließend manuell
+     * per approveEntry() oder resolveReport().
+     */
     public function ban(Submitter $submitter): void
     {
         $submitter->banned = true;
@@ -122,6 +163,10 @@ final class ModerationService
         $this->em->flush();
     }
 
+    /**
+     * Hebt die Sperre eines Submitters auf. Die Einträge bleiben »hidden« –
+     * die Wiederveröffentlichung erfolgt je Eintrag separat.
+     */
     public function unban(Submitter $submitter): void
     {
         $submitter->banned = false; // Einträge bleiben hidden — Freigabe je Eintrag per index:approve/resolve

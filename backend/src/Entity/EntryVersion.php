@@ -8,6 +8,11 @@ use App\Enum\VersionStatus;
 use App\Repository\EntryVersionRepository;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Eine einzelne SemVer-Version eines Entry mit validiertem JSON-Payload.
+ * Unique-Constraint auf (entry_id, semver) verhindert Duplikate; contentHash
+ * ermöglicht schnelle Inhaltsprüfung ohne erneutes Deserialisieren.
+ */
 #[ORM\Entity(repositoryClass: EntryVersionRepository::class)]
 #[ORM\Table(name: 'entry_version')]
 #[ORM\UniqueConstraint(columns: ['entry_id', 'semver'])]
@@ -43,7 +48,11 @@ class EntryVersion
     #[ORM\Column]
     public \DateTimeImmutable $submittedAt;
 
-    /** @param array<string, mixed> $payload */
+    /**
+     * Erstellt eine neue Version und setzt submittedAt auf den aktuellen Zeitpunkt.
+     *
+     * @param array<string, mixed> $payload
+     */
     public function __construct(Entry $entry, string $semver, array $payload, string $contentHash)
     {
         $this->entry = $entry;

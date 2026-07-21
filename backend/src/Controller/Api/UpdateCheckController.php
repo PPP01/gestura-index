@@ -11,8 +11,22 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt für den Batch-Update-Check der Extension.
+ *
+ * Vergleicht eine Liste bekannter (id, version)-Paare mit dem Index und
+ * meldet zurück, für welche Einträge neuere Versionen verfügbar sind.
+ * Ungültige Einzelposten werden still übersprungen.
+ */
 final class UpdateCheckController
 {
+    /**
+     * Liefert 200 mit einer Liste von Einträgen, für die eine neuere Version existiert.
+     *
+     * Akzeptiert im Body ein JSON-Objekt mit dem Feld entries (max. 200 Paare
+     * mit id und version). Wirft ApiProblem 400 bei ungültigem JSON oder wenn
+     * entries mehr als 200 Elemente enthält.
+     */
     #[Route('/api/v1/entries/updates', methods: ['POST'])]
     public function __invoke(Request $request, EntryRepository $entries): JsonResponse
     {

@@ -7,9 +7,18 @@ namespace App\Service;
 use App\Entity\Entry;
 use App\Entity\EntryVersion;
 
+/**
+ * Serialisiert Entry-Entities in API-konforme Arrays für Listen- und Detailansichten.
+ * Greift auf currentVersion->payload zu und baut daraus ein öffentlich-stabiles Format.
+ */
 final class EntrySerializer
 {
-    /** @return array<string, mixed> */
+    /**
+     * Gibt die kompakte Listenansicht eines Eintrags zurück.
+     * screenshotUrl wird als relativer Pfad geliefert (null wenn kein Screenshot vorhanden).
+     *
+     * @return array<string, mixed>
+     */
     public function toListItem(Entry $entry): array
     {
         $payload = $entry->currentVersion?->payload ?? [];
@@ -32,6 +41,9 @@ final class EntrySerializer
     }
 
     /**
+     * Gibt die vollständige Detailansicht zurück – enthält alle Felder von toListItem()
+     * ergänzt um die Versionsliste mit Changelog und hasTransformCode-Flag.
+     *
      * @param list<EntryVersion> $versions freigegebene Versionen, neueste zuerst
      *
      * @return array<string, mixed>

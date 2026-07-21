@@ -14,8 +14,21 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt zum Löschen eines eigenen Eintrags.
+ *
+ * Setzt den Status des Eintrags auf »Deleted« (Soft-Delete) und entfernt
+ * den zugehörigen Screenshot, sofern vorhanden.
+ */
 final class EntryDeleteController
 {
+    /**
+     * Markiert den Eintrag als gelöscht und bereinigt Mediendateien.
+     *
+     * Liefert 204 bei Erfolg. Wirft ApiProblem 404, wenn der Eintrag nicht
+     * existiert oder bereits gelöscht ist. Wirft ApiProblem 403, wenn der
+     * Aufrufer nicht der Eigentümer des Eintrags ist.
+     */
     #[Route('/api/v1/entries/{formatId}', methods: ['DELETE'])]
     public function __invoke(
         string $formatId,

@@ -13,6 +13,12 @@ use App\Exception\ApiProblem;
 use App\Repository\EntryVersionRepository;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * Kapselt den gesamten Einreichungs-Workflow: Body-Parsing, Schema-Validierung,
+ * Duplikatprüfung und das Übertragen von Metadaten sowie abgeleiteten Feldern
+ * auf ein Entry-Objekt. Wirft ApiProblem bei fehlerhaften oder unzulässigen
+ * Eingaben.
+ */
 final class SubmissionService
 {
     private const BODY_MAX = 131072; // 128 KiB: blobMax + Metadaten-Puffer
@@ -28,6 +34,11 @@ final class SubmissionService
     }
 
     /**
+     * Liest und validiert den Einreichungs-Body aus dem Request: prüft das
+     * Größenlimit, dekodiert JSON, normalisiert Kategorien und Tags und gibt
+     * das strukturierte Ergebnis zurück. Wirft ApiProblem 400/413 bei
+     * ungültigen oder zu großen Eingaben.
+     *
      * @return array{payloadJson: string, categories: ?list<Category>, tags: ?list<string>,
      *               changelog: ?string, deprecated: ?bool, successorFormatId: ?string}
      */
@@ -102,6 +113,11 @@ final class SubmissionService
         ];
     }
 
+    /**
+     * Validiert den Payload gegen das Exchange-Schema und prüft optional, ob
+     * Typ und Format-ID mit dem bestehenden Eintrag übereinstimmen.
+     * Wirft ApiProblem 400 bei Schema-Verstoß oder Typ-/ID-Konflikt.
+     */
     public function validatePayload(string $payloadJson, ?EntryType $expectedType, ?string $expectedFormatId): ValidationResult
     {
         $result = $this->validator->validate($payloadJson);
@@ -119,6 +135,10 @@ final class SubmissionService
     }
 
     /**
+     * Stellt sicher, dass kein inhaltlich identischer Eintrag im Index existiert.
+     * Abgelehnte Versionen und Versionen gelöschter Einträge blockieren keinen
+     * Hash dauerhaft. Wirft ApiProblem 409 bei Duplikat.
+     *
      * @param array<string, mixed> $payload
      *
      * @return string der contentHash des Payloads
@@ -143,7 +163,13 @@ final class SubmissionService
         return $hash;
     }
 
-    /** @param array{categories: ?list<Category>, tags: ?list<string>, deprecated: ?bool, successorFormatId: ?string} $meta */
+    /**
+     * Überträgt nicht-null-Werte aus $meta (Kategorien, Tags, deprecated,
+     * successorFormatId) auf den Eintrag – null-Felder werden übersprungen,
+     * damit partielle Updates nur die gesendeten Felder ändern.
+     *
+     * @param array{categories: ?list<Category>, tags: ?list<string>, deprecated: ?bool, successorFormatId: ?string} $meta
+     */
     public function applyMetadata(Entry $entry, array $meta): void
     {
         if ($meta['categories'] !== null) {
@@ -160,7 +186,13 @@ final class SubmissionService
         }
     }
 
-    /** @param array<string, mixed> $payload */
+    /**
+     * Aktualisiert die abgeleiteten Felder des Eintrags (Domains und Suchtext)
+     * aus dem dekodierten Payload – muss nach jeder Payload-Änderung aufgerufen
+     * werden, damit Index und Volltext-Suche aktuell bleiben.
+     *
+     * @param array<string, mixed> $payload
+     */
     public function refreshDerived(Entry $entry, array $payload): void
     {
         $entry->domains = $this->analyzer->extractDomains($payload);

@@ -23,8 +23,23 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt zum Einreichen eines neuen Eintrags (Menü oder Suchmaschine).
+ *
+ * Erstellt Entry und erste EntryVersion; generiert bei anonymer Einreichung
+ * einen einmalig ausgelieferten Edit-Token. Einreichungen mit transformCode
+ * landen stets in der Moderations-Warteschlange (Supply-Chain-Schutz).
+ */
 final class EntrySubmitController
 {
+    /**
+     * Legt einen neuen Eintrag an und gibt 201 mit formatId und Status zurück.
+     *
+     * Bei anonymer Einreichung enthält die Antwort zusätzlich das editToken –
+     * die einzige Stelle, an der das Token je herausgegeben wird. Wirft
+     * ApiProblem 409 bei bereits vergebener formatId (außer bei Junk-Recycling),
+     * 403 bei gesperrtem Einreicher und 429 bei überschrittenem Rate-Limit.
+     */
     #[Route('/api/v1/entries', methods: ['POST'])]
     public function __invoke(
         Request $request,

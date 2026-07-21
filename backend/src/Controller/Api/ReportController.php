@@ -18,8 +18,24 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt zum Melden eines Eintrags.
+ *
+ * Speichert einen Report mit Grund und optionalem Kommentar. Sobald die
+ * Anzahl offener Reports den konfigurierten Schwellenwert erreicht, wird
+ * der Eintrag automatisch auf »Hidden« gesetzt, bis ein Admin ihn prüft.
+ */
 final class ReportController
 {
+    /**
+     * Legt einen neuen Report an und liefert 204.
+     *
+     * Versteckt den Eintrag automatisch (Status Hidden), wenn die Anzahl
+     * offener Reports den Schwellenwert (app.report_hide_threshold) erreicht.
+     * Wirft ApiProblem 400 bei ungültigem JSON, unbekanntem Grund oder zu
+     * langem Kommentar (max. 2000 Zeichen), 404 wenn der Eintrag nicht
+     * veröffentlicht ist, und 429 bei überschrittenem Rate-Limit.
+     */
     #[Route('/api/v1/entries/{formatId}/report', methods: ['POST'])]
     public function __invoke(
         string $formatId,

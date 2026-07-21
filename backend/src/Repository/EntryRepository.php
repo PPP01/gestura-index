@@ -11,15 +11,30 @@ use App\Enum\EntryType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/** @extends ServiceEntityRepository<Entry> */
+/**
+ * Datenbankzugriff für Entry-Entitäten – kapselt Volltext-, Filter- und
+ * Paginierungslogik für die öffentliche Eintrags-Suche.
+ *
+ * @extends ServiceEntityRepository<Entry>
+ */
 class EntryRepository extends ServiceEntityRepository
 {
+    /**
+     * Registriert den Repository-Service für die Entry-Entität im Doctrine-ManagerRegistry.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Entry::class);
     }
 
-    /** @return array{items: list<\App\Entity\Entry>, total: int} */
+    /**
+     * Durchsucht veröffentlichte Einträge mit optionalen Filtern (Volltext,
+     * Domain, Kategorie, Tag, Typ) und liefert das paginierte Ergebnis sowie
+     * die Gesamtanzahl für die Paginierungsanzeige. Sortierung wahlweise
+     * nach Installationszähler (»installs«) oder Erstellungsdatum (neueste zuerst).
+     *
+     * @return array{items: list<\App\Entity\Entry>, total: int}
+     */
     public function search(
         ?string $q,
         ?string $site,
@@ -68,6 +83,10 @@ class EntryRepository extends ServiceEntityRepository
         return ['items' => $qb->getQuery()->getResult(), 'total' => $total];
     }
 
+    /**
+     * Maskiert LIKE-Sonderzeichen (%, _, \) in Nutzereingaben, damit sie
+     * als Literale und nicht als Platzhalter ausgewertet werden.
+     */
     // MariaDB nutzt Backslash als Default-Escape-Zeichen in LIKE; ein
     // ESCAPE-Zusatz in DQL ist daher nicht nötig. Ohne dieses Escaping
     // würden Nutzereingaben wie "%" oder "_" den Filter faktisch

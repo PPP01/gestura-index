@@ -15,10 +15,20 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  */
 final class ScreenshotStorage
 {
+    /**
+     * Nimmt den Projekt-Root-Pfad entgegen (via Symfony-Parameter
+     * kernel.project_dir), aus dem der öffentliche Screenshot-Pfad
+     * zusammengesetzt wird.
+     */
     public function __construct(#[Autowire('%kernel.project_dir%')] private readonly string $projectDir)
     {
     }
 
+    /**
+     * Löscht die Screenshot-Datei des Eintrags vom Dateisystem und setzt
+     * $entry->screenshotPath auf null. Ist kein Screenshot gesetzt oder die
+     * Datei bereits verschwunden, wird kein Fehler ausgelöst.
+     */
     public function remove(Entry $entry): void
     {
         if ($entry->screenshotPath === null) {

@@ -24,7 +24,15 @@ final class ScreenshotProcessor
     // erwarteten Speichers allozieren (Breite × Höhe × Bytes/Pixel).
     private const MAX_SOURCE_PIXELS = 8_000_000;
 
-    /** @return string WebP-Binärdaten */
+    /**
+     * Lädt ein Bild aus $sourcePath, prüft Dimensionen gegen den
+     * Decompression-Bomb-Schutz, skaliert bei Bedarf auf MAX_WIDTH×MAX_HEIGHT
+     * herunter und gibt die re-enkodierten WebP-Binärdaten zurück.
+     * Wirft ApiProblem 400 bei nicht lesbaren, zu großen oder nicht
+     * kodierbaren Quellbildern.
+     *
+     * @return string WebP-Binärdaten
+     */
     public function process(string $sourcePath): string
     {
         $raw = @file_get_contents($sourcePath);

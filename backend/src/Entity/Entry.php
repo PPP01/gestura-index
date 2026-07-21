@@ -12,6 +12,11 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Zentrale Entity des Index – repräsentiert einen Gestura-Menü- oder Suchmaschinen-Eintrag.
+ * Invariante: Status »pending« impliziert currentVersion === null;
+ * Status »published« impliziert currentVersion !== null.
+ */
 #[ORM\Entity(repositoryClass: EntryRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class Entry
@@ -69,6 +74,9 @@ class Entry
     #[ORM\Column]
     public \DateTimeImmutable $updatedAt;
 
+    /**
+     * Legt einen neuen Entry mit Startstatus {@see EntryStatus::Pending} an und initialisiert Zeitstempel.
+     */
     public function __construct(string $formatId, EntryType $type, Submitter $submitter)
     {
         $this->formatId = $formatId;
@@ -79,13 +87,20 @@ class Entry
         $this->updatedAt = $this->createdAt;
     }
 
+    /**
+     * ORM-Lifecycle-Hook – aktualisiert $updatedAt vor jedem Datenbank-UPDATE.
+     */
     #[ORM\PreUpdate]
     public function touch(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    /** @param list<Category> $categories */
+    /**
+     * Ersetzt alle Kategorien des Entry atomar: bestehende werden entfernt, neue angelegt.
+     *
+     * @param list<Category> $categories
+     */
     public function setCategories(array $categories): void
     {
         $this->categories->clear();
@@ -94,7 +109,11 @@ class Entry
         }
     }
 
-    /** @return list<string> */
+    /**
+     * Gibt die Kategorie-Werte aller zugeordneten Kategorien als String-Liste zurück.
+     *
+     * @return list<string>
+     */
     public function categoryKeys(): array
     {
         return array_values(array_map(

@@ -14,8 +14,21 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Endpunkt für den anonymen Install-Zähler.
+ *
+ * Erhöht den Zähler eines veröffentlichten Eintrags. Die Client-IP wird
+ * ausschließlich im Limiter-Cache gehalten und nie persistiert.
+ */
 final class InstallController
 {
+    /**
+     * Inkrementiert installCount des Eintrags und liefert 204.
+     *
+     * Erlaubt pro IP und Eintrag maximal einen Ping pro Tag (Rate-Limit).
+     * Wirft ApiProblem 404, wenn kein veröffentlichter Eintrag gefunden wird,
+     * und 429 bei überschrittenem Rate-Limit.
+     */
     #[Route('/api/v1/entries/{formatId}/install', methods: ['POST'])]
     public function __invoke(
         string $formatId,

@@ -14,9 +14,17 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * Konsolen-Command `index:queue` – gibt einen Überblick über die Moderations-
+ * Warteschlange: neue pending Einträge und pending Versionen bereits veröffentlichter
+ * Einträge (insbesondere solche mit transformCode).
+ */
 #[AsCommand(name: 'index:queue', description: 'Zeigt die Moderations-Warteschlange')]
 final class ModerationQueueCommand extends Command
 {
+    /**
+     * Nimmt EntryRepository und EntryVersionRepository per Dependency Injection entgegen.
+     */
     public function __construct(
         private readonly EntryRepository $entries,
         private readonly EntryVersionRepository $versions,
@@ -24,6 +32,11 @@ final class ModerationQueueCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * Gibt zwei Sektionen aus: neue Einträge im Status pending (älteste zuerst) und
+     * wartende Versionen veröffentlichter Einträge mit transformCode-Hinweis.
+     * Gibt stets Command::SUCCESS (0) zurück, auch wenn die Warteschlange leer ist.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
