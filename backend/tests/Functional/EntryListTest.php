@@ -24,6 +24,18 @@ final class EntryListTest extends ApiTestCase
         self::assertSame(['en' => 'Example Shop', 'de' => 'Beispiel-Shop'], $data['items'][0]['name']);
     }
 
+    public function testAbsurdlyLargePageIsCappedAndDoesNotError(): void
+    {
+        $this->createPublishedEntry('com.example.one');
+
+        // Ohne Obergrenze überläuft (page-1)*perPage zu einem float und
+        // löst öffentlich einen HTTP-500 aus.
+        $this->api('GET', '/api/v1/entries?page=9223372036854775807');
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame([], $this->json()['items']);
+    }
+
     public function testFiltersBySiteCategoryTagAndQuery(): void
     {
         $this->createPublishedEntry('com.example.shop');

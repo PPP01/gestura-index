@@ -21,6 +21,9 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class EntryListController
 {
+    /** Praktische Obergrenze für die Seitennummer (100.000 × 50 = 5 Mio. Treffer). */
+    private const MAX_PAGE = 100_000;
+
     /**
      * Liefert 200 mit einer paginierten Liste veröffentlichter Einträge.
      *
@@ -45,7 +48,10 @@ final class EntryListController
             throw new ApiProblem(400, 'Unknown sort');
         }
 
-        $page = max(1, $request->query->getInt('page', 1));
+        // Obergrenze verhindert, dass (page-1)*perPage bei absurd großen
+        // Werten (bis PHP_INT_MAX) zu einem float überläuft und setFirstResult()
+        // unter strict_types einen TypeError → HTTP 500 wirft.
+        $page = min(self::MAX_PAGE, max(1, $request->query->getInt('page', 1)));
         $perPage = min(50, max(1, $request->query->getInt('perPage', 20)));
 
         $result = $entries->search(
