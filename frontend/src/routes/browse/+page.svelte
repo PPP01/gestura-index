@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { onDestroy } from 'svelte';
 	import { listEntries, type EntryListResponse, type EntryQuery } from '$lib/api';
 	import { parseQuery, toSearchParams, Sequence, debounce } from '$lib/browse-state';
 	import { localizeHref } from '$lib/paraglide/runtime';
@@ -55,6 +56,8 @@
 	const pushQ = debounce((value: string) => {
 		updateUrl({ ...query, q: value || undefined, page: undefined });
 	}, 250);
+
+	onDestroy(() => pushQ.cancel());
 
 	function onQInput() {
 		pushQ(qField);
