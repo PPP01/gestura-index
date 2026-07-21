@@ -15,7 +15,8 @@ final class EntrySerializer
 {
     /**
      * Gibt die kompakte Listenansicht eines Eintrags zurück.
-     * screenshotUrl wird als relativer Pfad geliefert (null wenn kein Screenshot vorhanden).
+     * screenshotUrl verweist auf den statusgeprüften GET-Endpunkt (null wenn
+     * kein Screenshot vorhanden) – nie auf eine direkte Docroot-Datei.
      *
      * @return array<string, mixed>
      */
@@ -35,7 +36,7 @@ final class EntrySerializer
             'currentVersion' => $entry->currentVersion?->semver,
             'deprecated' => $entry->deprecated,
             'successorFormatId' => $entry->successorFormatId,
-            'screenshotUrl' => $entry->screenshotPath === null ? null : '/' . $entry->screenshotPath,
+            'screenshotUrl' => $entry->screenshotPath === null ? null : '/api/v1/entries/' . $entry->formatId . '/screenshot',
             'updatedAt' => $entry->updatedAt->format(\DateTimeInterface::ATOM),
         ];
     }

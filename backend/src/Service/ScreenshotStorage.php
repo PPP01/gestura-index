@@ -8,20 +8,50 @@ use App\Entity\Entry;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Entfernt die Screenshot-Datei eines Eintrags vom Dateisystem.
- *
- * Ohne diesen Aufruf bliebe der Screenshot nach Delete/Reject/Ban/
- * Resolve(delete) unter seiner erratbaren URL öffentlich erreichbar.
+ * Kapselt die Ablage der Screenshot-Dateien. Bilder liegen bewusst PRIVAT
+ * außerhalb des öffentlichen Docroots (var/media/screenshots/) und werden nur
+ * über einen statusgeprüften Controller ausgeliefert. Andernfalls wären Bilder
+ * zu pending/hidden Einträgen unter einer erratbaren URL öffentlich abrufbar
+ * (Moderations-Umgehung).
  */
 final class ScreenshotStorage
 {
+    private readonly string $baseDir;
+
     /**
-     * Nimmt den Projekt-Root-Pfad entgegen (via Symfony-Parameter
-     * kernel.project_dir), aus dem der öffentliche Screenshot-Pfad
-     * zusammengesetzt wird.
+     * Leitet aus dem Projekt-Root (Symfony-Parameter kernel.project_dir) das
+     * private Screenshot-Verzeichnis ab.
      */
-    public function __construct(#[Autowire('%kernel.project_dir%')] private readonly string $projectDir)
+    public function __construct(#[Autowire('%kernel.project_dir%')] string $projectDir)
     {
+        $this->baseDir = $projectDir . '/var/media/screenshots';
+    }
+
+    /**
+     * Schreibt die WebP-Binärdaten in den privaten Speicher und hinterlegt den
+     * Dateinamen in $entry->screenshotPath. Legt das Verzeichnis bei Bedarf an.
+     */
+    public function store(Entry $entry, string $webp): void
+    {
+        if (!is_dir($this->baseDir)) {
+            mkdir($this->baseDir, 0775, true);
+        }
+        $filename = $entry->formatId . '.webp';
+        file_put_contents($this->baseDir . '/' . $filename, $webp);
+        $entry->screenshotPath = $filename;
+    }
+
+    /**
+     * Gibt den absoluten Pfad zur Screenshot-Datei des Eintrags zurück,
+     * oder null, wenn kein Screenshot hinterlegt ist.
+     */
+    public function absolutePath(Entry $entry): ?string
+    {
+        if ($entry->screenshotPath === null) {
+            return null;
+        }
+
+        return $this->baseDir . '/' . $entry->screenshotPath;
     }
 
     /**
@@ -31,10 +61,10 @@ final class ScreenshotStorage
      */
     public function remove(Entry $entry): void
     {
-        if ($entry->screenshotPath === null) {
+        $file = $this->absolutePath($entry);
+        if ($file === null) {
             return;
         }
-        $file = $this->projectDir . '/public/' . $entry->screenshotPath;
         if (is_file($file)) {
             @unlink($file);
         }

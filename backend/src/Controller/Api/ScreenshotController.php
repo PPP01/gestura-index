@@ -8,9 +8,9 @@ use App\Enum\EntryStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
 use App\Service\ScreenshotProcessor;
+use App\Service\ScreenshotStorage;
 use App\Service\SubmitterResolver;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,8 +20,9 @@ use Symfony\Component\Routing\Attribute\Route;
  * Endpunkt zum Hochladen eines Screenshots für einen Eintrag.
  *
  * Nimmt ein Bild als Multipart-Upload entgegen, enkodiert es serverseitig
- * als WebP (Sicherheitsregel: keine Fremd-URLs) und speichert es unter
- * public/media/screenshots/{formatId}.webp.
+ * als WebP (Sicherheitsregel: keine Fremd-URLs) und speichert es PRIVAT
+ * (var/media/screenshots/) über ScreenshotStorage. Ausgeliefert wird es nur
+ * über den statusgeprüften GET-Endpunkt {@see ScreenshotViewController}.
  */
 final class ScreenshotController
 {
@@ -41,8 +42,8 @@ final class ScreenshotController
         EntryRepository $entries,
         SubmitterResolver $resolver,
         ScreenshotProcessor $processor,
+        ScreenshotStorage $storage,
         EntityManagerInterface $em,
-        #[Autowire('%kernel.project_dir%')] string $projectDir,
     ): JsonResponse {
         $entry = $entries->findOneBy(['formatId' => $formatId]);
         if ($entry === null || $entry->status === EntryStatus::Deleted) {
@@ -58,19 +59,10 @@ final class ScreenshotController
             throw new ApiProblem(413, 'Screenshot larger than 2 MB');
         }
 
-        $webp = $processor->process($upload->getPathname());
-
-        $relative = 'media/screenshots/' . $entry->formatId . '.webp';
-        $target = $projectDir . '/public/' . $relative;
-        if (!is_dir(\dirname($target))) {
-            mkdir(\dirname($target), 0775, true);
-        }
-        file_put_contents($target, $webp);
-
-        $entry->screenshotPath = $relative;
+        $storage->store($entry, $processor->process($upload->getPathname()));
         $entry->touch();
         $em->flush();
 
-        return new JsonResponse(['screenshotUrl' => '/' . $relative]);
+        return new JsonResponse(['screenshotUrl' => '/api/v1/entries/' . $entry->formatId . '/screenshot']);
     }
 }
