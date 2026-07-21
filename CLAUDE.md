@@ -2,6 +2,8 @@
 
 Vollständiges Kontext-Briefing (was Gestura ist, was dieses Projekt ist, alle festgezurrten Entscheidungen, Hosting-Fakten): @docs/gestura-index-context.md
 
+Team-Gedächtnis (Fallen und Konventionen aus der Umsetzung): @.claude/lessons.md
+
 ## Repo-Struktur
 
 - `backend/` – Symfony 7.4 LTS JSON-API (reine API, kein Twig). Lokal: PHP 8.5.3, `composer`.
@@ -32,7 +34,7 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 # Backend
 composer --working-dir=backend install
 php -S localhost:8000 -t backend/public          # Dev-Server
-backend/bin/phpunit                               # Tests (sobald eingerichtet)
+php backend/bin/phpunit                           # Tests (Exit-Code prüfen: echo $?)
 
 # Frontend
 npm --prefix frontend run dev                     # Dev-Server

@@ -1,0 +1,18 @@
+framework:
+    rate_limiter:
+        submit:     { policy: sliding_window, limit: 5,  interval: '1 hour' }
+        update:     { policy: sliding_window, limit: 10, interval: '1 hour' }
+        report:     { policy: sliding_window, limit: 5,  interval: '1 hour' }
+        token_auth: { policy: sliding_window, limit: 10, interval: '1 hour' }
+        install:    { policy: fixed_window,   limit: 1,  interval: '1 day' }
+
+# Funktionstests feuern viele Requests von 127.0.0.1 — dort großzügige
+# Limits; die Drosselung selbst testet RateLimitGuardTest isoliert.
+when@test:
+    framework:
+        rate_limiter:
+            submit:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            update:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            report:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            token_auth: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }
