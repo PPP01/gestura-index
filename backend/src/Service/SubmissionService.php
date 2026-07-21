@@ -40,7 +40,7 @@ final class SubmissionService
      * ungültigen oder zu großen Eingaben.
      *
      * @return array{payloadJson: string, categories: ?list<Category>, tags: ?list<string>,
-     *               changelog: ?string, deprecated: ?bool, successorFormatId: ?string}
+     *               changelog: ?string, deprecated: ?bool, successorFormatId: string|false|null}
      */
     public function parseSubmissionBody(Request $request, bool $categoriesRequired = true): array
     {
@@ -75,8 +75,12 @@ final class SubmissionService
             }
         }
 
+        $tagsInput = $body['tags'] ?? null;
+        if ($tagsInput !== null && !\is_array($tagsInput)) {
+            throw new ApiProblem(400, 'tags must be a list');
+        }
         $tags = [];
-        foreach ((array) ($body['tags'] ?? []) as $tag) {
+        foreach ($tagsInput ?? [] as $tag) {
             if (!\is_string($tag)) {
                 throw new ApiProblem(400, 'tags must be strings');
             }
@@ -98,9 +102,23 @@ final class SubmissionService
             throw new ApiProblem(400, 'Invalid changelog');
         }
 
-        $successor = $body['successorFormatId'] ?? null;
-        if ($successor !== null && (!\is_string($successor) || mb_strlen($successor) > 128)) {
-            throw new ApiProblem(400, 'Invalid successorFormatId');
+        // Explizites successorFormatId: null soll den Wert löschen können –
+        // deshalb wird zwischen »nicht gesendet« (Feld überspringen, Sentinel
+        // false) und »explizit null« (zurücksetzen) unterschieden.
+        $successor = false;
+        if (\array_key_exists('successorFormatId', $body)) {
+            $successor = $body['successorFormatId'];
+            if ($successor !== null && (!\is_string($successor) || mb_strlen($successor) > 128)) {
+                throw new ApiProblem(400, 'Invalid successorFormatId');
+            }
+        }
+
+        $deprecated = null;
+        if (\array_key_exists('deprecated', $body)) {
+            if (!\is_bool($body['deprecated'])) {
+                throw new ApiProblem(400, 'deprecated must be a boolean');
+            }
+            $deprecated = $body['deprecated'];
         }
 
         return [
@@ -108,7 +126,7 @@ final class SubmissionService
             'categories' => $categories ?? ($categoriesRequired ? throw new ApiProblem(400, 'Between 1 and 3 categories required') : null),
             'tags' => \array_key_exists('tags', $body) ? $tags : null,
             'changelog' => $changelog,
-            'deprecated' => isset($body['deprecated']) ? (bool) $body['deprecated'] : null,
+            'deprecated' => $deprecated,
             'successorFormatId' => $successor,
         ];
     }
@@ -164,11 +182,13 @@ final class SubmissionService
     }
 
     /**
-     * Überträgt nicht-null-Werte aus $meta (Kategorien, Tags, deprecated,
-     * successorFormatId) auf den Eintrag – null-Felder werden übersprungen,
-     * damit partielle Updates nur die gesendeten Felder ändern.
+     * Überträgt gesendete Werte aus $meta (Kategorien, Tags, deprecated,
+     * successorFormatId) auf den Eintrag – nicht gesendete Felder werden
+     * übersprungen, damit partielle Updates nur die gesendeten Felder ändern.
+     * successorFormatId nutzt den Sentinel false für »nicht gesendet«; ein
+     * explizites null setzt den Wert zurück.
      *
-     * @param array{categories: ?list<Category>, tags: ?list<string>, deprecated: ?bool, successorFormatId: ?string} $meta
+     * @param array{categories: ?list<Category>, tags: ?list<string>, deprecated: ?bool, successorFormatId: string|false|null} $meta
      */
     public function applyMetadata(Entry $entry, array $meta): void
     {
@@ -181,7 +201,7 @@ final class SubmissionService
         if ($meta['deprecated'] !== null) {
             $entry->deprecated = $meta['deprecated'];
         }
-        if ($meta['successorFormatId'] !== null) {
+        if ($meta['successorFormatId'] !== false) {
             $entry->successorFormatId = $meta['successorFormatId'];
         }
     }
