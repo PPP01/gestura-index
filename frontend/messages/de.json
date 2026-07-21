@@ -19,6 +19,7 @@
 	"installs": "Installationen",
 	"pager_prev": "Zurück",
 	"pager_next": "Weiter",
+	"pager_nav_label": "Seitennavigation",
 	"pager_info": "Seite {page} von {total}",
 	"state_empty_title": "Nichts gefunden",
 	"state_error_retry": "Erneut versuchen"
