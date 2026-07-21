@@ -21,6 +21,23 @@
 				document.documentElement.setAttribute('data-theme', actual);
 			})();
 		</script>
+		<script>
+			// Sprach-Weiche für die nackte Wurzel /: schon vor dem ersten Paint auf /en
+			// bzw. /de umleiten, damit die englische Startseite nicht kurz aufblitzt.
+			// Reihenfolge wie Paraglide: Cookie → Browsersprache → en (Fallback).
+			(function () {
+				if (location.pathname !== '/') return;
+				var lang;
+				try {
+					var m = document.cookie.match(/(?:^|;\s*)PARAGLIDE_LOCALE=([^;]+)/);
+					lang = m && decodeURIComponent(m[1]);
+				} catch (e) {}
+				if (lang !== 'de' && lang !== 'en') {
+					lang = (navigator.language || 'en').slice(0, 2) === 'de' ? 'de' : 'en';
+				}
+				location.replace('/' + lang + location.search + location.hash);
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
