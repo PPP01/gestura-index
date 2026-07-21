@@ -19,12 +19,12 @@
 </script>
 
 <svelte:head>
-	<title>Gestura Index</title>
+	<title>{m.hero_title()}</title>
 	<meta name="description" content={m.hero_tagline()} />
 </svelte:head>
 
 <section class="hero">
-	<h1>Gestura Index</h1>
+	<h1>{m.hero_title()}</h1>
 	<p class="hero-tagline">{m.hero_tagline()}</p>
 	<p class="hero-sub">{m.hero_sub()}</p>
 	<form onsubmit={submitSearch} class="hero-search">
