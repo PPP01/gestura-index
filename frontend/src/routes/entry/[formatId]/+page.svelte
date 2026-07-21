@@ -6,11 +6,12 @@
 		downloadVersionUrl,
 		pingInstall,
 		reportEntry,
+		ApiError,
 		type EntryDetail,
 		type ReportReason
 	} from '$lib/api';
 	import { triggerJsonDownload, buildDownloadFilename } from '$lib/download';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { localizeHref, getLocale } from '$lib/paraglide/runtime';
 	import { m } from '$lib/paraglide/messages.js';
 	import { categoryLabel } from '$lib/categories';
 	import Badge from '$lib/components/Badge.svelte';
@@ -29,10 +30,12 @@
 	let error = $state<string | null>(null);
 
 	let copied = $state(false);
+	let downloadError = $state<string | null>(null);
 	let reportReason = $state<ReportReason>('spam');
 	let reportComment = $state('');
 	let reportSent = $state(false);
 	let reportError = $state<string | null>(null);
+	let reportSubmitting = $state(false);
 
 	async function load() {
 		loading = true;
@@ -41,7 +44,7 @@
 		try {
 			entry = await getEntry(formatId);
 		} catch (e) {
-			if (e && typeof e === 'object' && 'status' in e && (e as { status: number }).status === 404) {
+			if (e instanceof ApiError && e.status === 404) {
 				notFound = true;
 			} else {
 				error = e instanceof Error ? e.message : String(e);
@@ -61,8 +64,14 @@
 
 	async function download() {
 		if (!entry || !currentVersion) return;
-		const data = await downloadVersion(entry.formatId, currentVersion);
-		triggerJsonDownload(data, buildDownloadFilename(entry.formatId, currentVersion));
+		downloadError = null;
+		try {
+			const data = await downloadVersion(entry.formatId, currentVersion);
+			triggerJsonDownload(data, buildDownloadFilename(entry.formatId, currentVersion));
+		} catch (e) {
+			downloadError = e instanceof Error ? e.message : String(e);
+			return;
+		}
 		try {
 			await pingInstall(entry.formatId);
 		} catch {
@@ -71,14 +80,19 @@
 	}
 	async function copyUrl() {
 		if (!entry || !currentVersion) return;
-		await navigator.clipboard.writeText(downloadVersionUrl(entry.formatId, currentVersion));
-		copied = true;
-		setTimeout(() => (copied = false), 1500);
+		try {
+			await navigator.clipboard.writeText(downloadVersionUrl(entry.formatId, currentVersion));
+			copied = true;
+			setTimeout(() => (copied = false), 1500);
+		} catch {
+			/* Zwischenablage nicht verfügbar – still ignorieren. */
+		}
 	}
 	async function submitReport(e: Event) {
 		e.preventDefault();
 		if (!entry) return;
 		reportError = null;
+		reportSubmitting = true;
 		try {
 			await reportEntry(entry.formatId, {
 				reason: reportReason,
@@ -87,6 +101,8 @@
 			reportSent = true;
 		} catch (err) {
 			reportError = err instanceof Error ? err.message : String(err);
+		} finally {
+			reportSubmitting = false;
 		}
 	}
 </script>
@@ -148,6 +164,7 @@
 				</button>
 				<span>{entry.installCount} {m.installs()}</span>
 			</div>
+			{#if downloadError}<p style="color:var(--danger-color);">{downloadError}</p>{/if}
 		</section>
 
 		<section>
@@ -158,7 +175,7 @@
 						<div class="filter-bar">
 							<strong>{v.semver}</strong>
 							{#if v.hasTransformCode}<Badge text={m.badge_transform()} variant="warning" icon={TriangleAlert} />{/if}
-							<span style="color:var(--text-muted);">{new Date(v.submittedAt).toLocaleDateString()}</span>
+							<span style="color:var(--text-muted);">{new Date(v.submittedAt).toLocaleDateString(getLocale())}</span>
 						</div>
 						{#if v.changelog}<p>{v.changelog}</p>{/if}
 					</li>
@@ -186,7 +203,7 @@
 						<textarea bind:value={reportComment} maxlength="2000" rows="3"></textarea>
 					</label>
 					{#if reportError}<p style="color:var(--danger-color);">{reportError}</p>{/if}
-					<button class="btn" type="submit">{m.report_submit()}</button>
+					<button class="btn" type="submit" disabled={reportSubmitting}>{m.report_submit()}</button>
 				</form>
 			{/if}
 		</section>
