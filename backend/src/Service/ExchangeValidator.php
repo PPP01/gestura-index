@@ -85,6 +85,8 @@ final class ExchangeValidator
 
         if ($type === 'menu') {
             $this->applyMenuRules($data, $errors);
+        } else {
+            $this->applyEngineRules($data, $errors);
         }
 
         if ($errors !== []) {
@@ -125,6 +127,13 @@ final class ExchangeValidator
      */
     private function applyMenuRules(object $menu, array &$errors): void
     {
+        // homepage ist optional, muss aber – wenn gesetzt – eine echte HTTPS-URL
+        // sein (JS-Validator validateMenu). Das Schema-`pattern: ^https://` allein
+        // ließe host-lose Werte wie "https://" durch.
+        if (isset($menu->homepage) && !$this->isHttpsUrl($menu->homepage)) {
+            $errors[] = 'homepage';
+        }
+
         $items = $menu->items ?? null;
         if (!\is_array($items)) {
             return; // Struktur bereits vom Schema bemängelt
@@ -162,11 +171,33 @@ final class ExchangeValidator
     }
 
     /**
+     * Zusatzregel für Engines, portiert aus js/menu-exchange.js (validateEngine):
+     * die Ziel-URL muss eine echte HTTPS-URL mit Host sein. Das Schema prüft nur
+     * den `^https://`-Präfix und lässt host-lose Werte wie "https://" durch;
+     * der autoritative Client lehnt sie via new URL() ab — das Backend muss
+     * identisch validieren.
+     *
+     * @param list<string> $errors
+     */
+    private function applyEngineRules(object $engine, array &$errors): void
+    {
+        if (!$this->isHttpsUrl($engine->url ?? null)) {
+            $errors[] = 'url';
+        }
+    }
+
+    /**
      * Prüft, ob value eine syntaktisch gültige HTTPS-URL mit nichtleerem Host ist.
      */
     private function isHttpsUrl(mixed $value): bool
     {
         if (!\is_string($value) || $value === '') {
+            return false;
+        }
+        // Roh-Whitespace ist in keiner gültigen URL erlaubt; parse_url akzeptiert
+        // ihn aber als Host (z.B. "https:// not a url" → host " not a url"),
+        // während der autoritative new URL()-Check des Clients ihn verwirft.
+        if (preg_match('/\s/', $value) === 1) {
             return false;
         }
         $parts = parse_url($value);

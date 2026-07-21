@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit;
 
 use App\Service\ExchangeValidator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class ExchangeValidatorTest extends TestCase
@@ -91,6 +92,51 @@ final class ExchangeValidatorTest extends TestCase
         $engine = $this->validEngine();
         $engine['url'] = 'http://example.com/s?q=%s';
         self::assertFalse($this->check($engine)->ok);
+    }
+
+    /**
+     * Der autoritative JS-Validator (menu-exchange.js) prüft die Engine-URL
+     * mit new URL() + Protokoll — ein reines Schema-`pattern: ^https://`
+     * akzeptiert dagegen host-lose Schrott-URLs. Das PHP-Backend MUSS identisch
+     * validieren (nicht verhandelbares Prinzip), sonst driften Client und Server.
+     */
+    #[DataProvider('provideSyntacticallyInvalidHttpsUrls')]
+    public function testRejectsEngineUrlThatIsNotAValidHttpsUrl(string $url): void
+    {
+        $engine = $this->validEngine();
+        $engine['url'] = $url;
+        $result = $this->check($engine);
+        self::assertFalse($result->ok, 'Engine-URL »' . $url . '« hätte abgelehnt werden müssen');
+        self::assertContains('url', $result->errors);
+    }
+
+    /**
+     * Menü-`homepage` ist optional, muss aber – wenn gesetzt – eine gültige
+     * HTTPS-URL sein (JS-Validator, validateMenu).
+     */
+    #[DataProvider('provideSyntacticallyInvalidHttpsUrls')]
+    public function testRejectsMenuHomepageThatIsNotAValidHttpsUrl(string $url): void
+    {
+        $menu = $this->validMenu();
+        $menu['homepage'] = $url;
+        $result = $this->check($menu);
+        self::assertFalse($result->ok, 'Menü-homepage »' . $url . '« hätte abgelehnt werden müssen');
+        self::assertContains('homepage', $result->errors);
+    }
+
+    public function testAcceptsMenuWithValidHomepage(): void
+    {
+        $menu = $this->validMenu();
+        $menu['homepage'] = 'https://example.com/';
+        $result = $this->check($menu);
+        self::assertTrue($result->ok, implode(', ', $result->errors));
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function provideSyntacticallyInvalidHttpsUrls(): iterable
+    {
+        yield 'nur Schema ohne Host' => ['https://'];
+        yield 'Leerzeichen im Host' => ['https:// not a url'];
     }
 
     public function testRejectsDuplicateItemIds(): void
