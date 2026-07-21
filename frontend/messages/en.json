@@ -29,5 +29,10 @@
 	"footer_privacy": "Privacy",
 	"footer_imprint": "Imprint",
 	"footer_works_with": "Works with the Gestura extension",
-	"theme_label": "Theme"
+	"theme_label": "Theme",
+	"hero_tagline": "Discover and share Gestura menus and search engines.",
+	"hero_sub": "The extension works entirely without this index — it is an optional, free add-on.",
+	"search_placeholder": "Search menus and engines…",
+	"home_categories": "Categories",
+	"home_docs_cta": "How the exchange format works"
 }
