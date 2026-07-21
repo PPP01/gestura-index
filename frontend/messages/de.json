@@ -63,5 +63,18 @@
 	"report_legal": "Rechtsverstoß",
 	"report_comment": "Kommentar (optional)",
 	"report_submit": "Meldung senden",
-	"report_thanks": "Danke für deine Meldung."
+	"report_thanks": "Danke für deine Meldung.",
+	"docs_title": "Format & Schema",
+	"docs_meta_description": "Wie das Gestura-Austauschformat funktioniert: Menüs, Suchmaschinen, Felder und Validierungsregeln.",
+	"docs_intro": "Gestura-Menüs und -Suchmaschinen lassen sich als portable JSON-Dateien exportieren, teilen und importieren. Dieser Index speichert und verteilt sie, aber das Format selbst hängt nicht davon ab: Die Browser-Erweiterung kann diese Dateien direkt importieren und exportieren, ganz ohne Server.",
+	"docs_optional_note": "Die Erweiterung funktioniert vollständig ohne diesen Index. Das Teilen hier ist ein optionales, kostenloses Zusatzangebot – nichts in der Erweiterung setzt voraus, dass dieses Backend erreichbar ist.",
+	"docs_menu_heading": "Menüs",
+	"docs_menu_body": "Eine Menü-Datei trägt auf oberster Ebene die Markierung »gesturaMenu«: 1 und beschreibt ein In-Page-Menü: eine Liste von Einträgen (Links, Suchen oder Aktionen wie Scrollen und Navigation), das auf passenden Websites erscheint. Jeder Eintrag braucht eine eindeutige id; ein Eintrag, der kein Separator ist, muss eine von einer festen Menge erlaubter Aktionen verwenden.",
+	"docs_engine_heading": "Suchmaschinen",
+	"docs_engine_body": "Eine Engine-Datei trägt die Markierung »gesturaEngine«: 1 und beschreibt eine einzelne benutzerdefinierte Suchmaschine oder einen Schnelllink: einen Namen, eine https-URL-Vorlage sowie optionale Einstellungen wie Ergebnis-Formatierung oder POST-Verhalten. Eine Engine kann transformCode enthalten, ein kleines JavaScript-Schnipsel, das das Suchergebnis vor der Verwendung umformt.",
+	"docs_fields_heading": "Gemeinsame Felder",
+	"docs_fields_body": "Jeder Eintrag hat eine id (ein kurzer Bezeichner im Reverse-Domain-Stil, z. B. example.com.my-menu) und eine version nach semantischer Versionierung (major.minor.patch, z. B. 1.2.0). name und, sofern vorhanden, description akzeptieren entweder eine einfache Zeichenkette oder ein Objekt mit Sprachcodes als Schlüssel, etwa einen »en«-Eintrag neben einem »de«-Eintrag, wobei Englisch als Fallback dient, wenn die Sprache des Betrachters fehlt. Menüs nutzen patterns (URL-Match-Muster) und items; Engines nutzen stattdessen eine url-Vorlage.",
+	"docs_rules_heading": "Validierungsregeln",
+	"docs_rules_body": "Der Server validiert jede Einreichung mit denselben Regeln, die auch die Erweiterung selbst durchsetzt: Alle URLs (homepage, Item-Links, Engine-url) müssen mit https: beginnen; id, name, description und URLs sind in der Länge begrenzt; ein Menü enthält höchstens 100 Einträge und höchstens 50 patterns; Item-ids müssen innerhalb eines Menüs eindeutig sein; ein searchLink-Eintrag braucht entweder eine engineId oder eine url. Einträge mit transformCode durchlaufen immer eine manuelle Moderation vor der Veröffentlichung, weil ausführbarer Code einen menschlichen Blick braucht.",
+	"docs_example_heading": "Minimalbeispiele"
 }

@@ -63,5 +63,18 @@
 	"report_legal": "Legal issue",
 	"report_comment": "Comment (optional)",
 	"report_submit": "Send report",
-	"report_thanks": "Thank you for your report."
+	"report_thanks": "Thank you for your report.",
+	"docs_title": "Format & Schema",
+	"docs_meta_description": "How the Gestura exchange format works: menus, search engines, fields and validation rules.",
+	"docs_intro": "Gestura menus and search engines can be exported, shared and imported as portable JSON files. This index stores and distributes them, but the format itself does not depend on it: the browser extension can import and export these files directly, with no server involved.",
+	"docs_optional_note": "The extension works entirely without this index. Sharing here is an optional, free add-on — nothing in the extension depends on this backend being reachable.",
+	"docs_menu_heading": "Menus",
+	"docs_menu_body": "A menu file has the marker \"gesturaMenu\": 1 at the top level and describes an in-page menu: a list of items (links, searches or actions such as scrolling and navigation) that appears on matching websites. Each item needs a unique id; a non-separator item must use one of a fixed set of allowed actions.",
+	"docs_engine_heading": "Search engines",
+	"docs_engine_body": "An engine file has the marker \"gesturaEngine\": 1 and describes a single custom search engine or quick link: a name, an https url template, and optional options such as result formatting or POST behaviour. An engine may include transformCode, a small JavaScript snippet that reshapes the search result before it is used.",
+	"docs_fields_heading": "Common fields",
+	"docs_fields_body": "Every entry has an id (a short, reverse-domain-style identifier, e.g. example.com.my-menu) and a version following semantic versioning (major.minor.patch, e.g. 1.2.0). name and, where present, description accept either a plain string or an object keyed by language code, such as an \"en\" entry alongside a \"de\" entry, with English used as the fallback when a viewer's language is missing. Menus use patterns (URL match patterns) and items; engines use a url template instead.",
+	"docs_rules_heading": "Validation rules",
+	"docs_rules_body": "The server validates every submission with the same rules the extension itself enforces: all URLs (homepage, item links, engine url) must start with https:; ids, names, descriptions and URLs are limited in length; a menu holds at most 100 items and at most 50 patterns; item ids must be unique within a menu; a searchLink item needs either an engineId or a url. Entries that contain transformCode always go through manual moderation before publication, since executable code needs a human look.",
+	"docs_example_heading": "Minimal examples"
 }
