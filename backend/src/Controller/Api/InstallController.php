@@ -8,7 +8,6 @@ use App\Enum\EntryStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
 use App\Service\RateLimitGuard;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -34,7 +33,6 @@ final class InstallController
         string $formatId,
         Request $request,
         EntryRepository $entries,
-        EntityManagerInterface $em,
         RateLimitGuard $guard,
         RateLimiterFactoryInterface $installLimiter,
     ): Response {
@@ -44,8 +42,9 @@ final class InstallController
         $entry = $entries->findOneBy(['formatId' => $formatId, 'status' => EntryStatus::Published])
             ?? throw new ApiProblem(404, 'Entry not found');
 
-        ++$entry->installCount;
-        $em->flush();
+        // Atomares UPDATE statt Read-modify-write: verhindert Zählverluste bei
+        // parallelen Requests (siehe EntryRepository::incrementInstallCount()).
+        $entries->incrementInstallCount($entry);
 
         return new Response('', 204);
     }

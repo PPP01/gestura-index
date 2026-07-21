@@ -84,6 +84,19 @@ class EntryRepository extends ServiceEntityRepository
     }
 
     /**
+     * Erhöht den anonymen Install-Zähler atomar in der Datenbank
+     * (UPDATE … SET install_count = install_count + 1). Ein Read-modify-write
+     * über das geladene Entity-Objekt würde bei parallelen Requests Zählungen
+     * verlieren; das direkte SQL-UPDATE ist rennsicher.
+     */
+    public function incrementInstallCount(Entry $entry): void
+    {
+        $this->getEntityManager()->createQuery(
+            'UPDATE App\Entity\Entry e SET e.installCount = e.installCount + 1 WHERE e.id = :id',
+        )->setParameter('id', $entry->id)->execute();
+    }
+
+    /**
      * Maskiert LIKE-Sonderzeichen (%, _, \) in Nutzereingaben, damit sie
      * als Literale und nicht als Platzhalter ausgewertet werden.
      */
