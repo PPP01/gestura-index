@@ -23,3 +23,15 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # WebAuthn-Zeremonie: standardmäßig die echte Bundle-Implementierung.
+    App\Service\WebAuthn\WebAuthnCeremony: '@App\Service\WebAuthn\BundleWebAuthnCeremony'
+
+when@test:
+    services:
+        # In Tests den deterministischen Fake statt der echten Zeremonie.
+        # public, damit der Test-Container das Interface direkt auflösen kann
+        # (sonst entfernt der Compiler den bislang ungenutzten Alias).
+        App\Service\WebAuthn\WebAuthnCeremony:
+            alias: App\Service\WebAuthn\FakeWebAuthnCeremony
+            public: true

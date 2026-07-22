@@ -1,0 +1,19 @@
+parameters:
+    # Fallback-RP-ID, falls WEBAUTHN_RP_ID nicht gesetzt ist.
+    default_rp_id: 'gestura.eu'
+
+webauthn:
+    # credential_repository / user_repository bleiben auf den Bundle-Defaults
+    # (Dummy-Repositories). Wir rufen die Validatoren direkt auf und nutzen
+    # weder die Bundle-Controller noch die Bundle-Security-Firewall, daher sind
+    # eigene Repository-Adapter nicht erforderlich.
+    creation_profiles:
+        admin:
+            rp:
+                id: '%env(default:default_rp_id:WEBAUTHN_RP_ID)%'
+            authenticator_selection_criteria:
+                user_verification: required
+    request_profiles:
+        admin:
+            rp_id: '%env(default:default_rp_id:WEBAUTHN_RP_ID)%'
+            user_verification: required
