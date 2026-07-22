@@ -161,5 +161,13 @@
 	"admin_login_heading": "Anmelden",
 	"admin_login_body": "Melde dich mit deinem Passkey an, um den Gestura Index zu verwalten.",
 	"admin_login_button": "Mit Passkey anmelden",
-	"admin_login_failed": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
+	"admin_login_failed": "Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
+	"admin_register_heading": "Konto anlegen",
+	"admin_register_body": "Richte einen Passkey ein, um dein Konto zu aktivieren.",
+	"admin_register_button": "Passkey anlegen",
+	"admin_register_invalid_link": "Dieser Einladungslink ist ungültig. Bitte einen Administrator um eine neue Einladung.",
+	"admin_register_failed": "Dieser Einladungslink ist ungültig oder abgelaufen. Bitte einen Administrator um eine neue Einladung.",
+	"admin_register_success_heading": "Konto aktiv",
+	"admin_register_success_body": "Dein Konto ist jetzt aktiv. Bitte melde dich an und richte einen zweiten Passkey als Backup ein.",
+	"admin_register_login_button": "Zur Anmeldung"
 }

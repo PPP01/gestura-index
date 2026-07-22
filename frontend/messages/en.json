@@ -161,5 +161,13 @@
 	"admin_login_heading": "Sign in",
 	"admin_login_body": "Sign in with your passkey to manage the Gestura Index.",
 	"admin_login_button": "Sign in with passkey",
-	"admin_login_failed": "Sign-in failed. Please try again."
+	"admin_login_failed": "Sign-in failed. Please try again.",
+	"admin_register_heading": "Create account",
+	"admin_register_body": "Set up a passkey to activate your account.",
+	"admin_register_button": "Create passkey",
+	"admin_register_invalid_link": "This invite link is invalid. Ask an administrator for a new invite.",
+	"admin_register_failed": "This invite link is invalid or has expired. Ask an administrator for a new invite.",
+	"admin_register_success_heading": "Account active",
+	"admin_register_success_body": "Your account is now active. Please sign in and set up a second passkey as a backup.",
+	"admin_register_login_button": "Go to sign in"
 }
