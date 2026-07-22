@@ -1,9 +1,12 @@
 <script lang="ts">
+	// Echter Wurzel-Layout (kein `page-shell`/Header/Footer mehr — das öffentliche
+	// Chrome lebt jetzt in `(public)/+layout.svelte`). Hier nur Dinge, die für
+	// öffentliche Seiten UND den Admin-Bereich gelten: globale Styles, Favicon,
+	// Sprach-Attribut. So kann `admin/+layout@.svelte` per Layout-Reset auf genau
+	// diese schlanke Wurzel zurücksetzen, ohne das öffentliche Header/Footer zu erben.
 	import '$lib/styles/gestura-common.css';
 	import '$lib/styles/site.css';
 	import favicon from '$lib/assets/logo/icon32.png';
-	import Header from '$lib/components/Header.svelte';
-	import Footer from '$lib/components/Footer.svelte';
 	import { getLocale, localizeHref, locales } from '$lib/paraglide/runtime';
 	import { page } from '$app/state';
 
@@ -31,10 +34,4 @@
 	<link rel="alternate" hreflang="x-default" href={SITE_URL + localizeHref(page.url.pathname, { locale: 'en' })} />
 </svelte:head>
 
-<div class="page-shell">
-	<Header />
-	<main class="container">
-		{@render children()}
-	</main>
-	<Footer />
-</div>
+{@render children()}

@@ -143,5 +143,19 @@
 	"gestura_os_heading": "Open source & credits",
 	"gestura_os_body": "Gestura is licensed under GPL-3.0 and is a fork of FlowMouse by Hmily[LCG] & Coxxs — huge thanks to them for the original extension.",
 	"gestura_github": "View on GitHub",
-	"gestura_index_note": "This site — the Gestura Index — lets you share and discover menus and search engines for the extension."
+	"gestura_index_note": "This site — the Gestura Index — lets you share and discover menus and search engines for the extension.",
+	"admin_nav_toggle": "Menu",
+	"admin_nav_queue": "Queue",
+	"admin_nav_entries": "Entry",
+	"admin_nav_reports": "Reports",
+	"admin_nav_submitters": "Submitter",
+	"admin_nav_users": "Users",
+	"admin_nav_audit": "Audit log",
+	"admin_nav_account": "My account",
+	"admin_topbar_role": "Role: {role}",
+	"admin_backup_banner": "Add a second passkey to protect your account from lockout.",
+	"admin_stepup_title": "Confirm with passkey",
+	"admin_stepup_body": "This action needs a fresh passkey confirmation for security.",
+	"admin_stepup_confirm": "Confirm",
+	"admin_stepup_cancel": "Cancel"
 }
