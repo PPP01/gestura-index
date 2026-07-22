@@ -29,11 +29,7 @@ final class ReportResolveController
         }
         $publish = $body['publish'];
 
-        try {
-            $moderation->resolveReport($report, $publish);
-        } catch (\RuntimeException $e) {
-            throw new ApiProblem(409, $e->getMessage());
-        }
+        $moderation->resolveReport($report, $publish);
 
         /** @var AdminUser $actor */
         $actor = $security->getUser();

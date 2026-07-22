@@ -18,11 +18,7 @@ final class SubmitterUnbanController
     {
         $submitter = $submitters->find($id) ?? throw new ApiProblem(404, 'Submitter not found');
 
-        try {
-            $moderation->unban($submitter);
-        } catch (\RuntimeException $e) {
-            throw new ApiProblem(409, $e->getMessage());
-        }
+        $moderation->unban($submitter);
 
         /** @var AdminUser $actor */
         $actor = $security->getUser();

@@ -32,11 +32,7 @@ final class SubmitterBanController
 
         $submitter = $submitters->find($id) ?? throw new ApiProblem(404, 'Submitter not found');
 
-        try {
-            $moderation->ban($submitter);
-        } catch (\RuntimeException $e) {
-            throw new ApiProblem(409, $e->getMessage());
-        }
+        $moderation->ban($submitter);
 
         $audit->log($actor, 'submitter.ban', 'submitter', (string) $submitter->id);
 

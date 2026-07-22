@@ -32,11 +32,7 @@ final class VersionRejectController
 
         $version = $versions->find($id) ?? throw new ApiProblem(404, 'Version not found');
 
-        try {
-            $moderation->rejectVersion($version);
-        } catch (\RuntimeException $e) {
-            throw new ApiProblem(409, $e->getMessage());
-        }
+        $moderation->rejectVersion($version);
 
         $audit->log($actor, 'version.reject', 'version', (string) $version->id);
 

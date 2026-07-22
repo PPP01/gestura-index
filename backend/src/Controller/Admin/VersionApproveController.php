@@ -18,11 +18,7 @@ final class VersionApproveController
     {
         $version = $versions->find($id) ?? throw new ApiProblem(404, 'Version not found');
 
-        try {
-            $moderation->approveVersion($version);
-        } catch (\RuntimeException $e) {
-            throw new ApiProblem(409, $e->getMessage());
-        }
+        $moderation->approveVersion($version);
 
         /** @var AdminUser $actor */
         $actor = $security->getUser();
