@@ -37,10 +37,4 @@ final class CredentialTest extends AdminTestCase
         $this->client->request('POST', '/api/admin/auth/login', server: $this->hdr(),
             content: json_encode(['id' => $credentialId], JSON_THROW_ON_ERROR));
     }
-
-    /** @return array<string,string> */
-    protected function hdr(): array
-    {
-        return ['CONTENT_TYPE' => 'application/json', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest'];
-    }
 }

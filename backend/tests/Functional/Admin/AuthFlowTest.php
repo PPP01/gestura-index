@@ -80,6 +80,7 @@ final class AuthFlowTest extends AdminTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+
     public function testLogoutInvalidatesSession(): void
     {
         $admin = $this->createAdmin('chef2@example.com', AdminRole::Admin);
@@ -101,11 +102,5 @@ final class AuthFlowTest extends AdminTestCase
 
         $this->client->request('GET', '/api/admin/auth/me', server: $this->hdr());
         self::assertResponseStatusCodeSame(401);
-    }
-
-    /** @return array<string,string> */
-    private function hdr(): array
-    {
-        return ['CONTENT_TYPE' => 'application/json', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest'];
     }
 }
