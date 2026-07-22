@@ -29,6 +29,7 @@
 		"vitest": "^4.1.10"
 	},
 	"dependencies": {
-		"@lucide/svelte": "^1.25.0"
+		"@lucide/svelte": "^1.25.0",
+		"@simplewebauthn/browser": "^13.3.0"
 	}
 }
