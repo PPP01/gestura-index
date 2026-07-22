@@ -14,6 +14,7 @@ framework:
         install:    { policy: fixed_window,   limit: 1,  interval: '1 day' }
         admin_login: { policy: sliding_window, limit: 10, interval: '15 minutes' }
         admin_register: { policy: sliding_window, limit: 10, interval: '1 hour' }
+        admin_invite: { policy: sliding_window, limit: 20, interval: '1 hour' }
 
 # Funktionstests feuern viele Requests von 127.0.0.1 — dort großzügige
 # Limits; die Drosselung selbst testet RateLimitGuardTest isoliert.
@@ -32,3 +33,4 @@ when@test:
             install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }
             admin_login: { policy: sliding_window, limit: 1000, interval: '15 minutes' }
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            admin_invite: { policy: sliding_window, limit: 1000, interval: '1 hour' }

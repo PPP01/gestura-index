@@ -14,10 +14,12 @@ use App\Security\StepUpGuard;
 use App\Service\AuditLogger;
 use App\Service\InviteMailer;
 use App\Service\InviteTokenService;
+use App\Service\RateLimitGuard;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -39,11 +41,14 @@ final class UserInviteController
         AuditLogger $audit,
         StepUpGuard $stepUp,
         BackupPasskeyGate $backup,
+        RateLimitGuard $guard,
+        RateLimiterFactoryInterface $adminInviteLimiter,
     ): JsonResponse {
         /** @var AdminUser $actor */
         $actor = $security->getUser();
         $backup->assertEnough($actor);
         $stepUp->assertFresh();
+        $guard->consume($adminInviteLimiter, $request->getClientIp() ?? 'unknown');
 
         try {
             $body = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);

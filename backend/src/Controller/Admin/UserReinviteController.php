@@ -15,9 +15,12 @@ use App\Security\StepUpGuard;
 use App\Service\AuditLogger;
 use App\Service\InviteMailer;
 use App\Service\InviteTokenService;
+use App\Service\RateLimitGuard;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -32,6 +35,7 @@ final class UserReinviteController
     #[Route('/api/admin/users/{id}/reinvite', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function __invoke(
         int $id,
+        Request $request,
         AdminUserRepository $users,
         AdminInviteRepository $invites,
         EntityManagerInterface $em,
@@ -41,11 +45,14 @@ final class UserReinviteController
         Security $security,
         BackupPasskeyGate $backup,
         StepUpGuard $stepUp,
+        RateLimitGuard $guard,
+        RateLimiterFactoryInterface $adminInviteLimiter,
     ): JsonResponse {
         /** @var AdminUser $actor */
         $actor = $security->getUser();
         $backup->assertEnough($actor);
         $stepUp->assertFresh();
+        $guard->consume($adminInviteLimiter, $request->getClientIp() ?? 'unknown');
 
         $user = $users->find($id) ?? throw new ApiProblem(404, 'User not found');
 
