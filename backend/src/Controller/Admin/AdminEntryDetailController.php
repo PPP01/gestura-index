@@ -31,6 +31,9 @@ final class AdminEntryDetailController
         $versionList = $versions->findBy(['entry' => $entry], ['submittedAt' => 'DESC']);
         $detail = $serializer->toDetail($entry, $versionList);
 
+        $detail['submitterId'] = $entry->submitter->id;
+        $detail['submitterBanned'] = $entry->submitter->banned;
+
         $detail['openReports'] = array_map(static fn ($r): array => [
             'id' => $r->id,
             'reason' => $r->reason->value,

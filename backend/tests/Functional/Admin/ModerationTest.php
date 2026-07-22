@@ -306,9 +306,15 @@ final class ModerationTest extends AdminTestCase
 
         $this->client->request('GET', '/api/admin/reports', server: $this->hdr());
         self::assertResponseStatusCodeSame(200);
-        $ids = array_column($this->json(), 'id');
+        $data = $this->json();
+        $ids = array_column($data, 'id');
         self::assertContains($open->id, $ids);
         self::assertNotContains($resolved->id, $ids);
+
+        $openItem = current(array_filter($data, static fn ($r) => $r['id'] === $open->id));
+        self::assertNotFalse($openItem);
+        self::assertSame($entry->submitter->id, $openItem['submitterId']);
+        self::assertFalse($openItem['submitterBanned']);
     }
 
     public function testQueueListsPendingEntryAndHighlightsTransformVersion(): void
@@ -347,6 +353,24 @@ final class ModerationTest extends AdminTestCase
         self::assertSame('com.example.detail', $data['formatId']);
         self::assertCount(1, $data['versions']);
         self::assertCount(1, $data['openReports']);
+        self::assertSame($entry->submitter->id, $data['submitterId']);
+        self::assertFalse($data['submitterBanned']);
+    }
+
+    public function testEntryDetailExposesBannedSubmitter(): void
+    {
+        $admin = $this->createAdmin('chef-detailbanned@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 1);
+        $entry = $this->createPublishedEntry('com.example.detailbanned');
+        $entry->submitter->banned = true;
+        $this->em->flush();
+
+        $this->client->request('GET', "/api/admin/entries/{$entry->id}", server: $this->hdr());
+        self::assertResponseStatusCodeSame(200);
+        $data = $this->json();
+
+        self::assertSame($entry->submitter->id, $data['submitterId']);
+        self::assertTrue($data['submitterBanned']);
     }
 
     private function addPendingVersion(Entry $entry, string $semver, bool $hasTransform = false): EntryVersion

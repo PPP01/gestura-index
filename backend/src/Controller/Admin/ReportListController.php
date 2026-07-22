@@ -18,6 +18,8 @@ final class ReportListController
             'id' => $r->id,
             'entryId' => $r->entry->id,
             'formatId' => $r->entry->formatId,
+            'submitterId' => $r->entry->submitter->id,
+            'submitterBanned' => $r->entry->submitter->banned,
             'reason' => $r->reason->value,
             'comment' => $r->comment,
             'createdAt' => $r->createdAt->format(\DateTimeInterface::ATOM),
