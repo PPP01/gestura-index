@@ -34,4 +34,22 @@ final class DeleteTest extends ApiTestCase
         $this->api('DELETE', '/api/v1/entries/com.example.shop', token: $foreignToken);
         self::assertResponseStatusCodeSame(403);
     }
+
+    public function testDeleteOfUnknownEntryYields404(): void
+    {
+        $this->api('DELETE', '/api/v1/entries/com.example.unbekannt');
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testDeleteOfAlreadyDeletedEntryYields404(): void
+    {
+        [$submitter, $token] = $this->createSubmitterWithToken();
+        $this->createPublishedEntry('com.example.shop', submitter: $submitter);
+
+        $this->api('DELETE', '/api/v1/entries/com.example.shop', token: $token);
+        self::assertResponseStatusCodeSame(204);
+
+        $this->api('DELETE', '/api/v1/entries/com.example.shop', token: $token);
+        self::assertResponseStatusCodeSame(404);
+    }
 }

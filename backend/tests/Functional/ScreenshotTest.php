@@ -136,6 +136,45 @@ final class ScreenshotTest extends ApiTestCase
         self::assertResponseStatusCodeSame(400);
     }
 
+    public function testUploadForUnknownEntryYields404(): void
+    {
+        [, $token] = $this->createSubmitterWithToken();
+
+        $this->client->request('POST', '/api/v1/entries/com.example.unbekannt/screenshot',
+            files: ['screenshot' => $this->makePngUpload()],
+            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
+        );
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testMissingScreenshotFieldYields400(): void
+    {
+        [$submitter, $token] = $this->createSubmitterWithToken();
+        $this->createPublishedEntry('com.example.shop', submitter: $submitter);
+
+        $this->client->request('POST', '/api/v1/entries/com.example.shop/screenshot',
+            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
+        );
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testOversizedUploadYields413(): void
+    {
+        [$submitter, $token] = $this->createSubmitterWithToken();
+        $this->createPublishedEntry('com.example.shop', submitter: $submitter);
+
+        $path = tempnam(sys_get_temp_dir(), 'big') . '.png';
+        file_put_contents($path, random_bytes(2 * 1024 * 1024 + 1)); // > UPLOAD_MAX (2 MB)
+        $upload = new UploadedFile($path, 'big.png', 'image/png', test: true);
+
+        $this->client->request('POST', '/api/v1/entries/com.example.shop/screenshot',
+            files: ['screenshot' => $upload],
+            server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token],
+        );
+        self::assertResponseStatusCodeSame(413);
+        unlink($path);
+    }
+
     public function testDeleteRemovesScreenshotFile(): void
     {
         [$submitter, $token] = $this->createSubmitterWithToken();
