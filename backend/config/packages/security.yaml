@@ -14,6 +14,7 @@ security:
             pattern: ^/api/admin
             provider: admin_users
             stateless: false
+            user_checker: App\Security\AdminUserChecker
             custom_authenticators:
                 - App\Security\AdminSessionAuthenticator
             entry_point: App\Security\AdminSessionAuthenticator
