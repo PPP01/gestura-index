@@ -24,6 +24,10 @@ DirectorySlash Off
 	RewriteCond %{REQUEST_FILENAME} -d
 	RewriteRule ^ - [L]
 
-	# 5. Alles andere (client-gerenderte Routen wie /en/browse, /en/entry/...) auf die SPA-Hülle.
+	# 5. Alles andere (client-gerenderte Routen wie /en/browse, /en/entry/...
+	#    sowie die komplette client-only Admin-SPA unter /admin, /en/admin/...,
+	#    inkl. Deep-Links wie /admin/entries/123) auf die SPA-Hülle.
+	#    /admin wird bewusst NIE prerendert (siehe adapter-static-Config) –
+	#    Regel 3/4 greifen dort also nie, Regel 5 übernimmt immer.
 	RewriteRule ^ /200.html [L]
 </IfModule>

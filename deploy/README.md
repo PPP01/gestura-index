@@ -17,3 +17,12 @@ Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Spec: `../docs/s
 ## Rollback
 
 Kein Releases-Mechanismus (bewusst, Phase 2): vorherigen Git-Stand auschecken und `deploy/deploy.sh` erneut ausführen. Migrationen sind vorwärtsgerichtet – bei Schema-Rollbacks `php85 bin/console doctrine:migrations:migrate <version>` auf dem Server.
+
+## Admin-SPA (`/admin`)
+
+Die Routen unter `/admin` sind **client-only** (kein Prerendering) und werden von `adapter-static` über den `200.html`-Fallback ausgeliefert – anders als die öffentlichen Seiten, die als statisches HTML prerendert sind (`build/en/…`, `build/de/…`). Der Webserver muss deshalb:
+
+- unbekannte Pfade unterhalb `/admin` (inkl. Deep-Links wie `/admin/entries/123` oder `/de/admin/queue`) auf `200.html` umleiten (Apache-Rewrite in der `.htaccess` des Frontend-Docroots), damit ein Reload/Direktaufruf nicht in einen 404 läuft,
+- dabei die **prerenderten öffentlichen Seiten nicht übergehen** – die Rewrite-Regel darf nur greifen, wenn keine passende Datei/kein passendes Verzeichnis existiert (klassisches `RewriteCond %{REQUEST_FILENAME} !-f` / `!-d` vor dem Fallback auf `200.html`).
+
+Serverseitige Voraussetzungen für die Admin-Auth (bereits mit dem SP4a-Deploy erfüllt, hier nur zur Erinnerung): credentialed CORS für `https://gestura.eu`, `SESSION_COOKIE_DOMAIN=.gestura.eu`, `WEBAUTHN_RP_ID=gestura.eu`, `MAILER_DSN` gesetzt.
