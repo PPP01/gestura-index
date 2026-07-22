@@ -157,5 +157,9 @@
 	"admin_stepup_title": "Confirm with passkey",
 	"admin_stepup_body": "This action needs a fresh passkey confirmation for security.",
 	"admin_stepup_confirm": "Confirm",
-	"admin_stepup_cancel": "Cancel"
+	"admin_stepup_cancel": "Cancel",
+	"admin_login_heading": "Sign in",
+	"admin_login_body": "Sign in with your passkey to manage the Gestura Index.",
+	"admin_login_button": "Sign in with passkey",
+	"admin_login_failed": "Sign-in failed. Please try again."
 }

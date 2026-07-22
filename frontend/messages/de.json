@@ -157,5 +157,9 @@
 	"admin_stepup_title": "Mit Passkey bestätigen",
 	"admin_stepup_body": "Diese Aktion erfordert aus Sicherheitsgründen eine erneute Passkey-Bestätigung.",
 	"admin_stepup_confirm": "Bestätigen",
-	"admin_stepup_cancel": "Abbrechen"
+	"admin_stepup_cancel": "Abbrechen",
+	"admin_login_heading": "Anmelden",
+	"admin_login_body": "Melde dich mit deinem Passkey an, um den Gestura Index zu verwalten.",
+	"admin_login_button": "Mit Passkey anmelden",
+	"admin_login_failed": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
 }
