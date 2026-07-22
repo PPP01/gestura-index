@@ -56,6 +56,18 @@ final class EntryListTest extends ApiTestCase
         self::assertSame(['org.other.menu'], array_column($this->json()['items'], 'formatId'));
     }
 
+    public function testFiltersByType(): void
+    {
+        $this->createPublishedEntry('com.example.shop');
+        $this->createPublishedEntry('com.example.search', $this->enginePayload());
+
+        $this->api('GET', '/api/v1/entries?type=menu');
+        self::assertSame(['com.example.shop'], array_column($this->json()['items'], 'formatId'));
+
+        $this->api('GET', '/api/v1/entries?type=engine');
+        self::assertSame(['com.example.search'], array_column($this->json()['items'], 'formatId'));
+    }
+
     public function testInvalidFilterValuesYield400(): void
     {
         $this->api('GET', '/api/v1/entries?category=quatsch');

@@ -95,4 +95,25 @@ final class SubmitterResolverTest extends TestCase
             }
         }
     }
+
+    /**
+     * Ein Header, der kein gültiges »gsti_…«-Tokenformat trägt, muss bereits
+     * beim Parsen (vor jeder teuren Argon2id-Verifikation) mit 401 abgelehnt
+     * werden – anders als beim komplett fehlenden Header (dann: null statt Exception).
+     */
+    public function testMalformedTokenFormatYields401WithoutHashVerification(): void
+    {
+        $resolver = $this->resolver(ipLimit: 1000);
+        $request = Request::create('/api/v1/entries', 'POST', server: [
+            'REMOTE_ADDR' => '5.5.5.5',
+            'HTTP_AUTHORIZATION' => 'Bearer not-a-valid-token',
+        ]);
+
+        try {
+            $resolver->resolve($request);
+            self::fail('401 für falsch formatiertes Token erwartet');
+        } catch (ApiProblem $e) {
+            self::assertSame(401, $e->getStatusCode());
+        }
+    }
 }

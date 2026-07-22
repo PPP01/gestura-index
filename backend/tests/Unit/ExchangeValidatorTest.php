@@ -224,4 +224,53 @@ final class ExchangeValidatorTest extends TestCase
         $menu['items'][0]['id'] = '<script>';
         self::assertFalse($this->check($menu)->ok);
     }
+
+    public function testConstructorThrowsWhenSchemaFileIsUnreadable(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('exchange-schema.json nicht lesbar');
+        // file_get_contents() selbst löst bei fehlendem Pfad zusätzlich eine
+        // native PHP-Warning aus (von PHPUnit als Fehler gewertet) – hier
+        // bewusst unterdrückt, da nur das RuntimeException-Verhalten geprüft wird.
+        @new ExchangeValidator('/nicht/existierender/pfad/exchange-schema.json');
+    }
+
+    /**
+     * detectType() erkennt den Typ nur an Sentinel-Properties eines JSON-
+     * OBJEKTS. Ein syntaktisch gültiges JSON-Top-Level, das kein Objekt ist
+     * (hier: eine Liste), muss ebenfalls "notGesturaFormat" ergeben statt
+     * z.B. eine PHP-Warnung/TypeError auszulösen.
+     */
+    public function testRejectsNonObjectTopLevelJson(): void
+    {
+        $result = $this->validator->validate('[1,2,3]');
+        self::assertFalse($result->ok);
+        self::assertContains('notGesturaFormat', $result->errors);
+    }
+
+    /**
+     * applyMenuRules() muss beim Fehlen des items-Feldes früh zurückkehren,
+     * statt über eine Nicht-Liste zu iterieren – die Struktur wird bereits
+     * vom JSON-Schema bemängelt, applyMenuRules() darf hier nicht crashen.
+     */
+    public function testMenuRulesReturnEarlyWhenItemsFieldIsMissing(): void
+    {
+        $menu = $this->validMenu();
+        unset($menu['items']);
+        $result = $this->check($menu);
+        self::assertFalse($result->ok);
+    }
+
+    /**
+     * Items ohne string-wertige id (Struktur bereits vom Schema bemängelt)
+     * müssen von applyMenuRules() übersprungen werden (kein Duplicate-/
+     * Action-Check für sie), statt eine Warnung auszulösen.
+     */
+    public function testMenuRulesSkipItemsWithoutStringId(): void
+    {
+        $menu = $this->validMenu();
+        $menu['items'][] = ['label' => 'Ohne id', 'action' => 'newTab'];
+        $result = $this->check($menu);
+        self::assertFalse($result->ok);
+    }
 }
