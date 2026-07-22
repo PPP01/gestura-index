@@ -37,3 +37,13 @@ when@test:
         App\Service\WebAuthn\WebAuthnCeremony:
             alias: App\Service\WebAuthn\FakeWebAuthnCeremony
             public: true
+
+        # Öffentlich nur für Tests: BundleWebAuthnCeremonyTest holt die echte
+        # Implementierung gezielt über den konkreten Klassennamen aus dem
+        # Test-Container, um ihre Guard-/Fehlerzweige unabhängig vom
+        # WebAuthnCeremony-Alias (der hier auf den Fake zeigt) abzudecken.
+        # Ohne "public" inlined/entfernt der Compiler den Service, weil er
+        # sonst nirgends direkt referenziert wird.
+        App\Service\WebAuthn\BundleWebAuthnCeremony:
+            autowire: true
+            public: true

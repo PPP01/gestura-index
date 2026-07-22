@@ -371,4 +371,52 @@ final class ModerationCommandsTest extends KernelTestCase
         $tester->assertCommandIsSuccessful();
         self::assertStringContainsString('2.0.0', $tester->getDisplay());
     }
+
+    public function testReportsShowsEmptyMessageWhenNoneOpen(): void
+    {
+        $tester = $this->runCommand('index:reports');
+
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('Keine Meldungen', $tester->getDisplay());
+    }
+
+    public function testReportsListsOpenReportsAsTable(): void
+    {
+        $entry = $this->createPendingEntry();
+        $entry->status = EntryStatus::Published;
+        $report = new Report($entry, ReportReason::Spam, str_repeat('lang genug, um gekürzt zu werden ', 3));
+        $this->em->persist($report);
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:reports');
+
+        $tester->assertCommandIsSuccessful();
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('com.example.neu', $display);
+        self::assertStringContainsString('spam', $display);
+        self::assertStringContainsString('open', $display);
+        self::assertStringContainsString('…', $display); // gekürzter Kommentar (mb_strimwidth)
+    }
+
+    public function testReportsAllOptionAlsoShowsResolvedReports(): void
+    {
+        $entry = $this->createPendingEntry();
+        $entry->status = EntryStatus::Published;
+        $report = new Report($entry, ReportReason::Legal, null);
+        $report->status = ReportStatus::Resolved;
+        $this->em->persist($report);
+        $this->em->flush();
+
+        // Ohne --all bleibt die erledigte Meldung unsichtbar.
+        $tester = $this->runCommand('index:reports');
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('Keine Meldungen', $tester->getDisplay());
+
+        $tester = $this->runCommand('index:reports', ['--all' => true]);
+        $tester->assertCommandIsSuccessful();
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('com.example.neu', $display);
+        self::assertStringContainsString('legal', $display);
+        self::assertStringContainsString('resolved', $display);
+    }
 }

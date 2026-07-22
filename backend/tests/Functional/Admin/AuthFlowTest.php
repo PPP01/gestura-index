@@ -81,6 +81,27 @@ final class AuthFlowTest extends AdminTestCase
     }
 
 
+    public function testStepUpOptionsReturnsRequestOptionsForLoggedInUser(): void
+    {
+        $admin = $this->createAdmin('stepup-options@example.com', AdminRole::Admin);
+        $cred = new WebAuthnCredential($admin, 'cred-stepup-options', '{"id":"cred-stepup-options"}', 'Laptop');
+        $this->em->persist($cred);
+        $this->em->flush();
+
+        $this->client->request('POST', '/api/admin/auth/options', server: $this->hdr());
+        self::assertResponseIsSuccessful();
+        $this->client->request('POST', '/api/admin/auth/login', server: $this->hdr(),
+            content: json_encode(['id' => 'cred-stepup-options'], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(204);
+
+        $this->client->request('POST', '/api/admin/stepup/options', server: $this->hdr());
+
+        self::assertResponseIsSuccessful();
+        $body = $this->json();
+        self::assertNotEmpty($body);
+        self::assertArrayHasKey('challenge', $body);
+    }
+
     public function testStepUpSucceedsWithMatchingCredential(): void
     {
         $admin = $this->createAdmin('stepup-ok@example.com', AdminRole::Admin);
