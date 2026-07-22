@@ -9,6 +9,8 @@
 parameters:
     app.report_hide_threshold: '%env(int:REPORT_HIDE_THRESHOLD)%'
     app.trust_threshold: '%env(int:TRUST_THRESHOLD)%'
+    # Fallback-Absenderadresse für InviteMailer, falls MAILER_FROM nicht gesetzt ist.
+    default_from: 'admin@gestura.eu'
 
 services:
     # default configuration for services in *this* file
