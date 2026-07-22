@@ -136,6 +136,18 @@ final class RegistrationTest extends AdminTestCase
         self::assertCount(2, $user->credentials);
     }
 
+    public function testRegisterInvalidJsonIs400(): void
+    {
+        $this->client->request('POST', '/api/admin/register', server: $this->hdr(), content: 'not-json');
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testRegisterOptionsInvalidJsonIs400(): void
+    {
+        $this->client->request('POST', '/api/admin/register/options', server: $this->hdr(), content: 'not-json');
+        self::assertResponseStatusCodeSame(400);
+    }
+
     public function testRegisterInvalidatesSiblingInvites(): void
     {
         $user = new AdminUser('Neu', 'siblings@example.com', AdminRole::Moderator);

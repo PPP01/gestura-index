@@ -41,6 +41,122 @@ final class ModerationTest extends AdminTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    /**
+     * approveEntry() wirft eine RuntimeException, wenn keine wartende
+     * Version existiert (z. B. ein bereits veröffentlichter Entry ohne
+     * erneute Einreichung) — der Controller muss das als 409 melden.
+     */
+    public function testApproveEntryWithoutPendingVersionIs409(): void
+    {
+        $admin = $this->createAdmin('chef-noqueue@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin);
+        $entry = $this->createPublishedEntry('com.example.noqueue');
+
+        $this->client->request('POST', "/api/admin/entries/{$entry->id}/approve", server: $this->hdr());
+        self::assertResponseStatusCodeSame(409);
+    }
+
+    public function testEntryRejectUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('chef-reject404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin); // 2 Passkeys — Backup-Gate muss passieren
+
+        $this->client->request('POST', '/api/admin/entries/999999/reject', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testVersionApproveUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('chef-va404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 1);
+
+        $this->client->request('POST', '/api/admin/versions/999999/approve', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testVersionRejectUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('chef-vr404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin);
+
+        $this->client->request('POST', '/api/admin/versions/999999/reject', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testSubmitterBanUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('chef-ban404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin);
+
+        $this->client->request('POST', '/api/admin/submitters/999999/ban', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testSubmitterUnbanUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('chef-unban404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 1);
+
+        $this->client->request('POST', '/api/admin/submitters/999999/unban', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testReportResolveUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('chef-report404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 1);
+
+        $this->client->request('POST', '/api/admin/reports/999999/resolve', server: $this->hdr(),
+            content: json_encode(['publish' => true], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testReportResolveInvalidJsonIs400(): void
+    {
+        $admin = $this->createAdmin('chef-reportjson@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 1);
+        $entry = $this->createPublishedEntry('com.example.reportjson');
+        $report = new Report($entry, ReportReason::Spam, null);
+        $this->em->persist($report);
+        $this->em->flush();
+
+        $this->client->request('POST', "/api/admin/reports/{$report->id}/resolve", server: $this->hdr(),
+            content: 'not-json');
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testReportResolveWithPublishFalseDeletesEntryAndWritesAudit(): void
+    {
+        $admin = $this->createAdmin('chef-reportfalse@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 1);
+        $entry = $this->createPublishedEntry('com.example.reportfalse');
+        $entry->status = EntryStatus::Hidden;
+        $report = new Report($entry, ReportReason::Spam, 'spammt');
+        $this->em->persist($report);
+        $this->em->flush();
+
+        $this->client->request('POST', "/api/admin/reports/{$report->id}/resolve", server: $this->hdr(),
+            content: json_encode(['publish' => false], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(204);
+
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->find($entry->id);
+        $report = $this->em->getRepository(Report::class)->find($report->id);
+        self::assertSame(EntryStatus::Deleted, $entry->status);
+        self::assertSame(ReportStatus::Resolved, $report->status);
+        $audits = $this->em->getRepository(AuditLogEntry::class)->findAll();
+        self::assertNotEmpty(array_filter($audits, static fn ($a) => $a->action === 'report.resolve'));
+    }
+
+    public function testAdminEntryDetailUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('chef-detail404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 1);
+
+        $this->client->request('GET', '/api/admin/entries/999999', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
     public function testRejectEntryRequiresBackupGate(): void
     {
         $admin = $this->createAdmin('chef@example.com', AdminRole::Admin);

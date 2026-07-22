@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace App\Tests\Functional\Admin;
 
+use App\Entity\AdminUser;
 use App\Entity\AuditLogEntry;
 use App\Entity\WebAuthnCredential;
 use App\Enum\AdminRole;
@@ -76,6 +77,111 @@ final class CredentialTest extends AdminTestCase
 
         $this->client->request('POST', "/api/admin/credentials/{$credB1->id}/remove", server: $this->hdr());
         self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testRemoveSucceedsWhenMoreThanTwoCredentialsRemain(): void
+    {
+        $admin = $this->createAdmin('multi-remove@example.com', AdminRole::Admin);
+        $this->em->persist(new WebAuthnCredential($admin, 'cred-r1', '{"id":"cred-r1"}', 'Laptop'));
+        $this->em->persist(new WebAuthnCredential($admin, 'cred-r2', '{"id":"cred-r2"}', 'Handy'));
+        $extra = new WebAuthnCredential($admin, 'cred-r3', '{"id":"cred-r3"}', 'Tablet');
+        $this->em->persist($extra);
+        $this->em->flush();
+        $this->loginAs('cred-r1');
+
+        $this->client->request('POST', "/api/admin/credentials/{$extra->id}/remove", server: $this->hdr());
+        self::assertResponseStatusCodeSame(204);
+
+        $this->em->clear();
+        $reloaded = $this->em->getRepository(AdminUser::class)->find($admin->id);
+        self::assertCount(2, $reloaded->credentials);
+
+        $entry = $this->em->getRepository(AuditLogEntry::class)->findOneBy([
+            'action' => 'credential.remove',
+            'targetId' => (string) $extra->id,
+        ]);
+        self::assertNotNull($entry);
+    }
+
+    public function testRemoveUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('remove-404@example.com', AdminRole::Admin);
+        $this->em->persist(new WebAuthnCredential($admin, 'cred-rm404', '{"id":"cred-rm404"}', 'Laptop'));
+        $this->em->flush();
+        $this->loginAs('cred-rm404');
+
+        $this->client->request('POST', '/api/admin/credentials/999999/remove', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testAddCredentialInvalidJsonIs400(): void
+    {
+        $admin = $this->createAdmin('add-invalid@example.com', AdminRole::Admin);
+        $this->em->persist(new WebAuthnCredential($admin, 'cred-addinv-1', '{"id":"cred-addinv-1"}', 'Laptop'));
+        $this->em->flush();
+        $this->loginAs('cred-addinv-1');
+
+        $this->client->request('POST', '/api/admin/credentials/options', server: $this->hdr());
+        self::assertResponseIsSuccessful();
+        $this->client->request('POST', '/api/admin/credentials', server: $this->hdr(), content: 'not-json');
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testLabelRenameSucceeds(): void
+    {
+        $admin = $this->createAdmin('label-owner@example.com', AdminRole::Admin);
+        $cred = new WebAuthnCredential($admin, 'cred-label-1', '{"id":"cred-label-1"}', 'Laptop');
+        $this->em->persist($cred);
+        $this->em->flush();
+        $this->loginAs('cred-label-1');
+
+        $this->client->request('PATCH', "/api/admin/credentials/{$cred->id}", server: $this->hdr(),
+            content: json_encode(['label' => 'Neuer Name'], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame('Neuer Name', $this->json()['label']);
+
+        $this->em->clear();
+        $reloaded = $this->em->getRepository(WebAuthnCredential::class)->find($cred->id);
+        self::assertSame('Neuer Name', $reloaded->label);
+    }
+
+    public function testLabelRenameMissingLabelIs400(): void
+    {
+        $admin = $this->createAdmin('label-owner2@example.com', AdminRole::Admin);
+        $cred = new WebAuthnCredential($admin, 'cred-label-2', '{"id":"cred-label-2"}', 'Laptop');
+        $this->em->persist($cred);
+        $this->em->flush();
+        $this->loginAs('cred-label-2');
+
+        $this->client->request('PATCH', "/api/admin/credentials/{$cred->id}", server: $this->hdr(),
+            content: json_encode(['label' => ''], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testLabelRenameUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('label-owner3@example.com', AdminRole::Admin);
+        $cred = new WebAuthnCredential($admin, 'cred-label-3', '{"id":"cred-label-3"}', 'Laptop');
+        $this->em->persist($cred);
+        $this->em->flush();
+        $this->loginAs('cred-label-3');
+
+        $this->client->request('PATCH', '/api/admin/credentials/999999', server: $this->hdr(),
+            content: json_encode(['label' => 'X'], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testLabelRenameInvalidJsonIs400(): void
+    {
+        $admin = $this->createAdmin('label-owner4@example.com', AdminRole::Admin);
+        $cred = new WebAuthnCredential($admin, 'cred-label-4', '{"id":"cred-label-4"}', 'Laptop');
+        $this->em->persist($cred);
+        $this->em->flush();
+        $this->loginAs('cred-label-4');
+
+        $this->client->request('PATCH', "/api/admin/credentials/{$cred->id}", server: $this->hdr(),
+            content: 'not-json');
+        self::assertResponseStatusCodeSame(400);
     }
 
     protected function loginAs(string $credentialId): void

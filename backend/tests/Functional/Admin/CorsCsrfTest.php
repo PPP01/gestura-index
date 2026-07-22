@@ -31,6 +31,21 @@ final class CorsCsrfTest extends AdminTestCase
         self::assertFalse($response->headers->has('Access-Control-Allow-Credentials'));
     }
 
+    public function testAdminCorsHeaderPresentOnRealNonPreflightResponse(): void
+    {
+        // Kein OPTIONS-Preflight, sondern ein echter (unauthentifizierter)
+        // Request — die CORS-Header müssen dennoch über den RESPONSE-Zweig
+        // gesetzt werden, nicht nur über den REQUEST-Preflight-Kurzschluss.
+        $this->client->request('GET', '/api/admin/auth/me', server: array_merge($this->hdr(), [
+            'HTTP_ORIGIN' => 'https://gestura.eu',
+        ]));
+
+        self::assertResponseStatusCodeSame(401);
+        $response = $this->client->getResponse();
+        self::assertSame('https://gestura.eu', $response->headers->get('Access-Control-Allow-Origin'));
+        self::assertSame('true', $response->headers->get('Access-Control-Allow-Credentials'));
+    }
+
     public function testStateChangingAdminNeedsCsrfHeader(): void
     {
         // Bewusst OHNE X-Requested-With — nur Content-Type, so wie ein

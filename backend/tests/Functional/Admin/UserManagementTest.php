@@ -228,4 +228,40 @@ final class UserManagementTest extends AdminTestCase
         self::assertResponseStatusCodeSame(201);
         self::assertEmailCount(1);
     }
+
+    public function testDisableUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('disable-404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+
+        $this->client->request('POST', '/api/admin/users/999999/disable', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testEnableUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('enable-404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+
+        $this->client->request('POST', '/api/admin/users/999999/enable', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testReinviteUnknownIdIs404(): void
+    {
+        $admin = $this->createAdmin('reinvite-404@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+
+        $this->client->request('POST', '/api/admin/users/999999/reinvite', server: $this->hdr());
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testInviteInvalidJsonIs400(): void
+    {
+        $admin = $this->createAdmin('invite-invalid@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+
+        $this->client->request('POST', '/api/admin/users', server: $this->hdr(), content: 'not-json');
+        self::assertResponseStatusCodeSame(400);
+    }
 }
