@@ -9,3 +9,4 @@ Thumbs.db
 
 # Claude Code (lokale Session-Daten)
 /.claude/settings.local.json
+/.claude/worktrees/
