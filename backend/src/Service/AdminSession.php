@@ -17,6 +17,11 @@ final class AdminSession
     public function login(AdminUser $u): void
     {
         $s = $this->requestStack->getSession();
+        // Session-ID bei jedem Login rotieren (Fixation-Schutz): eine vor
+        // dem Login bereits bestehende (z. B. vorab bekannte) Session-ID
+        // darf nach dem Login nicht weiterverwendbar sein. `migrate(true)`
+        // behält die Attribute, ersetzt aber die ID.
+        $s->migrate(true);
         $s->set(self::KEY_USER, $u->id);
         $s->set(self::KEY_EMAIL, $u->email);
         $s->set(self::KEY_VERIFIED, time());

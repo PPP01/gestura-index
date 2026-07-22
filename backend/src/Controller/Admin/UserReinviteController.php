@@ -56,7 +56,8 @@ final class UserReinviteController
 
         $user = $users->find($id) ?? throw new ApiProblem(404, 'User not found');
 
-        // Ein deaktivierter Account darf nur bewusst über /enable
+        // Ein deaktivierter Account darf nur bewusst über
+        // POST /api/admin/users/{id}/enable (UserEnableController)
         // reaktiviert werden, nie über einen erneuten Invite-Link.
         if (AdminUserStatus::Disabled === $user->status) {
             throw new ApiProblem(409, 'Cannot reinvite a disabled user');

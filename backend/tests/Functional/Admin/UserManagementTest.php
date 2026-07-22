@@ -4,10 +4,21 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Admin;
 
+use App\Controller\Admin\UserDisableController;
 use App\Entity\AdminUser;
 use App\Enum\AdminRole;
 use App\Enum\AdminUserStatus;
+use App\Exception\ApiProblem;
+use App\Repository\AdminUserRepository;
+use App\Security\StepUpGuard;
+use App\Service\AdminSession;
+use App\Service\AuditLogger;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 final class UserManagementTest extends AdminTestCase
 {
@@ -78,6 +89,102 @@ final class UserManagementTest extends AdminTestCase
 
         $this->em->refresh($target);
         self::assertSame(AdminUserStatus::Disabled, $target->status);
+    }
+
+    public function testCannotDisableOwnAccount(): void
+    {
+        $admin = $this->createAdmin('self-disable@example.com', AdminRole::Admin);
+        // Zweiter aktiver Admin, damit ausschließlich die Selbst-Sperre
+        // geprüft wird, nicht der Letzter-Admin-Schutz.
+        $this->createAdmin('self-disable-2@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+
+        $this->client->request('POST', "/api/admin/users/{$admin->id}/disable", server: $this->hdr());
+        self::assertResponseStatusCodeSame(409);
+
+        $reloaded = $this->em->getRepository(AdminUser::class)->find($admin->id);
+        self::assertSame(AdminUserStatus::Active, $reloaded->status);
+    }
+
+    /**
+     * Über HTTP nicht reproduzierbar: AdminUserChecker verlangt bei JEDEM
+     * Request einen aktiven Admin-Akteur (sonst 401) – der Akteur zählt
+     * also stets selbst mit zu den aktiven Admins, wodurch die Zielperson
+     * (≠ Akteur) nie alleine auf »1« stehen kann. Das deckt sich mit dem
+     * Selbst-Disable-Fall (separat oben getestet). Dieser Test ruft den
+     * Controller daher direkt auf, um die Invariante isoliert von der
+     * Firewall-Einschränkung nachzuweisen: ein Akteur ohne ROLE_ADMIN
+     * (hier bewusst ein Moderator) versucht, den letzten aktiven Admin zu
+     * deaktivieren.
+     */
+    public function testCannotDisableLastActiveAdmin(): void
+    {
+        $lastAdmin = $this->createAdmin('sole-admin@example.com', AdminRole::Admin);
+        $actor = $this->createAdmin('bypass-actor@example.com', AdminRole::Moderator);
+
+        $security = $this->createMock(Security::class);
+        $security->expects(self::once())->method('getUser')->willReturn($actor);
+
+        $controller = new UserDisableController();
+        try {
+            $controller(
+                $lastAdmin->id,
+                static::getContainer()->get(AdminUserRepository::class),
+                $this->em,
+                static::getContainer()->get(AuditLogger::class),
+                $security,
+                $this->freshStepUpGuard(),
+            );
+            self::fail('Erwartete ApiProblem-Exception blieb aus');
+        } catch (ApiProblem $e) {
+            self::assertSame(409, $e->getStatusCode());
+            self::assertSame('Cannot disable the last active admin', $e->getMessage());
+        }
+
+        $this->em->refresh($lastAdmin);
+        self::assertSame(AdminUserStatus::Active, $lastAdmin->status);
+    }
+
+    private function freshStepUpGuard(): StepUpGuard
+    {
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('_admin_verified_at', time());
+        $request = new Request();
+        $request->setSession($session);
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
+
+        return new StepUpGuard(new AdminSession($requestStack));
+    }
+
+    public function testEnableReactivatesDisabledUser(): void
+    {
+        $admin = $this->createAdmin('enable-chef@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+        // Zweiter aktiver Admin, damit das Disable des Ziel-Accounts nicht
+        // am Letzter-Admin-Schutz scheitert (Ziel ist hier ein Admin).
+        $this->createAdmin('enable-chef-2@example.com', AdminRole::Admin);
+        $target = $this->createAdmin('to-enable@example.com', AdminRole::Moderator);
+
+        $this->client->request('POST', "/api/admin/users/{$target->id}/disable", server: $this->hdr());
+        self::assertResponseStatusCodeSame(204);
+
+        $this->client->request('POST', "/api/admin/users/{$target->id}/enable", server: $this->hdr());
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame('active', $this->json()['status']);
+
+        $this->em->refresh($target);
+        self::assertSame(AdminUserStatus::Active, $target->status);
+    }
+
+    public function testEnableRejectedForNonDisabledUser(): void
+    {
+        $admin = $this->createAdmin('enable-chef3@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+        $target = $this->createAdmin('already-active@example.com', AdminRole::Moderator, AdminUserStatus::Active);
+
+        $this->client->request('POST', "/api/admin/users/{$target->id}/enable", server: $this->hdr());
+        self::assertResponseStatusCodeSame(409);
     }
 
     public function testReinviteSendsNewEmail(): void

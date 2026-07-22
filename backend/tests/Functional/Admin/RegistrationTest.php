@@ -102,6 +102,20 @@ final class RegistrationTest extends AdminTestCase
         self::assertCount(0, $user->credentials);
     }
 
+    public function testRegisterOptionsRejectedForDisabledAccount(): void
+    {
+        $user = $this->createAdmin('disabled-options@example.com', AdminRole::Moderator, AdminUserStatus::Disabled);
+
+        $gen = (new InviteTokenService())->generate();
+        $invite = new AdminInvite($gen->selector, $gen->hash, $user, AdminRole::Moderator, new \DateTimeImmutable('+72 hours'));
+        $this->em->persist($invite);
+        $this->em->flush();
+
+        $this->client->request('POST', '/api/admin/register/options', server: $this->hdr(),
+            content: json_encode(['token' => $gen->token], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(409);
+    }
+
     public function testRegisterRecoveryForActiveAccountAddsPasskey(): void
     {
         $user = $this->createAdmin('recovery@example.com', AdminRole::Moderator, AdminUserStatus::Active);
