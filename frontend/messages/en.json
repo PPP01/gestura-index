@@ -190,5 +190,16 @@
 	"admin_account_rename_failed": "Renaming failed. Please try again.",
 	"admin_account_remove_button": "Remove",
 	"admin_account_remove_failed": "Removing failed. Please try again.",
-	"admin_account_remove_backup_required": "You need at least 2 passkeys as a backup — add another one before removing this one."
+	"admin_account_remove_backup_required": "You need at least 2 passkeys as a backup — add another one before removing this one.",
+	"admin_queue_heading": "Moderation queue",
+	"admin_queue_load_failed": "Loading the queue failed.",
+	"admin_queue_empty_title": "The queue is empty",
+	"admin_queue_entries_heading": "Pending entries",
+	"admin_queue_versions_heading": "Pending versions",
+	"admin_queue_transform_badge": "transformCode",
+	"admin_queue_approve_button": "Approve",
+	"admin_queue_reject_button": "Reject",
+	"admin_queue_approve_failed": "Approving failed. Please try again.",
+	"admin_queue_reject_failed": "Rejecting failed. Please try again.",
+	"admin_queue_backup_required": "You need at least 2 passkeys as a backup to confirm this action."
 }

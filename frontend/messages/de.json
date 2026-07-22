@@ -190,5 +190,16 @@
 	"admin_account_rename_failed": "Umbenennen fehlgeschlagen. Bitte erneut versuchen.",
 	"admin_account_remove_button": "Entfernen",
 	"admin_account_remove_failed": "Entfernen fehlgeschlagen. Bitte erneut versuchen.",
-	"admin_account_remove_backup_required": "Es werden mindestens 2 Passkeys als Backup benötigt – füge zuerst einen weiteren hinzu, bevor du diesen entfernst."
+	"admin_account_remove_backup_required": "Es werden mindestens 2 Passkeys als Backup benötigt – füge zuerst einen weiteren hinzu, bevor du diesen entfernst.",
+	"admin_queue_heading": "Moderations-Warteschlange",
+	"admin_queue_load_failed": "Die Warteschlange konnte nicht geladen werden.",
+	"admin_queue_empty_title": "Die Warteschlange ist leer",
+	"admin_queue_entries_heading": "Offene Einträge",
+	"admin_queue_versions_heading": "Offene Versionen",
+	"admin_queue_transform_badge": "transformCode",
+	"admin_queue_approve_button": "Freigeben",
+	"admin_queue_reject_button": "Ablehnen",
+	"admin_queue_approve_failed": "Freigeben fehlgeschlagen. Bitte erneut versuchen.",
+	"admin_queue_reject_failed": "Ablehnen fehlgeschlagen. Bitte erneut versuchen.",
+	"admin_queue_backup_required": "Es werden mindestens 2 Passkeys als Backup benötigt, um diese Aktion zu bestätigen."
 }
