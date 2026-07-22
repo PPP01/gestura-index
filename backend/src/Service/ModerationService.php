@@ -74,9 +74,15 @@ final class ModerationService
     /**
      * Lehnt einen Eintrag endgültig ab: alle wartenden Versionen werden auf
      * »rejected« gesetzt, der Entry auf »deleted« und der Screenshot entfernt.
+     * Wirft RuntimeException, wenn der Entry nicht »pending« ist — sonst ließe
+     * sich ein bereits veröffentlichter Eintrag über Reject hart löschen.
      */
     public function rejectEntry(Entry $entry): void
     {
+        if ($entry->status !== EntryStatus::Pending) {
+            throw new \RuntimeException('Nur wartende Einträge können abgelehnt werden');
+        }
+
         foreach ($this->versions->findBy(['entry' => $entry, 'status' => VersionStatus::Pending]) as $version) {
             $version->status = VersionStatus::Rejected;
         }

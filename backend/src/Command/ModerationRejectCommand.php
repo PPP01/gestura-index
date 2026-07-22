@@ -45,8 +45,9 @@ final class ModerationRejectCommand extends Command
     /**
      * Lehnt ab: pending Entry → rejectEntry() (löscht den Eintrag), pending Version →
      * rejectVersion() (Version wird verworfen, Entry bleibt published).
-     * Gibt Command::FAILURE (1) zurück, wenn die formatId unbekannt ist oder nichts
-     * abzulehnen ist (Entry bereits published, keine pending Version vorhanden).
+     * Gibt Command::FAILURE (1) zurück, wenn die formatId unbekannt ist, nichts
+     * abzulehnen ist (Entry bereits published, keine pending Version vorhanden)
+     * oder ModerationService eine RuntimeException wirft.
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -59,7 +60,13 @@ final class ModerationRejectCommand extends Command
         }
 
         if ($entry->status === EntryStatus::Pending) {
-            $this->moderation->rejectEntry($entry);
+            try {
+                $this->moderation->rejectEntry($entry);
+            } catch (\RuntimeException $e) {
+                $io->error($e->getMessage());
+
+                return Command::FAILURE;
+            }
             $io->success($entry->formatId . ' abgelehnt (deleted)');
 
             return Command::SUCCESS;

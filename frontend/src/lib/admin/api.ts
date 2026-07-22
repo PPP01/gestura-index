@@ -6,6 +6,7 @@ export const ADMIN_API_BASE = env.PUBLIC_API_BASE || 'https://api.gestura.eu';
 export type AdminRole = 'admin' | 'moderator';
 export type AdminUserStatus = 'invited' | 'active' | 'disabled';
 export type EntryType = 'menu' | 'engine';
+export type EntryStatus = 'pending' | 'published' | 'hidden' | 'deleted';
 export type ReportReason = 'spam' | 'broken_links' | 'misleading' | 'legal';
 
 /** GET /auth/me. */
@@ -65,6 +66,7 @@ export interface OpenReport {
 /** GET /entries/{id} — EntrySerializer::toDetail plus Admin-Zusatzfelder. */
 export interface EntryDetailAdmin {
 	formatId: string;
+	status: EntryStatus;
 	type: EntryType;
 	name: string;
 	description: string | null;

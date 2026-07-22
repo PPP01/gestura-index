@@ -34,6 +34,7 @@ import { AdminApiError } from '$lib/admin/api';
 function makeDetail(overrides: Partial<Record<string, unknown>> = {}) {
 	return {
 		formatId: 'com.example.menu',
+		status: 'pending' as const,
 		type: 'menu' as const,
 		name: 'Example Menu',
 		description: 'Ein Beispiel-Menü',
@@ -138,6 +139,29 @@ describe('Eintrag-Detail', () => {
 		await waitFor(() => expect(unbanSubmitter).toHaveBeenCalledWith(7));
 		expect(withStepUp).not.toHaveBeenCalled();
 		await waitFor(() => expect(entryDetail).toHaveBeenCalledTimes(2));
+	});
+
+	it('zeigt Freigeben/Ablehnen bei einem wartenden Eintrag', async () => {
+		entryDetail.mockResolvedValue(makeDetail({ status: 'pending' }));
+
+		render(EntryDetailPage);
+
+		await waitFor(() => expect(screen.getByText('Example Menu')).toBeInTheDocument());
+		expect(screen.getByRole('button', { name: /freigeben|approve/i })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /ablehnen|reject/i })).toBeInTheDocument();
+	});
+
+	// Reports verlinken auch auf published Entries — ohne diese Gating hätte
+	// die Reject-Aktion einen bereits veröffentlichten Eintrag hart gelöscht.
+	it('versteckt Freigeben/Ablehnen bei einem veröffentlichten Eintrag, zeigt aber weiter Sperren', async () => {
+		entryDetail.mockResolvedValue(makeDetail({ status: 'published' }));
+
+		render(EntryDetailPage);
+
+		await waitFor(() => expect(screen.getByText('Example Menu')).toBeInTheDocument());
+		expect(screen.queryByRole('button', { name: /freigeben|approve/i })).not.toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: /ablehnen|reject/i })).not.toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /sperren|^ban$/i })).toBeInTheDocument();
 	});
 
 	it('zeigt bei 404 einen ErrorState', async () => {

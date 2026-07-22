@@ -32,7 +32,11 @@ final class EntryRejectController
 
         $entry = $entries->find($id) ?? throw new ApiProblem(404, 'Entry not found');
 
-        $moderation->rejectEntry($entry);
+        try {
+            $moderation->rejectEntry($entry);
+        } catch (\RuntimeException $e) {
+            throw new ApiProblem(409, $e->getMessage());
+        }
 
         $audit->log($actor, 'entry.reject', 'entry', (string) $entry->id);
 

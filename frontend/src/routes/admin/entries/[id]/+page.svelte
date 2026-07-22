@@ -12,6 +12,7 @@
 		unbanSubmitter,
 		AdminApiError,
 		type EntryDetailAdmin,
+		type EntryStatus,
 		type ReportReason
 	} from '$lib/admin/api';
 	import { withStepUp } from '$lib/admin/stepup';
@@ -64,6 +65,19 @@
 				return m.report_misleading();
 			case 'legal':
 				return m.report_legal();
+		}
+	}
+
+	function statusLabel(status: EntryStatus): string {
+		switch (status) {
+			case 'pending':
+				return m.admin_entry_detail_status_pending();
+			case 'published':
+				return m.admin_entry_detail_status_published();
+			case 'hidden':
+				return m.admin_entry_detail_status_hidden();
+			case 'deleted':
+				return m.admin_entry_detail_status_deleted();
 		}
 	}
 
@@ -150,6 +164,10 @@
 		<header class="detail-head">
 			<h1><FileText size={20} />{entry.name}</h1>
 			<Badge text={entry.type === 'menu' ? m.type_menu() : m.type_engine()} />
+			<Badge
+				text={statusLabel(entry.status)}
+				variant={entry.status === 'published' ? 'default' : 'warning'}
+			/>
 			{#if entry.deprecated}<Badge text={m.badge_deprecated()} variant="warning" />{/if}
 		</header>
 
@@ -185,15 +203,19 @@
 			{/if}
 		</div>
 
-		<div class="detail-actions">
-			<button class="btn btn-primary" onclick={onApproveEntry} disabled={entryBusy}>
-				{m.admin_queue_approve_button()}
-			</button>
-			<button class="btn btn-danger" onclick={onRejectEntry} disabled={entryBusy}>
-				{m.admin_queue_reject_button()}
-			</button>
-		</div>
-		{#if entryActionError}<p class="detail-error" role="alert">{entryActionError}</p>{/if}
+		{#if entry.status === 'pending'}
+			<div class="detail-actions">
+				<button class="btn btn-primary" onclick={onApproveEntry} disabled={entryBusy}>
+					{m.admin_queue_approve_button()}
+				</button>
+				<button class="btn btn-danger" onclick={onRejectEntry} disabled={entryBusy}>
+					{m.admin_queue_reject_button()}
+				</button>
+			</div>
+			{#if entryActionError}<p class="detail-error" role="alert">{entryActionError}</p>{/if}
+		{:else}
+			<p class="detail-section-empty">{m.admin_entry_detail_not_pending_note()}</p>
+		{/if}
 
 		<section>
 			<h2>{m.detail_versions()}</h2>

@@ -171,6 +171,25 @@ final class ModerationTest extends AdminTestCase
         self::assertSame(EntryStatus::Pending, $entry->status); // unverändert
     }
 
+    /**
+     * Der Reports-Screen verlinkt auch auf published Entries — ohne den
+     * Pending-Guard in ModerationService::rejectEntry() ließe sich ein
+     * bereits veröffentlichter Eintrag über Reject hart löschen.
+     */
+    public function testRejectPublishedEntryIsRejected(): void
+    {
+        $admin = $this->createAdmin('chef-rejectpublished@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin); // 2 Passkeys, frische Session
+        $entry = $this->createPublishedEntry('com.example.rejectpublished');
+
+        $this->client->request('POST', "/api/admin/entries/{$entry->id}/reject", server: $this->hdr());
+        self::assertResponseStatusCodeSame(409);
+
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->find($entry->id);
+        self::assertSame(EntryStatus::Published, $entry->status); // unverändert, nicht gelöscht
+    }
+
     public function testRejectEntryWritesAuditAndDeletesEntry(): void
     {
         $admin = $this->createAdmin('chef@example.com', AdminRole::Admin);
@@ -351,6 +370,7 @@ final class ModerationTest extends AdminTestCase
         $data = $this->json();
 
         self::assertSame('com.example.detail', $data['formatId']);
+        self::assertSame('published', $data['status']);
         self::assertCount(1, $data['versions']);
         self::assertCount(1, $data['openReports']);
         self::assertSame($entry->submitter->id, $data['submitterId']);
