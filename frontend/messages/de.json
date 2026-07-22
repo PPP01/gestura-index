@@ -216,5 +216,10 @@
 	"admin_entry_detail_ban_button": "Sperren",
 	"admin_entry_detail_unban_button": "Entsperren",
 	"admin_entry_detail_ban_failed": "Sperren fehlgeschlagen. Bitte erneut versuchen.",
-	"admin_entry_detail_unban_failed": "Entsperren fehlgeschlagen. Bitte erneut versuchen."
+	"admin_entry_detail_unban_failed": "Entsperren fehlgeschlagen. Bitte erneut versuchen.",
+	"admin_reports_load_failed": "Die Meldungen konnten nicht geladen werden.",
+	"admin_reports_empty_title": "Keine offenen Meldungen",
+	"admin_reports_keep_button": "Behalten",
+	"admin_reports_reject_button": "Löschen",
+	"admin_reports_resolve_failed": "Bearbeiten der Meldung fehlgeschlagen. Bitte erneut versuchen."
 }

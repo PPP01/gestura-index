@@ -216,5 +216,10 @@
 	"admin_entry_detail_ban_button": "Ban",
 	"admin_entry_detail_unban_button": "Unban",
 	"admin_entry_detail_ban_failed": "Banning failed. Please try again.",
-	"admin_entry_detail_unban_failed": "Unbanning failed. Please try again."
+	"admin_entry_detail_unban_failed": "Unbanning failed. Please try again.",
+	"admin_reports_load_failed": "Loading the reports failed.",
+	"admin_reports_empty_title": "No open reports",
+	"admin_reports_keep_button": "Keep",
+	"admin_reports_reject_button": "Delete",
+	"admin_reports_resolve_failed": "Resolving the report failed. Please try again."
 }
