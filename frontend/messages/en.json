@@ -248,5 +248,16 @@
 	"admin_users_disable_failed": "Disabling the user failed. Please try again.",
 	"admin_users_enable_failed": "Reactivating the user failed. Please try again.",
 	"admin_users_reinvite_failed": "Resending the invite failed. Please try again.",
-	"admin_users_action_backup_required": "You need at least 2 passkeys as a backup to confirm this action."
+	"admin_users_action_backup_required": "You need at least 2 passkeys as a backup to confirm this action.",
+	"admin_audit_heading": "Audit log",
+	"admin_audit_load_failed": "Loading the audit log failed.",
+	"admin_audit_empty_title": "No audit entries yet",
+	"admin_audit_actor_header": "Actor",
+	"admin_audit_action_header": "Action",
+	"admin_audit_target_header": "Target",
+	"admin_audit_detail_header": "Detail",
+	"admin_audit_created_header": "Date",
+	"admin_audit_actor_system": "System",
+	"admin_audit_detail_none": "—",
+	"admin_audit_page_info": "Page {page}"
 }

@@ -248,5 +248,16 @@
 	"admin_users_disable_failed": "Deaktivieren des Nutzers fehlgeschlagen. Bitte erneut versuchen.",
 	"admin_users_enable_failed": "Reaktivieren des Nutzers fehlgeschlagen. Bitte erneut versuchen.",
 	"admin_users_reinvite_failed": "Erneutes Einladen fehlgeschlagen. Bitte erneut versuchen.",
-	"admin_users_action_backup_required": "Für diese Aktion sind mindestens 2 Passkeys als Backup nötig."
+	"admin_users_action_backup_required": "Für diese Aktion sind mindestens 2 Passkeys als Backup nötig.",
+	"admin_audit_heading": "Audit-Log",
+	"admin_audit_load_failed": "Laden des Audit-Logs fehlgeschlagen.",
+	"admin_audit_empty_title": "Noch keine Audit-Einträge",
+	"admin_audit_actor_header": "Akteur",
+	"admin_audit_action_header": "Aktion",
+	"admin_audit_target_header": "Ziel",
+	"admin_audit_detail_header": "Detail",
+	"admin_audit_created_header": "Datum",
+	"admin_audit_actor_system": "System",
+	"admin_audit_detail_none": "—",
+	"admin_audit_page_info": "Seite {page}"
 }
