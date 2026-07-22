@@ -17,3 +17,28 @@ Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Spec: `../docs/s
 ## Rollback
 
 Kein Releases-Mechanismus (bewusst, Phase 2): vorherigen Git-Stand auschecken und `deploy/deploy.sh` erneut ausführen. Migrationen sind vorwärtsgerichtet – bei Schema-Rollbacks `php85 bin/console doctrine:migrations:migrate <version>` auf dem Server.
+
+## Admin-Backend (SP4a)
+
+Das Admin-Backend (Passkey-Login, Moderation, Nutzerverwaltung) bringt eigene `.env.local`-Variablen und einen einmaligen Bootstrap-Schritt mit.
+
+### Neue `.env.local`-Variablen (Server, nie im Repo)
+
+- `MAILER_DSN` – SMTP-Zugangsdaten des Hosters (ersetzt den lokalen Default `null://null`), z. B. `smtp://user:pass@host:587`.
+- `SESSION_COOKIE_DOMAIN=.gestura.eu` – Cookie-Domain der Admin-Session (mit führendem Punkt, damit sie über Subdomains gilt).
+- `WEBAUTHN_RP_ID=gestura.eu` – Relying-Party-ID für WebAuthn/Passkeys (ohne führenden Punkt, muss zur Cookie-Domain passen).
+- `MAILER_FROM=admin@gestura.eu` – Absenderadresse für Invite- und Admin-Mails.
+
+### Migrationen
+
+Die Doctrine-Migrationen legen zusätzlich vier Admin-Tabellen an: `admin_user`, `webauthn_credential`, `admin_invite` und `audit_log_entry`. Sie laufen im normalen `deploy.sh`-Migrationsschritt mit, kein separater Aufruf nötig.
+
+### Einmaliger Bootstrap nach dem ersten Deploy
+
+Es gibt keine Registrierung ohne Einladung – der allererste Admin-Account muss per CLI auf dem Server angelegt werden:
+
+```bash
+php85 bin/console index:admin:create "Dein Name" deine@mail.tld --role=admin
+```
+
+Danach kann sich dieser Account per Passkey-Registrierung anmelden und weitere Admins/Moderatoren über den Invite-Endpoint einladen.

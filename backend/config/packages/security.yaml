@@ -1,0 +1,30 @@
+security:
+    providers:
+        admin_users:
+            entity:
+                class: App\Entity\AdminUser
+                property: email
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_MODERATOR]
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        admin:
+            pattern: ^/api/admin
+            provider: admin_users
+            stateless: false
+            user_checker: App\Security\AdminUserChecker
+            custom_authenticators:
+                - App\Security\AdminSessionAuthenticator
+            entry_point: App\Security\AdminSessionAuthenticator
+        public:
+            pattern: ^/
+            security: false
+    access_control:
+        - { path: ^/api/admin/auth/options, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/auth/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/users, roles: ROLE_ADMIN }
+        - { path: ^/api/admin/audit, roles: ROLE_ADMIN }
+        - { path: ^/api/admin, roles: ROLE_MODERATOR }

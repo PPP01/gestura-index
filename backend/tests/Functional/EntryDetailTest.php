@@ -49,4 +49,10 @@ final class EntryDetailTest extends ApiTestCase
         $this->api('GET', '/api/v1/entries/com.example.shop/versions/9.9.9');
         self::assertResponseStatusCodeSame(404);
     }
+
+    public function testVersionDownloadOfUnknownEntryYields404(): void
+    {
+        $this->api('GET', '/api/v1/entries/com.example.unbekannt/versions/1.0.0');
+        self::assertResponseStatusCodeSame(404);
+    }
 }

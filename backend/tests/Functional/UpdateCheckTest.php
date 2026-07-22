@@ -38,4 +38,27 @@ final class UpdateCheckTest extends ApiTestCase
         $this->api('POST', '/api/v1/entries/updates', ['entries' => 'quatsch']);
         self::assertResponseStatusCodeSame(400);
     }
+
+    public function testRejectsMalformedJsonBody(): void
+    {
+        $this->client->request('POST', '/api/v1/entries/updates',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: '{kaputtes json',
+        );
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testSkipsInvalidIndividualEntriesButKeepsCheckUsable(): void
+    {
+        $this->createPublishedEntry('com.example.shop', ['version' => '2.0.0']);
+
+        $this->api('POST', '/api/v1/entries/updates', ['entries' => [
+            ['id' => 'com.example.shop', 'version' => 'keine-semver'], // fehlerhaft: kein SemVer
+            ['id' => 'com.example.shop'], // fehlerhaft: version fehlt
+            ['version' => '1.0.0'], // fehlerhaft: id fehlt
+        ]]);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame([], $this->json()['updates']); // fehlerhafte Posten stillschweigend übersprungen
+    }
 }

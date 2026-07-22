@@ -9,6 +9,8 @@
 parameters:
     app.report_hide_threshold: '%env(int:REPORT_HIDE_THRESHOLD)%'
     app.trust_threshold: '%env(int:TRUST_THRESHOLD)%'
+    # Fallback-Absenderadresse für InviteMailer, falls MAILER_FROM nicht gesetzt ist.
+    default_from: 'admin@gestura.eu'
 
 services:
     # default configuration for services in *this* file
@@ -23,3 +25,25 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # WebAuthn-Zeremonie: standardmäßig die echte Bundle-Implementierung.
+    App\Service\WebAuthn\WebAuthnCeremony: '@App\Service\WebAuthn\BundleWebAuthnCeremony'
+
+when@test:
+    services:
+        # In Tests den deterministischen Fake statt der echten Zeremonie.
+        # public, damit der Test-Container das Interface direkt auflösen kann
+        # (sonst entfernt der Compiler den bislang ungenutzten Alias).
+        App\Service\WebAuthn\WebAuthnCeremony:
+            alias: App\Service\WebAuthn\FakeWebAuthnCeremony
+            public: true
+
+        # Öffentlich nur für Tests: BundleWebAuthnCeremonyTest holt die echte
+        # Implementierung gezielt über den konkreten Klassennamen aus dem
+        # Test-Container, um ihre Guard-/Fehlerzweige unabhängig vom
+        # WebAuthnCeremony-Alias (der hier auf den Fake zeigt) abzudecken.
+        # Ohne "public" inlined/entfernt der Compiler den Service, weil er
+        # sonst nirgends direkt referenziert wird.
+        App\Service\WebAuthn\BundleWebAuthnCeremony:
+            autowire: true
+            public: true

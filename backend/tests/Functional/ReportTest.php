@@ -43,6 +43,17 @@ final class ReportTest extends ApiTestCase
         self::assertSame('Link 404', $reports[0]->comment);
     }
 
+    public function testMalformedJsonBodyYields400(): void
+    {
+        $this->createPublishedEntry('com.example.shop');
+
+        $this->client->request('POST', '/api/v1/entries/com.example.shop/report',
+            server: ['CONTENT_TYPE' => 'application/json', 'REMOTE_ADDR' => '10.6.0.1'],
+            content: '{kaputtes json',
+        );
+        self::assertResponseStatusCodeSame(400);
+    }
+
     public function testInvalidReasonYields400(): void
     {
         $this->createPublishedEntry('com.example.shop');

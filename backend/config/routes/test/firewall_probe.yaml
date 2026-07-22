@@ -1,0 +1,7 @@
+# Nur in der Test-Umgebung geladen (MicroKernelTrait importiert
+# config/routes/{env}/*). Stellt eine geschützte Admin-Route bereit, damit der
+# FirewallTest den 401-Pfad nachweisen kann, bevor echte Admin-Controller
+# existieren. In dev/prod nie aktiv.
+test_admin_probe:
+    resource: '../../../tests/Support/FirewallProbeController.php'
+    type: attribute

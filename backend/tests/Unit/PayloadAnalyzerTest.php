@@ -22,6 +22,15 @@ final class PayloadAnalyzerTest extends TestCase
         self::assertSame(['example.com', 'www.github.com', 'shop.example.com'], $this->analyzer->extractDomains($payload));
     }
 
+    public function testExtractDomainsSkipsNonStringPatterns(): void
+    {
+        // Fremdartige Werte in patterns (kein Schema-Verstoß auf dieser Ebene
+        // erzwungen) dürfen die Domain-Extraktion nicht mit einem TypeError
+        // zum Absturz bringen, sondern werden übersprungen.
+        $payload = ['patterns' => [123, null, ['verschachtelt'], '*example.com*']];
+        self::assertSame(['example.com'], $this->analyzer->extractDomains($payload));
+    }
+
     public function testSearchTextCollectsAllLanguages(): void
     {
         $payload = [

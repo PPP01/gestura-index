@@ -97,4 +97,127 @@ final class SubmissionServiceTest extends TestCase
 
         self::assertSame('com.example.neu', $entry->successorFormatId);
     }
+
+    public function testInvalidJsonBodyIsRejected(): void
+    {
+        $request = Request::create('/api/v1/entries', 'POST', content: '{kaputt');
+
+        $this->expectException(ApiProblem::class);
+        $this->service()->parseSubmissionBody($request, false);
+    }
+
+    public function testMissingPayloadObjectIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        // Body ohne "payload"-Schlüssel überhaupt.
+        $this->parse(['foo' => 'bar']);
+    }
+
+    public function testCategoriesMustBeAList(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'categories' => 'shopping']);
+    }
+
+    public function testNonStringCategoryKeyIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'categories' => [123]]);
+    }
+
+    public function testNonStringTagIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'tags' => [123]]);
+    }
+
+    public function testEmptyAndDuplicateTagsAreSkippedNotStored(): void
+    {
+        // " Shop " (getrimmt/lowercase "shop"), Leerstring und ein exaktes
+        // Duplikat dürfen den bereits gesammelten Eintrag nicht verdoppeln.
+        $result = $this->parse(['payload' => ['x' => 1], 'tags' => ['Shop', ' shop ', '', 'Shop']]);
+
+        self::assertSame(['shop'], $result['tags']);
+    }
+
+    public function testTagExceedingLengthLimitIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'tags' => [str_repeat('a', 51)]]);
+    }
+
+    public function testMoreThanTenTagsAreRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $tags = [];
+        for ($i = 0; $i < 11; ++$i) {
+            $tags[] = 'tag' . $i;
+        }
+        $this->parse(['payload' => ['x' => 1], 'tags' => $tags]);
+    }
+
+    public function testNonStringChangelogIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'changelog' => 12345]);
+    }
+
+    public function testOversizedChangelogIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'changelog' => str_repeat('x', 2001)]);
+    }
+
+    public function testNonStringSuccessorFormatIdIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'successorFormatId' => 12345]);
+    }
+
+    public function testOversizedSuccessorFormatIdIsRejected(): void
+    {
+        $this->expectException(ApiProblem::class);
+
+        $this->parse(['payload' => ['x' => 1], 'successorFormatId' => str_repeat('a', 129)]);
+    }
+
+    public function testValidatePayloadRejectsTypeMismatch(): void
+    {
+        $menu = [
+            'gesturaMenu' => 1,
+            'id' => 'com.example.shop',
+            'version' => '1.0.0',
+            'name' => 'Example Shop',
+            'patterns' => ['*example.com*'],
+            'items' => [
+                ['id' => 'orders', 'label' => 'Bestellungen', 'action' => 'newTab'],
+            ],
+        ];
+        $payloadJson = json_encode($menu, JSON_THROW_ON_ERROR);
+
+        $this->expectException(ApiProblem::class);
+        $this->expectExceptionMessage('Payload type does not match entry type');
+        // Eintrag erwartet Engine, Payload ist tatsächlich ein Menü.
+        $this->service()->validatePayload($payloadJson, EntryType::Engine, null);
+    }
+
+    public function testApplyMetadataSetsDeprecatedFlagFromMeta(): void
+    {
+        $entry = $this->entry();
+        self::assertFalse($entry->deprecated);
+
+        $meta = $this->parse(['payload' => ['x' => 1], 'deprecated' => true]);
+        $this->service()->applyMetadata($entry, $meta);
+
+        self::assertTrue($entry->deprecated);
+    }
 }

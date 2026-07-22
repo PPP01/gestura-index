@@ -10,3 +10,7 @@ Thumbs.db
 # Claude Code (lokale Session-Daten)
 /.claude/settings.local.json
 /.claude/worktrees/
+
+# Symfony-generierter Config-Referenz-Dump (environment-abhängig, wird bei
+# jedem cache:clear neu geschrieben – keine Handpflege, keine Diff-Relevanz)
+/backend/config/reference.php

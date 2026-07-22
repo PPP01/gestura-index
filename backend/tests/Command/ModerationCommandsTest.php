@@ -237,4 +237,186 @@ final class ModerationCommandsTest extends KernelTestCase
         self::assertTrue($entry->submitter->banned);
         self::assertSame(EntryStatus::Hidden, $entry->status);
     }
+
+    public function testBanUnknownSubmitterFails(): void
+    {
+        $tester = $this->runCommand('index:ban', ['submitterId' => '999999']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Unbekannter Submitter', $tester->getDisplay());
+    }
+
+    public function testUnbanLiftsBanButKeepsEntriesHidden(): void
+    {
+        $entry = $this->createPendingEntry();
+        $entry->status = EntryStatus::Published;
+        $this->em->flush();
+        $submitterId = $entry->submitter->id;
+        $this->runCommand('index:ban', ['submitterId' => (string) $submitterId])->assertCommandIsSuccessful();
+
+        $tester = $this->runCommand('index:ban', ['submitterId' => (string) $submitterId, '--unban' => true]);
+
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('Sperre aufgehoben', $tester->getDisplay());
+        $this->em->clear();
+        $submitter = $this->em->getRepository(Submitter::class)->find($submitterId);
+        self::assertFalse($submitter->banned);
+        // Unban hebt nur die Sperre auf — die Wiederveröffentlichung der
+        // Einträge erfolgt bewusst separat per index:approve/index:resolve.
+        $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.neu']);
+        self::assertSame(EntryStatus::Hidden, $entry->status);
+    }
+
+    public function testRejectUnknownFormatIdFails(): void
+    {
+        $tester = $this->runCommand('index:reject', ['formatId' => 'com.example.unbekannt']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Unbekannte formatId', $tester->getDisplay());
+    }
+
+    public function testRejectVersionOfPublishedEntryKeepsEntryPublished(): void
+    {
+        $entry = $this->createPendingEntry();
+        $current = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $current->status = VersionStatus::Approved;
+        $entry->currentVersion = $current;
+        $entry->status = EntryStatus::Published;
+        $this->em->flush();
+        $this->addVersion($entry, '2.0.0', VersionStatus::Pending);
+
+        $tester = $this->runCommand('index:reject', ['formatId' => 'com.example.neu']);
+
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('2.0.0 abgelehnt', $tester->getDisplay());
+        $this->em->clear();
+        $entry = $this->em->getRepository(Entry::class)->findOneBy(['formatId' => 'com.example.neu']);
+        self::assertSame(EntryStatus::Published, $entry->status); // Entry bleibt bestehen
+        $rejected = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry, 'semver' => '2.0.0']);
+        self::assertSame(VersionStatus::Rejected, $rejected->status);
+    }
+
+    public function testRejectFailsWhenNothingToReject(): void
+    {
+        $entry = $this->createPendingEntry();
+        $version = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $version->status = VersionStatus::Approved;
+        $entry->currentVersion = $version;
+        $entry->status = EntryStatus::Published;
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:reject', ['formatId' => 'com.example.neu']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Nichts abzulehnen', $tester->getDisplay());
+    }
+
+    public function testApproveUnknownFormatIdFails(): void
+    {
+        $tester = $this->runCommand('index:approve', ['formatId' => 'com.example.unbekannt']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Unbekannte formatId', $tester->getDisplay());
+    }
+
+    public function testApproveFailsWhenNothingToApprove(): void
+    {
+        $entry = $this->createPendingEntry();
+        $version = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $version->status = VersionStatus::Approved;
+        $entry->currentVersion = $version;
+        $entry->status = EntryStatus::Published;
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:approve', ['formatId' => 'com.example.neu']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Nichts freizugeben', $tester->getDisplay());
+    }
+
+    public function testResolveUnknownReportIdFails(): void
+    {
+        $tester = $this->runCommand('index:resolve', ['reportId' => '999999', '--action' => 'publish']);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Unbekannte Meldung oder --action fehlt', $tester->getDisplay());
+    }
+
+    public function testResolveMissingActionFails(): void
+    {
+        $entry = $this->createPendingEntry();
+        $entry->status = EntryStatus::Published;
+        $report = new Report($entry, ReportReason::Spam, null);
+        $this->em->persist($report);
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:resolve', ['reportId' => (string) $report->id]);
+
+        self::assertNotSame(0, $tester->getStatusCode());
+        self::assertStringContainsString('Unbekannte Meldung oder --action fehlt', $tester->getDisplay());
+    }
+
+    public function testQueueListsPendingVersionsOfPublishedEntries(): void
+    {
+        $entry = $this->createPendingEntry();
+        $current = $this->em->getRepository(EntryVersion::class)->findOneBy(['entry' => $entry]);
+        $current->status = VersionStatus::Approved;
+        $entry->currentVersion = $current;
+        $entry->status = EntryStatus::Published;
+        $this->em->flush();
+        $this->addVersion($entry, '2.0.0', VersionStatus::Pending);
+
+        $tester = $this->runCommand('index:queue');
+
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('2.0.0', $tester->getDisplay());
+    }
+
+    public function testReportsShowsEmptyMessageWhenNoneOpen(): void
+    {
+        $tester = $this->runCommand('index:reports');
+
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('Keine Meldungen', $tester->getDisplay());
+    }
+
+    public function testReportsListsOpenReportsAsTable(): void
+    {
+        $entry = $this->createPendingEntry();
+        $entry->status = EntryStatus::Published;
+        $report = new Report($entry, ReportReason::Spam, str_repeat('lang genug, um gekürzt zu werden ', 3));
+        $this->em->persist($report);
+        $this->em->flush();
+
+        $tester = $this->runCommand('index:reports');
+
+        $tester->assertCommandIsSuccessful();
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('com.example.neu', $display);
+        self::assertStringContainsString('spam', $display);
+        self::assertStringContainsString('open', $display);
+        self::assertStringContainsString('…', $display); // gekürzter Kommentar (mb_strimwidth)
+    }
+
+    public function testReportsAllOptionAlsoShowsResolvedReports(): void
+    {
+        $entry = $this->createPendingEntry();
+        $entry->status = EntryStatus::Published;
+        $report = new Report($entry, ReportReason::Legal, null);
+        $report->status = ReportStatus::Resolved;
+        $this->em->persist($report);
+        $this->em->flush();
+
+        // Ohne --all bleibt die erledigte Meldung unsichtbar.
+        $tester = $this->runCommand('index:reports');
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('Keine Meldungen', $tester->getDisplay());
+
+        $tester = $this->runCommand('index:reports', ['--all' => true]);
+        $tester->assertCommandIsSuccessful();
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('com.example.neu', $display);
+        self::assertStringContainsString('legal', $display);
+        self::assertStringContainsString('resolved', $display);
+    }
 }

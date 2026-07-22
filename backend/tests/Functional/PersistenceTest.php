@@ -10,6 +10,7 @@ use App\Entity\Submitter;
 use App\Enum\Category;
 use App\Enum\EntryStatus;
 use App\Enum\EntryType;
+use App\Repository\EntryVersionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -38,5 +39,23 @@ final class PersistenceTest extends KernelTestCase
         self::assertSame(EntryStatus::Pending, $reloaded->status);
         self::assertEqualsCanonicalizing(['shopping', 'other'], $reloaded->categoryKeys());
         self::assertSame(['example.com'], $reloaded->domains);
+    }
+
+    public function testMaxSemverIsNullForEntryWithoutAnyVersion(): void
+    {
+        self::bootKernel();
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+
+        $submitter = new Submitter(bin2hex(random_bytes(8)), 'hash');
+        // Bewusst OHNE zugehörige EntryVersion – im normalen Einreichungs-Fluss
+        // gibt es das nicht, maxSemver() muss die Leere trotzdem robust behandeln.
+        $entry = new Entry('com.example.ohneversion', EntryType::Menu, $submitter);
+
+        $em->persist($submitter);
+        $em->persist($entry);
+        $em->flush();
+
+        $repository = self::getContainer()->get(EntryVersionRepository::class);
+        self::assertNull($repository->maxSemver($entry));
     }
 }
