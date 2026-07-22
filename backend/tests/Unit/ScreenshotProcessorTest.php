@@ -51,4 +51,31 @@ final class ScreenshotProcessorTest extends TestCase
             unlink($path);
         }
     }
+
+    /**
+     * Ein Bild mit extremem Seitenverhältnis (4000×1) bleibt unter dem
+     * Decompression-Bomb-Limit (nur 4000 Pixel), skaliert aber auf eine
+     * Zielhöhe von 0 herunter (1280/4000 ≈ 0,32 × 1 → rundet auf 0). GD
+     * wirft dafür seit PHP 8.5 einen \ValueError statt false zurückzugeben
+     * — der muss als sauberes 400 ApiProblem enden, nicht als 500.
+     */
+    public function testExtremeAspectRatioIsRejectedInsteadOfCrashing(): void
+    {
+        $img = imagecreatetruecolor(4000, 1);
+        imagefill($img, 0, 0, (int) imagecolorallocate($img, 10, 20, 30));
+        ob_start();
+        imagepng($img);
+        $png = (string) ob_get_clean();
+
+        $path = tempnam(sys_get_temp_dir(), 'extreme') . '.png';
+        file_put_contents($path, $png);
+
+        $this->expectException(ApiProblem::class);
+        $this->expectExceptionMessage('Image could not be processed');
+        try {
+            (new ScreenshotProcessor())->process($path);
+        } finally {
+            unlink($path);
+        }
+    }
 }

@@ -58,7 +58,15 @@ final class ScreenshotProcessor
         $height = imagesy($image);
         $scale = min(self::MAX_WIDTH / $width, self::MAX_HEIGHT / $height, 1.0);
         if ($scale < 1.0) {
-            $scaled = imagescale($image, (int) round($width * $scale), (int) round($height * $scale), IMG_BICUBIC);
+            // Bei extremen Seitenverhältnissen (z.B. 4000×1) rundet die
+            // Ziel-Höhe/-Breite auf 0 — GD wirft dann seit PHP 8.5 einen
+            // \ValueError statt false zurückzugeben. Beides ist derselbe
+            // Fehlerfall und wird identisch als 400 gemeldet.
+            try {
+                $scaled = imagescale($image, (int) round($width * $scale), (int) round($height * $scale), IMG_BICUBIC);
+            } catch (\ValueError) {
+                $scaled = false;
+            }
             if ($scaled === false) {
                 throw new ApiProblem(400, 'Image could not be processed');
             }
@@ -66,7 +74,12 @@ final class ScreenshotProcessor
         }
 
         ob_start();
-        $ok = imagewebp($image, null, self::WEBP_QUALITY);
+        try {
+            $ok = imagewebp($image, null, self::WEBP_QUALITY);
+        } catch (\ValueError) {
+            ob_end_clean();
+            throw new ApiProblem(400, 'Image could not be encoded');
+        }
         $webp = (string) ob_get_clean();
         if (!$ok || $webp === '') {
             throw new ApiProblem(400, 'Image could not be encoded');
