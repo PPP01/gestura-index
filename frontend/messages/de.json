@@ -201,5 +201,20 @@
 	"admin_queue_reject_button": "Ablehnen",
 	"admin_queue_approve_failed": "Freigeben fehlgeschlagen. Bitte erneut versuchen.",
 	"admin_queue_reject_failed": "Ablehnen fehlgeschlagen. Bitte erneut versuchen.",
-	"admin_queue_backup_required": "Es werden mindestens 2 Passkeys als Backup benötigt, um diese Aktion zu bestätigen."
+	"admin_queue_backup_required": "Es werden mindestens 2 Passkeys als Backup benötigt, um diese Aktion zu bestätigen.",
+	"admin_entry_detail_heading": "Eintrag",
+	"admin_entry_detail_load_failed": "Der Eintrag konnte nicht geladen werden.",
+	"admin_entry_detail_not_found": "Dieser Eintrag wurde nicht gefunden.",
+	"admin_entry_detail_current_version": "Aktuelle Version",
+	"admin_entry_detail_updated": "Aktualisiert",
+	"admin_entry_detail_versions_empty": "Keine Versionen vorhanden",
+	"admin_entry_detail_reports_heading": "Offene Meldungen",
+	"admin_entry_detail_reports_empty": "Keine offenen Meldungen",
+	"admin_entry_detail_submitter_heading": "Einreicher",
+	"admin_entry_detail_submitter_id": "Einreicher-ID",
+	"admin_entry_detail_submitter_banned_badge": "Gesperrt",
+	"admin_entry_detail_ban_button": "Sperren",
+	"admin_entry_detail_unban_button": "Entsperren",
+	"admin_entry_detail_ban_failed": "Sperren fehlgeschlagen. Bitte erneut versuchen.",
+	"admin_entry_detail_unban_failed": "Entsperren fehlgeschlagen. Bitte erneut versuchen."
 }

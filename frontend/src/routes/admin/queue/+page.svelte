@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { ListChecks, TriangleAlert } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages.js';
-	import { getLocale } from '$lib/paraglide/runtime';
+	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import {
 		queue,
 		approveEntry,
@@ -139,7 +139,9 @@
 					<div class="card queue-card">
 						<div class="queue-card-head">
 							<Badge text={typeLabel(entry.type)} />
-							<strong>{entry.formatId}</strong>
+							<a class="queue-format-link" href={localizeHref(`/admin/entries/${entry.id}`)}>
+								{entry.formatId}
+							</a>
 						</div>
 						<span class="queue-meta">
 							{new Date(entry.createdAt).toLocaleDateString(getLocale())}
@@ -176,7 +178,12 @@
 				{#each versions as version (version.id)}
 					<div class="card queue-card">
 						<div class="queue-card-head">
-							<strong>{version.formatId}</strong>
+							<a
+								class="queue-format-link"
+								href={localizeHref(`/admin/entries/${version.entryId}`)}
+							>
+								{version.formatId}
+							</a>
 							<span class="queue-semver">{version.semver}</span>
 							{#if version.hasTransformCode}
 								<Badge
@@ -253,6 +260,16 @@
 		align-items: center;
 		gap: 8px;
 		flex: 1 1 auto;
+	}
+
+	.queue-format-link {
+		font-weight: 600;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.queue-format-link:hover {
+		text-decoration: underline;
 	}
 
 	.queue-semver {

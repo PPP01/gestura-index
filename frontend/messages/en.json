@@ -201,5 +201,20 @@
 	"admin_queue_reject_button": "Reject",
 	"admin_queue_approve_failed": "Approving failed. Please try again.",
 	"admin_queue_reject_failed": "Rejecting failed. Please try again.",
-	"admin_queue_backup_required": "You need at least 2 passkeys as a backup to confirm this action."
+	"admin_queue_backup_required": "You need at least 2 passkeys as a backup to confirm this action.",
+	"admin_entry_detail_heading": "Entry",
+	"admin_entry_detail_load_failed": "Loading the entry failed.",
+	"admin_entry_detail_not_found": "This entry was not found.",
+	"admin_entry_detail_current_version": "Current version",
+	"admin_entry_detail_updated": "Updated",
+	"admin_entry_detail_versions_empty": "No versions yet",
+	"admin_entry_detail_reports_heading": "Open reports",
+	"admin_entry_detail_reports_empty": "No open reports",
+	"admin_entry_detail_submitter_heading": "Submitter",
+	"admin_entry_detail_submitter_id": "Submitter ID",
+	"admin_entry_detail_submitter_banned_badge": "Banned",
+	"admin_entry_detail_ban_button": "Ban",
+	"admin_entry_detail_unban_button": "Unban",
+	"admin_entry_detail_ban_failed": "Banning failed. Please try again.",
+	"admin_entry_detail_unban_failed": "Unbanning failed. Please try again."
 }
