@@ -50,6 +50,28 @@ final class ReviewFindingsTest extends AdminTestCase
         self::assertResponseStatusCodeSame(409);
     }
 
+    public function testVersionApproveCannotBypassPendingEntryApproval(): void
+    {
+        $admin = $this->createAdmin('reg-apppendingversion@example.com');
+        $this->loginWithCredentials($admin, 2);
+        $entry = $this->createPendingEntry('com.example.apppendingversion');
+        $version = $this->em->getRepository(EntryVersion::class)->findOneBy([
+            'entry' => $entry,
+            'status' => VersionStatus::Pending,
+        ]);
+
+        self::assertNotNull($version);
+        $this->client->request('POST', "/api/admin/versions/{$version->id}/approve", server: $this->hdr());
+        self::assertResponseStatusCodeSame(409);
+
+        $this->em->clear();
+        $reloadedEntry = $this->em->getRepository(Entry::class)->find($entry->id);
+        $reloadedVersion = $this->em->getRepository(EntryVersion::class)->find($version->id);
+        self::assertSame(EntryStatus::Pending, $reloadedEntry->status);
+        self::assertNull($reloadedEntry->currentVersion);
+        self::assertSame(VersionStatus::Pending, $reloadedVersion->status);
+    }
+
     public function testApprovingAPublishedEntryWithPendingUpdateConflicts(): void
     {
         $admin = $this->createAdmin('reg-apppublished@example.com');

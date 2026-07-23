@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Entity\AdminUser;
+use App\Enum\EntryStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryVersionRepository;
 use App\Service\AuditLogger;
@@ -31,8 +32,20 @@ final class VersionApproveController
             // Aggregat (Entry) sperren und Version frisch lesen: serialisiert
             // paralleles Approve/Reject, sodass beide Guards nicht gleichzeitig
             // »Pending« sehen und currentVersion inkonsistent wird.
-            $em->lock($version->entry, LockMode::PESSIMISTIC_WRITE);
+            $entry = $version->entry;
+            $em->lock($entry, LockMode::PESSIMISTIC_WRITE);
+            // lock() sperrt die DB-Zeile, hydriert aber nicht den bereits vor
+            // Transaktionsbeginn geladenen Zustand. Insbesondere currentVersion
+            // muss nach einem möglichen Warten auf eine parallele Freigabe neu
+            // eingelesen werden, damit ältere Versionen sie nicht zurückstufen.
+            $em->refresh($entry);
             $em->refresh($version);
+            // Dieser Endpunkt ist ausschließlich für Updates veröffentlichter
+            // Einträge. Die erste Version eines pending Entries wird atomar über
+            // EntryApproveController/approveEntry() freigegeben.
+            if ($entry->status !== EntryStatus::Published) {
+                return 'Updates können nur für veröffentlichte Einträge freigegeben werden';
+            }
             try {
                 $moderation->approveVersion($version);
             } catch (\RuntimeException $e) {

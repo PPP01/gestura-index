@@ -52,8 +52,15 @@ final class ReportResolveController
         $conflict = $em->wrapInTransaction(function () use ($moderation, $report, $publish, $audit, $actor, $em, &$pathToDelete): ?string {
             // Betroffenes Aggregat sperren und frisch lesen, damit paralleles
             // Approve/Reject/Resolve den Status-Guard nicht umgeht.
-            $em->lock($report->entry, LockMode::PESSIMISTIC_WRITE);
-            $em->refresh($report->entry);
+            $entry = $report->entry;
+            $em->lock($entry, LockMode::PESSIMISTIC_WRITE);
+            $em->refresh($entry);
+            // Der Report wurde vor Transaktionsbeginn geladen. Nach einem
+            // möglichen Warten am Entry-Lock seinen Status ebenfalls unter
+            // Lock neu einlesen, damit eine parallele Auflösung nicht mit einem
+            // veralteten »open«-Objekt erneut ausgeführt werden kann.
+            $em->lock($report, LockMode::PESSIMISTIC_WRITE);
+            $em->refresh($report);
             try {
                 $pathToDelete = $moderation->resolveReport($report, $publish);
             } catch (\RuntimeException $e) {
