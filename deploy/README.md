@@ -24,10 +24,25 @@ Das Admin-Backend (Passkey-Login, Moderation, Nutzerverwaltung) bringt eigene `.
 
 ### Neue `.env.local`-Variablen (Server, nie im Repo)
 
-- `MAILER_DSN` – SMTP-Zugangsdaten des Hosters (ersetzt den lokalen Default `null://null`), z. B. `smtp://user:pass@host:587`.
+- `MAILER_DSN` – Mailversand des Hosters (ersetzt den lokalen Default `null://null`). Auf ALL-INKL **SMTP verwenden**, nicht sendmail – siehe »Mailversand verifizieren« unten.
 - `SESSION_COOKIE_DOMAIN=.gestura.eu` – Cookie-Domain der Admin-Session (mit führendem Punkt, damit sie über Subdomains gilt).
 - `WEBAUTHN_RP_ID=gestura.eu` – Relying-Party-ID für WebAuthn/Passkeys (ohne führenden Punkt, muss zur Cookie-Domain passen).
-- `MAILER_FROM=admin@gestura.eu` – Absenderadresse für Invite- und Admin-Mails.
+- `MAILER_FROM=admin@gestura.eu` – Absenderadresse für Invite- und Admin-Mails. **Muss eine real existierende Mailbox** auf dem Account sein (SPF/DKIM), sonst wird die Mail abgewiesen oder als Spam einsortiert.
+
+### Mailversand verifizieren (ALL-INKL)
+
+Auf dem Shared-Hosting **SMTP statt sendmail** verwenden. Der lokale sendmail-Weg (`native://` / `sendmail://`) ist unzuverlässig: Die `php.ini` verweist zwar auf `/usr/sbin/sendmail -t -i`, in der (gejailten) SSH-Shell fehlt dieser Binary aber – ein `mail()`-Test schlägt dort mit Exit 127 fehl, selbst wenn der Web-Kontext anders aussähe. SMTP verhält sich in CLI und Web identisch und ist damit verlässlich testbar.
+
+- `MAILER_DSN=smtp://MAILBOX%40gestura.eu:PASSWORT@wXXXXXXX.kasserver.com:587` – Benutzername ist die **volle Mailadresse** (`@` als `%40` kodieren); Host und Port stehen im KAS unter den Zugangsdaten des Postfachs. Für SMTPS `smtps://…:465`.
+- Ein erfolgreicher Transport heißt »vom Server angenommen«, nicht automatisch »zugestellt« – immer zusätzlich das Zielpostfach prüfen.
+
+Konfiguration end-to-end testen (nutzt exakt den konfigurierten `MAILER_DSN` und denselben Absender wie die Admin-Mails; sendet synchron, daher kommt ein Transportfehler direkt zurück):
+
+```bash
+php85 bin/console index:mail:test empfaenger@example.de
+```
+
+`[OK]` = Transport hat angenommen (bei SMTP echte Server-Bestätigung) → Postfach prüfen. `[ERROR]` nennt den Transport-Klartext (Auth, Port, abgelehnter Absender) – genau die Information, die ein blanker `mail()`-Aufruf verschluckt.
 
 ### Migrationen
 
