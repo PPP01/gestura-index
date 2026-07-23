@@ -31,10 +31,15 @@ final class AuthLoginController
         if ($user->status !== AdminUserStatus::Active) {
             throw new ApiProblem(403, 'Account is not active');
         }
+        // Erst DB + Audit erfolgreich abschließen, DANN die Session aktivieren.
+        // Andernfalls hätte der Client bei einem Fehler der Audit-Transaktion
+        // (500) bereits eine authentifizierte Session ohne zugehörigen
+        // Login-Audit-Eintrag.
+        $em->wrapInTransaction(function () use ($user, $audit): void {
+            $user->lastLoginAt = new \DateTimeImmutable();
+            $audit->log($user, 'auth.login');
+        });
         $session->login($user);
-        $user->lastLoginAt = new \DateTimeImmutable();
-        $em->flush();
-        $audit->log($user, 'auth.login');
         return new Response('', 204);
     }
 }

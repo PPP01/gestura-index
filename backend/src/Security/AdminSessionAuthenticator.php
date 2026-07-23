@@ -15,6 +15,9 @@ use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface
 
 final class AdminSessionAuthenticator extends AbstractAuthenticator implements AuthenticationEntryPointInterface
 {
+    /** Idle-Timeout in Sekunden: 30 Minuten ohne Aktivität beenden die Session. */
+    private const IDLE_TTL = 1800;
+
     public function __construct(private readonly AdminSession $session) {}
 
     public function supports(Request $request): ?bool
@@ -28,6 +31,17 @@ final class AdminSessionAuthenticator extends AbstractAuthenticator implements A
         if ($email === null) {
             throw new AuthenticationException('No admin session');
         }
+
+        // Deterministischer Idle-Timeout: seit der letzten Aktivität dürfen
+        // höchstens 30 Minuten vergangen sein. gc_maxlifetime räumt Sessions
+        // nur probabilistisch weg (auf Shared-Hosting oft gar nicht) – dieser
+        // Check erzwingt das Ablaufen pro Request und verwirft die Session hart.
+        $last = $this->session->lastActivityAt();
+        if ($last === null || (time() - $last) > self::IDLE_TTL) {
+            $this->session->logout();
+            throw new AuthenticationException('Session idle timeout');
+        }
+        $this->session->touchActivity();
 
         // Der Standard-Entity-Provider (property: email) lädt den AdminUser
         // ohne Custom-Loader; login() legt die E-Mail zusätzlich in der Session ab.

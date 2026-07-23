@@ -10,6 +10,7 @@ final class AdminSession
     private const KEY_USER = '_admin_user_id';
     private const KEY_EMAIL = '_admin_user_email';
     private const KEY_VERIFIED = '_admin_verified_at';
+    private const KEY_ACTIVITY = '_admin_last_activity';
     private const KEY_CHALLENGE = '_admin_challenge_';
 
     public function __construct(private readonly RequestStack $requestStack) {}
@@ -25,6 +26,7 @@ final class AdminSession
         $s->set(self::KEY_USER, $u->id);
         $s->set(self::KEY_EMAIL, $u->email);
         $s->set(self::KEY_VERIFIED, time());
+        $s->set(self::KEY_ACTIVITY, time());
     }
 
     public function currentUserId(): ?int
@@ -46,6 +48,22 @@ final class AdminSession
     {
         $ts = $this->requestStack->getSession()->get(self::KEY_VERIFIED);
         return is_int($ts) && (time() - $ts) <= $maxAgeSeconds;
+    }
+
+    /**
+     * Zeitpunkt der letzten Aktivität (Unix-Sekunden) oder null, wenn nie
+     * gesetzt (z. B. Alt-Session aus der Zeit vor dem Idle-Timeout).
+     */
+    public function lastActivityAt(): ?int
+    {
+        $ts = $this->requestStack->getSession()->get(self::KEY_ACTIVITY);
+        return is_int($ts) ? $ts : null;
+    }
+
+    /** Aktualisiert den Aktivitätszeitpunkt auf jetzt (pro authentifiziertem Request). */
+    public function touchActivity(): void
+    {
+        $this->requestStack->getSession()->set(self::KEY_ACTIVITY, time());
     }
 
     public function logout(): void
