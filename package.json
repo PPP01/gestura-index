@@ -1,0 +1,8 @@
+{
+	"name": "gestura-index",
+	"private": true,
+	"description": "Task-Runner-Wrapper fürs Monorepo (keine Abhängigkeiten). Das Frontend hat seine eigene package.json unter frontend/.",
+	"scripts": {
+		"dev:all": "./dev.sh"
+	}
+}

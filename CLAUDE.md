@@ -33,6 +33,7 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 ```bash
 # Alles zusammen (Backend + Frontend, ein Befehl; Strg+C beendet beide)
 ./dev.sh                                          # Backend (Auto-Port ab 8000) + Vite → http://localhost:5173
+npm run dev:all                                   # identisch, via Root-package.json (ruft ./dev.sh)
 
 # Backend
 composer --working-dir=backend install
