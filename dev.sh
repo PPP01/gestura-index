@@ -45,24 +45,40 @@ if [ ! -d "$ROOT/frontend/node_modules" ]; then
 	npm --prefix "$ROOT/frontend" install
 fi
 
-# Beide Kindprozesse laufen in DIESER Prozessgruppe (im Skript ist Job-Control
-# aus, daher erben php und die von npm gestartete Vite-Instanz die PGID).
-# `kill 0` beendet die ganze Gruppe – bei Strg+C (INT), bei `kill` (TERM) und
-# beim regulären Exit. Vor dem Töten die Traps entfernen, sonst löst das an uns
-# selbst gesendete Signal den Trap erneut aus (Endlosschleife).
-trap 'trap - INT TERM EXIT; kill 0' INT TERM EXIT
+# Job-Control aktivieren: jeder mit `&` gestartete Job wird eigener
+# Prozessgruppen-Leader. So lässt sich beim Beenden gezielt NUR die jeweilige
+# Kind-Prozessgruppe (php bzw. npm+vite und deren Kinder) killen – niemals die
+# aufrufende Shell/IDE-Task, wie es das frühere `kill 0` (ganze Gruppe) tat.
+set -m
+
+BACKEND_PID=""
+FRONTEND_PID=""
+
+cleanup() {
+	# Traps zuerst entfernen, sonst löst das an die Kinder gesendete Signal beim
+	# eigenen Exit den Trap erneut aus (Endlosschleife).
+	trap - INT TERM EXIT
+	for pid in "$BACKEND_PID" "$FRONTEND_PID"; do
+		# Negatives PID = ganze Prozessgruppe des Kindes (inkl. Enkel wie vite),
+		# ohne die Gruppe dieses Skripts zu treffen.
+		[ -n "$pid" ] && kill -- -"$pid" 2>/dev/null || true
+	done
+}
+trap cleanup INT TERM EXIT
 
 echo "▶ Backend   → http://localhost:${BACKEND_PORT}  (APP_ENV=dev, ${PHP_BIN})"
 (
 	cd "$ROOT/backend"
 	APP_ENV=dev "$PHP_BIN" -S "localhost:${BACKEND_PORT}" -t public public/index.php
 ) &
+BACKEND_PID=$!
 
 echo "▶ Frontend  → http://localhost:5173"
 (
 	cd "$ROOT/frontend"
 	npm run dev
 ) &
+FRONTEND_PID=$!
 
 # Fail-fast: sobald EIN Server endet (Absturz, belegter Port, Strg+C), bringt der
 # EXIT-Trap den anderen mit runter – kein verwaistes Frontend mit totem /api.
