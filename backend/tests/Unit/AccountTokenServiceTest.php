@@ -12,7 +12,7 @@ final class AccountTokenServiceTest extends TestCase
         $gen = (new AccountTokenService())->generate();
         self::assertMatchesRegularExpression('/^gacc_[0-9a-f]{16}_[A-Za-z0-9_-]{43}$/', $gen->token);
         self::assertSame(16, strlen($gen->selector));
-        $verifier = substr($gen->token, strrpos($gen->token, '_') + 1);
+        [, , $verifier] = explode('_', $gen->token, 3);
         self::assertTrue(password_verify($verifier, $gen->hash));
     }
 
