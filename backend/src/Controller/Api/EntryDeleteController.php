@@ -44,9 +44,14 @@ final class EntryDeleteController
         }
         $resolver->requireOwner($request, $entry);
 
+        // Dateipfad vor dem Nullsetzen sichern, die irreversible Löschung aber
+        // erst nach dem erfolgreichen DB-Commit ausführen. Schlägt flush()
+        // fehl, bleiben damit DB-Referenz und Datei unverändert erhalten.
+        $screenshotPath = $screenshots->absolutePath($entry);
         $entry->status = EntryStatus::Deleted;
-        $screenshots->remove($entry);
+        $entry->screenshotPath = null;
         $em->flush();
+        $screenshots->deleteFileAt($screenshotPath);
 
         return new Response('', 204);
     }

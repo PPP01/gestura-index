@@ -62,23 +62,6 @@ final class ScreenshotStorage
     }
 
     /**
-     * Löscht die Screenshot-Datei des Eintrags vom Dateisystem und setzt
-     * $entry->screenshotPath auf null. Ist kein Screenshot gesetzt oder die
-     * Datei bereits verschwunden, wird kein Fehler ausgelöst.
-     *
-     * Hinweis: löscht die Datei sofort. Für Abläufe innerhalb einer DB-
-     * Transaktion NICHT verwenden — dort erst die Referenz nullen und die
-     * Datei per deleteFileAt() NACH dem Commit entfernen (siehe
-     * ModerationService::rejectEntry()/resolveReport()).
-     */
-    public function remove(Entry $entry): void
-    {
-        $file = $this->absolutePath($entry);
-        $entry->screenshotPath = null;
-        $this->deleteFileAt($file);
-    }
-
-    /**
      * Löscht eine zuvor per absolutePath() erfasste Datei. Gedacht für die
      * Ausführung NACH einem erfolgreichen DB-Commit: so bleibt bei einem
      * Rollback die Datei erhalten (DB und Dateisystem bleiben konsistent).
