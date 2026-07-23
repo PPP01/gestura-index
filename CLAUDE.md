@@ -31,9 +31,12 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 ## Befehle
 
 ```bash
+# Alles zusammen (Backend + Frontend, ein Befehl; Strg+C beendet beide)
+./dev.sh                                          # Backend (Auto-Port ab 8000) + Vite → http://localhost:5173
+
 # Backend
 composer --working-dir=backend install
-php -S localhost:8000 -t backend/public          # Dev-Server
+php -S localhost:8000 -t backend/public          # Dev-Server (einzeln)
 php backend/bin/phpunit                           # Tests (Exit-Code prüfen: echo $?)
 
 # Frontend

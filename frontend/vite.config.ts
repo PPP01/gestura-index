@@ -60,7 +60,9 @@ export default defineConfig({
 		// bzw. einen Windows→WSL-Portproxy erreichbar ist (lokaler Passkey-Test).
 		host: true,
 		proxy: {
-			'/api': 'http://localhost:8000'
+			// Backend-Port aus der Umgebung (setzt ./dev.sh, das denselben Port
+			// fürs Backend nutzt); Default 8000, wenn direkt `vite dev` läuft.
+			'/api': `http://localhost:${process.env.BACKEND_PORT ?? '8000'}`
 		}
 	}
 });
