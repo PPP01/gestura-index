@@ -49,12 +49,12 @@ final class UserEnableController
             throw new ApiProblem(409, 'User is not disabled');
         }
 
-        $user->status = 0 === $user->credentialCount()
-            ? AdminUserStatus::Invited
-            : AdminUserStatus::Active;
-        $em->flush();
-
-        $audit->log($actor, 'user.enable', 'admin_user', (string) $user->id);
+        $em->wrapInTransaction(function () use ($user, $audit, $actor): void {
+            $user->status = 0 === $user->credentialCount()
+                ? AdminUserStatus::Invited
+                : AdminUserStatus::Active;
+            $audit->log($actor, 'user.enable', 'admin_user', (string) $user->id);
+        });
 
         return new JsonResponse(['id' => $user->id, 'email' => $user->email, 'status' => $user->status->value]);
     }

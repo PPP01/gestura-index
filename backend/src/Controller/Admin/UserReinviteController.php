@@ -20,6 +20,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -63,21 +64,30 @@ final class UserReinviteController
             throw new ApiProblem(409, 'Cannot reinvite a disabled user');
         }
 
-        // Alte, noch gültige Invites desselben Nutzers invalidieren, damit
-        // nur das neu verschickte Token verwendbar ist (Replay-Schutz).
-        foreach ($invites->findUnusedForUser($user) as $stale) {
-            $stale->usedAt = new \DateTimeImmutable();
-        }
-
         $gen = $tokens->generate();
         $expiresAt = new \DateTimeImmutable('+72 hours');
         $invite = new AdminInvite($gen->selector, $gen->hash, $user, $user->role, $expiresAt);
         $invite->createdBy = $actor;
-        $em->persist($invite);
-        $em->flush();
 
-        $mailer->send($user->email, $gen->token, $expiresAt);
-        $audit->log($actor, 'user.reinvite', 'admin_user', (string) $user->id);
+        // Invalidierung der alten Tokens, neues Invite, Mailversand und Audit
+        // in EINER Transaktion: schlägt der Versand fehl, bleiben die alten
+        // Tokens gültig und es entsteht kein verwaistes neues Invite – der
+        // Nutzer steht nie ganz ohne verwendbaren Link da.
+        try {
+            $em->wrapInTransaction(function () use ($em, $invites, $user, $invite, $mailer, $gen, $expiresAt, $audit, $actor): void {
+                // Alte, noch gültige Invites desselben Nutzers invalidieren, damit
+                // nur das neu verschickte Token verwendbar ist (Replay-Schutz).
+                foreach ($invites->findUnusedForUser($user) as $stale) {
+                    $stale->usedAt = new \DateTimeImmutable();
+                }
+                $em->persist($invite);
+                $em->flush();
+                $mailer->send($user->email, $gen->token, $expiresAt);
+                $audit->log($actor, 'user.reinvite', 'admin_user', (string) $user->id);
+            });
+        } catch (TransportExceptionInterface) {
+            throw new ApiProblem(502, 'Invitation e-mail could not be sent');
+        }
 
         return new JsonResponse(['id' => $user->id, 'email' => $user->email, 'status' => $user->status->value], 201);
     }

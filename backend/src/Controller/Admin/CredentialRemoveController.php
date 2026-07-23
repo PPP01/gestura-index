@@ -24,12 +24,26 @@ final class CredentialRemoveController
         if ($cred === null || $cred->adminUser->id !== $user->id) {
             throw new ApiProblem(404, 'Credential not found');
         }
-        if ($user->credentialCount() <= 2) {
+
+        // Zählung + Entfernung + Audit atomar und unter FOR-UPDATE-Sperre:
+        // ohne Sperre könnten zwei parallele Requests bei drei Passkeys beide
+        // die »> 2«-Prüfung bestehen und die Zahl unter zwei drücken. Der Guard
+        // wird als Flag zurückgegeben statt geworfen (ein Throw aus
+        // wrapInTransaction schlösse den EntityManager).
+        $tooFew = $em->wrapInTransaction(function () use ($repo, $user, $cred, $em, $audit): bool {
+            if ($repo->countForUserForUpdate($user) <= 2) {
+                return true;
+            }
+            $audit->log($user, 'credential.remove', 'credential', (string) $cred->id);
+            $em->remove($cred);
+
+            return false;
+        });
+
+        if ($tooFew) {
             throw new ApiProblem(409, 'At least two passkeys required', ['backupRequired' => true]);
         }
-        $audit->log($user, 'credential.remove', 'credential', (string) $cred->id);
-        $em->remove($cred);
-        $em->flush();
+
         return new Response('', 204);
     }
 }
