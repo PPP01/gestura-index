@@ -22,4 +22,35 @@ final class AccountTest extends ApiTestCase
         self::assertMatchesRegularExpression('/^gacc_[0-9a-f]{16}_[A-Za-z0-9_-]{43}$/', $token);
         self::assertSame(1, $this->em->getRepository(Account::class)->count([]));
     }
+
+    public function testMeWithValidTokenReturnsCreatedAt(): void
+    {
+        $token = $this->createAccount();
+        $this->client->request('GET', '/api/account/me', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
+        self::assertResponseStatusCodeSame(200);
+        self::assertArrayHasKey('createdAt', $this->json());
+    }
+
+    public function testMeWithoutTokenIs401(): void
+    {
+        $this->client->request('GET', '/api/account/me');
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testMeWithInvalidTokenIs401(): void
+    {
+        $bogus = 'gacc_' . str_repeat('a', 16) . '_' . str_repeat('b', 43);
+        $this->client->request('GET', '/api/account/me', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $bogus]);
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testDeleteRemovesAccountAndInvalidatesToken(): void
+    {
+        $token = $this->createAccount();
+        $this->client->request('DELETE', '/api/account', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
+        self::assertResponseStatusCodeSame(204);
+
+        $this->client->request('GET', '/api/account/me', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
+        self::assertResponseStatusCodeSame(401);
+    }
 }
