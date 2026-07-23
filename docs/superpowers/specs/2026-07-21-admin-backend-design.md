@@ -25,8 +25,15 @@ Die serverseitige Grundlage für ein Web-Admin-Panel: WebAuthn-basierte Anmeldun
 ## 4. Rollen
 
 Zwei Rollen (Enum `AdminRole`):
-- **`admin`** – volle Rechte: Moderation **und** Nutzerverwaltung (einladen/deaktivieren), Ban/Unban, Audit-Log-Einsicht.
-- **`moderator`** – nur Moderation: Warteschlange, Einträge/Versionen freigeben/ablehnen, Meldungen bearbeiten. Kein Zugriff auf Nutzerverwaltung, Ban oder Audit-Log.
+- **`admin`** – volle Rechte: Moderation **und** Nutzerverwaltung (einladen/deaktivieren), Audit-Log-Einsicht.
+- **`moderator`** – Moderation inkl. Submitter-Ban/Unban: Warteschlange, Einträge/Versionen freigeben/ablehnen, Meldungen bearbeiten, Submitter sperren/entsperren. Kein Zugriff auf Nutzerverwaltung oder Audit-Log.
+
+> **Entscheidung 2026-07-23 (Review):** Ban/Unban ist bewusst Teil der
+> Moderation und damit auch für `moderator` erlaubt – der Submitter-Screen
+> gehört laut SPA-Design zu den für Moderatoren sichtbaren Ansichten. Diese
+> Fassung löst den früheren Widerspruch zwischen Backend-Design (»Ban nur
+> admin«) und SPA-Design auf; maßgeblich ist die hier dokumentierte Regel.
+> Nutzerverwaltung und Audit-Log bleiben admin-only.
 
 Rollenprüfung serverseitig pro Endpunkt (Symfony Security Voter oder `#[IsGranted]`).
 
@@ -90,7 +97,7 @@ Dünne Controller über `ModerationService` + Repository-Abfragen; jede zustands
 ## 9. Tests
 
 - WebAuthn-Ceremonies in Tests **gemockt** (kein echter Authenticator): Registrierung, Login, Step-up-Frische.
-- Rollen-Guards: Moderator wird auf Verwaltungs-/Ban-/Audit-Endpunkten mit 403 abgewiesen.
+- Rollen-Guards: Moderator wird auf Verwaltungs- und Audit-Endpunkten mit 403 abgewiesen (Ban/Unban sind für Moderatoren erlaubt).
 - Jede Moderationsaktion end-to-end über HTTP (approve/reject Entry+Version, resolve Report, ban/unban) inkl. **Audit-Log-Schreibung**.
 - Einladungs-Flow: Invite anlegen → E-Mail via Symfony **Test-Transport** asserten → Registrierung mit gültigem/abgelaufenem/verbrauchtem Token.
 - Session: Zugriff ohne Cookie → 401; abgelaufene Session → 401; Step-up nötig, wenn Verifikation zu alt.
