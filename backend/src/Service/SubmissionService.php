@@ -138,6 +138,14 @@ final class SubmissionService
      */
     public function validatePayload(string $payloadJson, ?EntryType $expectedType, ?string $expectedFormatId): ValidationResult
     {
+        // Verteidigung in der Tiefe: Ein End-Nutzer-Konto-Token (gacc_-Muster)
+        // darf NIE über den öffentlichen Index austreten. Eingereichte Inhalte,
+        // die irgendwo ein solches Token enthalten (z. B. versehentlich in
+        // name/description/url), werden abgelehnt.
+        if (preg_match('/gacc_[0-9a-f]{16}_[A-Za-z0-9_-]{43}/', $payloadJson) === 1) {
+            throw new ApiProblem(400, 'Submission must not contain an account token');
+        }
+
         $result = $this->validator->validate($payloadJson);
         if (!$result->ok) {
             throw new ApiProblem(400, 'Payload validation failed', ['errors' => $result->errors]);
