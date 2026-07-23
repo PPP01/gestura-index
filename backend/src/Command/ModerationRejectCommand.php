@@ -9,6 +9,7 @@ use App\Enum\VersionStatus;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
 use App\Service\ModerationService;
+use App\Service\ScreenshotStorage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -30,6 +31,7 @@ final class ModerationRejectCommand extends Command
         private readonly EntryRepository $entries,
         private readonly EntryVersionRepository $versions,
         private readonly ModerationService $moderation,
+        private readonly ScreenshotStorage $screenshots,
     ) {
         parent::__construct();
     }
@@ -61,12 +63,14 @@ final class ModerationRejectCommand extends Command
 
         if ($entry->status === EntryStatus::Pending) {
             try {
-                $this->moderation->rejectEntry($entry);
+                $screenshotPath = $this->moderation->rejectEntry($entry);
             } catch (\RuntimeException $e) {
                 $io->error($e->getMessage());
 
                 return Command::FAILURE;
             }
+            // Datei erst nach dem (intern geflushten) Commit löschen.
+            $this->screenshots->deleteFileAt($screenshotPath);
             $io->success($entry->formatId . ' abgelehnt (deleted)');
 
             return Command::SUCCESS;

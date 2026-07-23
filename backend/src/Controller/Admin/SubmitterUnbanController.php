@@ -7,6 +7,7 @@ use App\Exception\ApiProblem;
 use App\Repository\SubmitterRepository;
 use App\Service\AuditLogger;
 use App\Service\ModerationService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -14,15 +15,17 @@ use Symfony\Component\Routing\Attribute\Route;
 final class SubmitterUnbanController
 {
     #[Route('/api/admin/submitters/{id}/unban', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function __invoke(int $id, SubmitterRepository $submitters, ModerationService $moderation, AuditLogger $audit, Security $security): Response
+    public function __invoke(int $id, SubmitterRepository $submitters, ModerationService $moderation, AuditLogger $audit, Security $security, EntityManagerInterface $em): Response
     {
         $submitter = $submitters->find($id) ?? throw new ApiProblem(404, 'Submitter not found');
 
-        $moderation->unban($submitter);
-
         /** @var AdminUser $actor */
         $actor = $security->getUser();
-        $audit->log($actor, 'submitter.unban', 'submitter', (string) $submitter->id);
+
+        $em->wrapInTransaction(function () use ($moderation, $submitter, $audit, $actor): void {
+            $moderation->unban($submitter);
+            $audit->log($actor, 'submitter.unban', 'submitter', (string) $submitter->id);
+        });
 
         return new Response('', 204);
     }

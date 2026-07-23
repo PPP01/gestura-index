@@ -9,6 +9,7 @@ use App\Security\BackupPasskeyGate;
 use App\Security\StepUpGuard;
 use App\Service\AuditLogger;
 use App\Service\ModerationService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -24,6 +25,7 @@ final class SubmitterBanController
         Security $security,
         StepUpGuard $stepUp,
         BackupPasskeyGate $backup,
+        EntityManagerInterface $em,
     ): Response {
         /** @var AdminUser $actor */
         $actor = $security->getUser();
@@ -32,9 +34,10 @@ final class SubmitterBanController
 
         $submitter = $submitters->find($id) ?? throw new ApiProblem(404, 'Submitter not found');
 
-        $moderation->ban($submitter);
-
-        $audit->log($actor, 'submitter.ban', 'submitter', (string) $submitter->id);
+        $em->wrapInTransaction(function () use ($moderation, $submitter, $audit, $actor): void {
+            $moderation->ban($submitter);
+            $audit->log($actor, 'submitter.ban', 'submitter', (string) $submitter->id);
+        });
 
         return new Response('', 204);
     }

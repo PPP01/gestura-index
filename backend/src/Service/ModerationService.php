@@ -45,6 +45,14 @@ final class ModerationService
      */
     public function approveEntry(Entry $entry): void
     {
+        // Nur wartende Einträge werden hier freigegeben. Ohne diesen Guard ließe
+        // sich der Entry-Approve-Endpunkt auf einen bereits veröffentlichten
+        // Eintrag mit pending Update anwenden – das würde das Update genehmigen
+        // UND approvedCount erneut hochzählen. Updates laufen über approveVersion.
+        if ($entry->status !== EntryStatus::Pending) {
+            throw new \RuntimeException('Nur wartende Einträge können freigegeben werden');
+        }
+
         $pending = $this->versions->findOneBy(['entry' => $entry, 'status' => VersionStatus::Pending])
             ?? throw new \RuntimeException('Keine wartende Version für ' . $entry->formatId);
         $this->approveVersion($pending);
@@ -73,11 +81,14 @@ final class ModerationService
 
     /**
      * Lehnt einen Eintrag endgültig ab: alle wartenden Versionen werden auf
-     * »rejected« gesetzt, der Entry auf »deleted« und der Screenshot entfernt.
-     * Wirft RuntimeException, wenn der Entry nicht »pending« ist — sonst ließe
-     * sich ein bereits veröffentlichter Eintrag über Reject hart löschen.
+     * »rejected« gesetzt, der Entry auf »deleted« und die Screenshot-Referenz
+     * genullt. Wirft RuntimeException, wenn der Entry nicht »pending« ist —
+     * sonst ließe sich ein bereits veröffentlichter Eintrag über Reject hart
+     * löschen. Gibt den absoluten Pfad der zu löschenden Screenshot-Datei zurück
+     * (oder null); der Aufrufer löscht die Datei erst NACH erfolgreichem Commit
+     * (sonst bliebe bei einem Rollback die Datei verschwunden, die DB aber intakt).
      */
-    public function rejectEntry(Entry $entry): void
+    public function rejectEntry(Entry $entry): ?string
     {
         if ($entry->status !== EntryStatus::Pending) {
             throw new \RuntimeException('Nur wartende Einträge können abgelehnt werden');
@@ -86,10 +97,13 @@ final class ModerationService
         foreach ($this->versions->findBy(['entry' => $entry, 'status' => VersionStatus::Pending]) as $version) {
             $version->status = VersionStatus::Rejected;
         }
+        $screenshotPath = $this->screenshots->absolutePath($entry);
         $entry->status = EntryStatus::Deleted;
-        $this->screenshots->remove($entry);
+        $entry->screenshotPath = null;
         $entry->touch();
         $this->em->flush();
+
+        return $screenshotPath;
     }
 
     /**
@@ -99,6 +113,13 @@ final class ModerationService
      */
     public function approveVersion(EntryVersion $version): void
     {
+        // Nur wartende Versionen sind freigebbar. Ohne diesen Guard ließe sich
+        // eine bereits abgelehnte Version reaktivieren oder eine schon
+        // freigegebene erneut »freigeben« und currentVersion zurückstufen.
+        if ($version->status !== VersionStatus::Pending) {
+            throw new \RuntimeException('Nur wartende Versionen können freigegeben werden');
+        }
+
         $version->status = VersionStatus::Approved;
         $entry = $version->entry;
         // currentVersion darf nur vorwärts wandern: eine ältere, noch in der
@@ -116,9 +137,16 @@ final class ModerationService
 
     /**
      * Lehnt eine einzelne Version ab, ohne den Entry-Status zu ändern.
+     * Nur wartende Versionen sind ablehnbar; da currentVersion per Invariante
+     * stets »approved« ist, kann so nie die aktuelle Version abgelehnt werden
+     * (die sonst weiterverwiesen würde, während ihr Download 404 liefert).
      */
     public function rejectVersion(EntryVersion $version): void
     {
+        if ($version->status !== VersionStatus::Pending) {
+            throw new \RuntimeException('Nur wartende Versionen können abgelehnt werden');
+        }
+
         $version->status = VersionStatus::Rejected;
         $this->em->flush();
     }
@@ -127,22 +155,56 @@ final class ModerationService
      * Schließt eine Meldung ab und setzt den Entry-Status entsprechend.
      * Bei publish=true werden zusätzlich alle offenen Meldungen desselben Eintrags
      * aufgelöst, damit ein erneuter einzelner Report nicht sofort wieder den
-     * Hide-Threshold erreicht. Bei publish=false wird der Screenshot entfernt.
+     * Hide-Threshold erreicht. Bei publish=false wird die Screenshot-Referenz
+     * genullt; der absolute Dateipfad wird zurückgegeben, damit der Aufrufer die
+     * Datei erst NACH erfolgreichem Commit löscht (sonst Datei weg, DB aber
+     * zurückgerollt). Gibt null zurück, wenn keine Datei zu löschen ist.
      */
-    public function resolveReport(Report $report, bool $publish): void
+    public function resolveReport(Report $report, bool $publish): ?string
     {
-        $report->status = ReportStatus::Resolved;
-        $report->entry->status = $publish ? EntryStatus::Published : EntryStatus::Deleted;
-        if (!$publish) {
-            $this->screenshots->remove($report->entry);
+        // Nur offene Meldungen sind auflösbar — sonst ließe sich über einen
+        // alten, längst abgeschlossenen Report der Entry-Status erneut kippen.
+        if ($report->status !== ReportStatus::Open) {
+            throw new \RuntimeException('Meldung ist bereits abgeschlossen');
         }
-        $report->entry->touch();
+
+        $entry = $report->entry;
+
+        // Ein (soft-)gelöschter Eintrag bleibt gelöscht. Ohne diesen Guard
+        // könnte ein alter offener Report einen zwischenzeitlich gelöschten
+        // Eintrag wieder sichtbar machen.
+        if ($entry->status === EntryStatus::Deleted) {
+            throw new \RuntimeException('Eintrag ist gelöscht');
+        }
 
         if ($publish) {
-            $this->resolveOpenReports($report->entry);
+            // Einen Eintrag eines gesperrten Submitters nicht über die
+            // Report-Auflösung wieder veröffentlichen (erst entsperren).
+            if ($entry->submitter->banned) {
+                throw new \RuntimeException('Submitter ist gesperrt — erst entsperren');
+            }
+            // Published impliziert currentVersion !== null (Statusmaschinen-Invariante).
+            if ($entry->currentVersion === null) {
+                throw new \RuntimeException('Eintrag hat keine freigegebene Version');
+            }
+        }
+
+        $report->status = ReportStatus::Resolved;
+        $entry->status = $publish ? EntryStatus::Published : EntryStatus::Deleted;
+        $screenshotPath = null;
+        if (!$publish) {
+            $screenshotPath = $this->screenshots->absolutePath($entry);
+            $entry->screenshotPath = null;
+        }
+        $entry->touch();
+
+        if ($publish) {
+            $this->resolveOpenReports($entry);
         }
 
         $this->em->flush();
+
+        return $screenshotPath;
     }
 
     // Ohne dies würde die nächste einzelne neue Meldung sofort wieder den

@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Repository\ReportRepository;
 use App\Service\ModerationService;
+use App\Service\ScreenshotStorage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -28,6 +29,7 @@ final class ModerationResolveCommand extends Command
     public function __construct(
         private readonly ReportRepository $reports,
         private readonly ModerationService $moderation,
+        private readonly ScreenshotStorage $screenshots,
     ) {
         parent::__construct();
     }
@@ -58,7 +60,9 @@ final class ModerationResolveCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->moderation->resolveReport($report, $action === 'publish');
+        $screenshotPath = $this->moderation->resolveReport($report, $action === 'publish');
+        // Datei erst nach dem (intern geflushten) Commit löschen.
+        $this->screenshots->deleteFileAt($screenshotPath);
         $io->success('Meldung erledigt, Eintrag ' . $report->entry->formatId . ' → ' . $report->entry->status->value);
 
         return Command::SUCCESS;

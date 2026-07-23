@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Entry;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -18,13 +20,18 @@ final class ScreenshotStorage
 {
     private readonly string $baseDir;
 
+    private readonly LoggerInterface $logger;
+
     /**
      * Leitet aus dem Projekt-Root (Symfony-Parameter kernel.project_dir) das
      * private Screenshot-Verzeichnis ab.
      */
-    public function __construct(#[Autowire('%kernel.project_dir%')] string $projectDir)
-    {
+    public function __construct(
+        #[Autowire('%kernel.project_dir%')] string $projectDir,
+        ?LoggerInterface $logger = null,
+    ) {
         $this->baseDir = $projectDir . '/var/media/screenshots';
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -58,16 +65,32 @@ final class ScreenshotStorage
      * Löscht die Screenshot-Datei des Eintrags vom Dateisystem und setzt
      * $entry->screenshotPath auf null. Ist kein Screenshot gesetzt oder die
      * Datei bereits verschwunden, wird kein Fehler ausgelöst.
+     *
+     * Hinweis: löscht die Datei sofort. Für Abläufe innerhalb einer DB-
+     * Transaktion NICHT verwenden — dort erst die Referenz nullen und die
+     * Datei per deleteFileAt() NACH dem Commit entfernen (siehe
+     * ModerationService::rejectEntry()/resolveReport()).
      */
     public function remove(Entry $entry): void
     {
         $file = $this->absolutePath($entry);
-        if ($file === null) {
+        $entry->screenshotPath = null;
+        $this->deleteFileAt($file);
+    }
+
+    /**
+     * Löscht eine zuvor per absolutePath() erfasste Datei. Gedacht für die
+     * Ausführung NACH einem erfolgreichen DB-Commit: so bleibt bei einem
+     * Rollback die Datei erhalten (DB und Dateisystem bleiben konsistent).
+     * Ein fehlgeschlagenes unlink() wird geloggt statt verschluckt.
+     */
+    public function deleteFileAt(?string $absolutePath): void
+    {
+        if ($absolutePath === null || !is_file($absolutePath)) {
             return;
         }
-        if (is_file($file)) {
-            @unlink($file);
+        if (!@unlink($absolutePath)) {
+            $this->logger->warning('Screenshot-Datei konnte nicht gelöscht werden', ['path' => $absolutePath]);
         }
-        $entry->screenshotPath = null;
     }
 }
