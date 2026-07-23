@@ -25,6 +25,7 @@ final class SubmissionService
     private const TAGS_MAX = 10;
     private const TAG_LENGTH_MAX = 50;
     private const CHANGELOG_MAX = 2000;
+    private const ACCOUNT_TOKEN_PATTERN = '/gacc_[0-9a-f]{16}_[A-Za-z0-9_-]{43}/';
 
     public function __construct(
         private readonly ExchangeValidator $validator,
@@ -57,6 +58,12 @@ final class SubmissionService
         if (!\is_array($body) || !\is_array($body['payload'] ?? null)) {
             throw new ApiProblem(400, 'Missing payload object');
         }
+
+        // Nicht nur das eigentliche Austausch-Payload wird später öffentlich:
+        // Changelog, Tags und successorFormatId erscheinen ebenfalls in API-
+        // Antworten. Deshalb den vollständig dekodierten Submission-Body
+        // rekursiv prüfen; so erfassen wir auch JSON-Unicode-Escapes.
+        $this->assertNoAccountToken($body);
 
         $categories = null;
         if (\array_key_exists('categories', $body)) {
@@ -138,6 +145,14 @@ final class SubmissionService
      */
     public function validatePayload(string $payloadJson, ?EntryType $expectedType, ?string $expectedFormatId): ValidationResult
     {
+        // Verteidigung in der Tiefe: Ein End-Nutzer-Konto-Token (gacc_-Muster)
+        // darf NIE über den öffentlichen Index austreten. Eingereichte Inhalte,
+        // die irgendwo ein solches Token enthalten (z. B. versehentlich in
+        // name/description/url), werden abgelehnt.
+        if (preg_match(self::ACCOUNT_TOKEN_PATTERN, $payloadJson) === 1) {
+            throw new ApiProblem(400, 'Submission must not contain an account token');
+        }
+
         $result = $this->validator->validate($payloadJson);
         if (!$result->ok) {
             throw new ApiProblem(400, 'Payload validation failed', ['errors' => $result->errors]);
@@ -150,6 +165,29 @@ final class SubmissionService
         }
 
         return $result;
+    }
+
+    /**
+     * Verhindert rekursiv, dass ein Konto-Token in irgendeinem String eines
+     * bereits dekodierten Submission-Bodys in den öffentlichen Index gelangt.
+     */
+    private function assertNoAccountToken(mixed $value): void
+    {
+        if (\is_string($value)) {
+            if (preg_match(self::ACCOUNT_TOKEN_PATTERN, $value) === 1) {
+                throw new ApiProblem(400, 'Submission must not contain an account token');
+            }
+
+            return;
+        }
+
+        if (!\is_array($value)) {
+            return;
+        }
+
+        foreach ($value as $item) {
+            $this->assertNoAccountToken($item);
+        }
     }
 
     /**
