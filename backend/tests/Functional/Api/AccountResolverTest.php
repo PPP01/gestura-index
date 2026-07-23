@@ -40,9 +40,19 @@ final class AccountResolverTest extends ApiTestCase
     public function testResolvesValidTokenAndUpdatesLastSeen(): void
     {
         $token = $this->seedAccount();
-        $account = $this->resolver()->resolve($this->requestWithToken($token));
-        self::assertNotNull($account);
-        self::assertGreaterThanOrEqual($account->createdAt->getTimestamp(), $account->lastSeenAt->getTimestamp());
+
+        // lastSeenAt bewusst auf eine eindeutig vergangene Zeit setzen: der
+        // Konstruktor initialisiert lastSeenAt = createdAt, daher würde ein
+        // reiner ">= createdAt"-Vergleich auch dann grün bleiben, wenn
+        // resolve() lastSeenAt nie aktualisiert.
+        $account = $this->em->getRepository(Account::class)->findAll()[0];
+        $oldLastSeenAt = new \DateTimeImmutable('-10 days');
+        $account->lastSeenAt = $oldLastSeenAt;
+        $this->em->flush();
+
+        $resolved = $this->resolver()->resolve($this->requestWithToken($token));
+        self::assertNotNull($resolved);
+        self::assertGreaterThan($oldLastSeenAt->getTimestamp(), $resolved->lastSeenAt->getTimestamp());
     }
 
     public function testNoHeaderReturnsNull(): void
