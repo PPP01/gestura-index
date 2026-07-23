@@ -8,6 +8,7 @@
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Badge from '$lib/components/Badge.svelte';
+	import AdminError from '$lib/components/admin/AdminError.svelte';
 
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
@@ -108,7 +109,7 @@
 			</div>
 		{/each}
 	</div>
-	{#if actionError}<p class="reports-error" role="alert">{actionError}</p>{/if}
+	{#if actionError}<AdminError message={actionError} />{/if}
 {/if}
 
 <style>
@@ -159,9 +160,4 @@
 		gap: 8px;
 	}
 
-	.reports-error {
-		color: var(--danger-color);
-		font-weight: 600;
-		margin-top: 12px;
-	}
 </style>

@@ -49,5 +49,18 @@ export default defineConfig({
 		environment: 'jsdom',
 		setupFiles: ['./vitest-setup.ts'],
 		globals: true
+	},
+
+	// Nur für `vite dev` (nicht für den Build): leitet /api an das lokale
+	// Symfony-Backend weiter, damit SPA und API im lokalen Passkey-Test unter
+	// EINER Origin (localhost) laufen – so entfällt jede CORS-/Cross-Origin-
+	// Cookie-Frage, und WebAuthn hat eine saubere Origin (RP-ID=localhost).
+	server: {
+		// Auf alle Interfaces binden, damit der Dev-Server auch über die WSL-IP
+		// bzw. einen Windows→WSL-Portproxy erreichbar ist (lokaler Passkey-Test).
+		host: true,
+		proxy: {
+			'/api': 'http://localhost:8000'
+		}
 	}
 });

@@ -7,6 +7,7 @@
 	import { performAssertion } from '$lib/admin/webauthn';
 	import { session } from '$lib/admin/session.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
+	import AdminError from '$lib/components/admin/AdminError.svelte';
 
 	let loading = $state(false);
 	let error = $state<string | null>(null);
@@ -37,7 +38,7 @@
 	<h1><KeyRound size={20} />{m.admin_login_heading()}</h1>
 	<p>{m.admin_login_body()}</p>
 
-	{#if error}<p class="login-error" role="alert">{error}</p>{/if}
+	{#if error}<AdminError message={error} />{/if}
 
 	<button class="btn btn-primary" onclick={login} disabled={loading}>
 		{#if loading}<Spinner />{:else}{m.admin_login_button()}{/if}
@@ -63,11 +64,6 @@
 	.login-card p {
 		color: var(--text-secondary);
 		margin: 0 0 16px;
-	}
-
-	.login-error {
-		color: var(--danger-color);
-		font-weight: 600;
 	}
 
 	.login-card .btn {

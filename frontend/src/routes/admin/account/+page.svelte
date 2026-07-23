@@ -18,6 +18,7 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import AdminError from '$lib/components/admin/AdminError.svelte';
 
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
@@ -52,10 +53,17 @@
 		adding = true;
 		addError = null;
 		try {
-			const options = await addCredentialOptions();
-			const attestation = await performRegistration(options);
 			const label = addLabel.trim() || m.admin_account_default_label();
-			await addCredential(attestation, label);
+			// Einen Passkey hinzuzufügen ist step-up-geschützt. Die GESAMTE Zeremonie
+			// (Options → Attestation → POST) in `withStepUp` kapseln, nicht nur den
+			// finalen Request: Der Options-Endpunkt verlangt die Frische zuerst, sodass
+			// der 403 VOR der (langsamen) Attestation feuert; `withStepUp` holt dann die
+			// Bestätigung ein und wiederholt die ganze Kette mit frischer Challenge.
+			await withStepUp(async () => {
+				const options = await addCredentialOptions();
+				const attestation = await performRegistration(options);
+				await addCredential(attestation, label);
+			});
 			addLabel = '';
 			// Ein zusätzlicher Passkey ändert `credentialCount` — die Session neu
 			// laden, damit `session.needsBackup` (Backup-Banner) mitzieht.
@@ -203,8 +211,8 @@
 		</div>
 	</div>
 
-	{#if renameError}<p class="account-error" role="alert">{renameError}</p>{/if}
-	{#if removeError}<p class="account-error" role="alert">{removeError}</p>{/if}
+	{#if renameError}<AdminError message={renameError} />{/if}
+	{#if removeError}<AdminError message={removeError} />{/if}
 {/if}
 
 <div class="card">
@@ -220,7 +228,7 @@
 			{#if adding}<Spinner />{:else}<Plus size={16} />{m.admin_account_add_button()}{/if}
 		</button>
 	</div>
-	{#if addError}<p class="account-error" role="alert">{addError}</p>{/if}
+	{#if addError}<AdminError message={addError} />{/if}
 </div>
 
 <style>
@@ -274,12 +282,6 @@
 
 	.add-passkey-row input {
 		flex: 1;
-	}
-
-	.account-error {
-		color: var(--danger-color);
-		font-weight: 600;
-		margin-top: 12px;
 	}
 
 	@media (max-width: 640px) {

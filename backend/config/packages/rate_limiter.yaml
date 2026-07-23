@@ -34,3 +34,21 @@ when@test:
             admin_login: { policy: sliding_window, limit: 1000, interval: '15 minutes' }
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             admin_invite: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+
+# Lokale Entwicklung: dieselben großzügigen Limits wie im Test, damit
+# manuelles Durchklicken (z. B. Passkey-Registrierung/Login mit mehreren
+# Versuchen) nicht ins Prod-Limit läuft. Produktion nutzt weiter den
+# framework-Block oben.
+when@dev:
+    framework:
+        rate_limiter:
+            submit:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            update:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            report:     { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            report_per_entry: { policy: fixed_window, limit: 1000, interval: '1 day' }
+            token_auth: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            token_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }
+            admin_login: { policy: sliding_window, limit: 1000, interval: '15 minutes' }
+            admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            admin_invite: { policy: sliding_window, limit: 1000, interval: '1 hour' }

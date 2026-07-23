@@ -20,6 +20,7 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import Badge from '$lib/components/Badge.svelte';
+	import AdminError from '$lib/components/admin/AdminError.svelte';
 
 	// `page.params.id` statt `PageProps` (Vorgabe für diese Route) — Route-Param
 	// ist bei uns immer eine Zahl (Eintrags-ID).
@@ -212,7 +213,7 @@
 					{m.admin_queue_reject_button()}
 				</button>
 			</div>
-			{#if entryActionError}<p class="detail-error" role="alert">{entryActionError}</p>{/if}
+			{#if entryActionError}<AdminError message={entryActionError} />{/if}
 		{:else}
 			<p class="detail-section-empty">{m.admin_entry_detail_not_pending_note()}</p>
 		{/if}
@@ -282,7 +283,7 @@
 					</button>
 				{/if}
 			</div>
-			{#if submitterActionError}<p class="detail-error" role="alert">{submitterActionError}</p>{/if}
+			{#if submitterActionError}<AdminError message={submitterActionError} />{/if}
 		</section>
 	</article>
 {/if}
@@ -348,12 +349,6 @@
 	.detail-actions {
 		display: flex;
 		gap: 8px;
-		margin-top: 12px;
-	}
-
-	.detail-error {
-		color: var(--danger-color);
-		font-weight: 600;
 		margin-top: 12px;
 	}
 

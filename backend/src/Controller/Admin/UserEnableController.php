@@ -14,12 +14,19 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Reaktiviert einen zuvor gesperrten Admin-Nutzer (Status `disabled` →
- * `active`). Bewusst der einzige Reaktivierungs-Pfad – niemals über einen
- * liegen gebliebenen Invite-Token (siehe UserReinviteController), damit
- * eine Sperre nicht durch ein altes, noch gültiges Token unterlaufen
- * werden kann. Destruktiv genug für Step-up, kein Backup-Passkey-Gate
- * nötig (kein zweiter eigener Passkey des Ziel-Accounts erforderlich).
+ * Reaktiviert einen zuvor gesperrten Admin-Nutzer. Bewusst der einzige
+ * Reaktivierungs-Pfad – niemals über einen liegen gebliebenen Invite-Token
+ * (siehe UserReinviteController), damit eine Sperre nicht durch ein altes,
+ * noch gültiges Token unterlaufen werden kann. Destruktiv genug für Step-up,
+ * kein Backup-Passkey-Gate nötig (kein zweiter eigener Passkey des Ziel-
+ * Accounts erforderlich).
+ *
+ * Der Zielstatus richtet sich danach, ob sich der Nutzer je selbst registriert
+ * hat: `disabled` überschreibt beim Sperren den Vorzustand (invited ODER
+ * active), merkt ihn aber nicht. Rekonstruiert wird er über die Passkey-Zahl –
+ * ein nie registrierter Nutzer hat keinen Passkey (die Erst-Registrierung legt
+ * den ersten an und flippt auf `active`). Ohne Passkey also zurück auf
+ * `invited` (er muss sich noch registrieren), sonst `active`.
  */
 final class UserEnableController
 {
@@ -42,7 +49,9 @@ final class UserEnableController
             throw new ApiProblem(409, 'User is not disabled');
         }
 
-        $user->status = AdminUserStatus::Active;
+        $user->status = 0 === $user->credentialCount()
+            ? AdminUserStatus::Invited
+            : AdminUserStatus::Active;
         $em->flush();
 
         $audit->log($actor, 'user.enable', 'admin_user', (string) $user->id);

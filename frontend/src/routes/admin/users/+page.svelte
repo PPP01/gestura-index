@@ -17,6 +17,7 @@
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Badge from '$lib/components/Badge.svelte';
+	import AdminError from '$lib/components/admin/AdminError.svelte';
 
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
@@ -210,7 +211,7 @@
 		</div>
 	</div>
 
-	{#if actionError}<p class="users-error" role="alert">{actionError}</p>{/if}
+	{#if actionError}<AdminError message={actionError} />{/if}
 {/if}
 
 <div class="card">
@@ -238,7 +239,7 @@
 			{#if inviting}<Spinner />{:else}<UserPlus size={16} />{m.admin_users_invite_button()}{/if}
 		</button>
 	</form>
-	{#if inviteError}<p class="users-error" role="alert">{inviteError}</p>{/if}
+	{#if inviteError}<AdminError message={inviteError} />{/if}
 </div>
 
 <style>
@@ -294,12 +295,6 @@
 	.invite-form input,
 	.invite-form select {
 		flex: 1 1 160px;
-	}
-
-	.users-error {
-		color: var(--danger-color);
-		font-weight: 600;
-		margin-top: 12px;
 	}
 
 	@media (max-width: 640px) {

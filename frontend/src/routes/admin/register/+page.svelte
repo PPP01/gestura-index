@@ -4,9 +4,10 @@
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { registerOptions, register } from '$lib/admin/api';
+	import { registerOptions, register, AdminApiError } from '$lib/admin/api';
 	import { performRegistration } from '$lib/admin/webauthn';
 	import Spinner from '$lib/components/Spinner.svelte';
+	import AdminError from '$lib/components/admin/AdminError.svelte';
 
 	// Der Invite-Token kommt aus dem Link, den ein Admin per Einladung
 	// verschickt (siehe `inviteUser`) – kein Session-Kontext vorhanden.
@@ -15,6 +16,9 @@
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let success = $state(false);
+	// Terminal-Zustand: der Link/Token ist ungültig, abgelaufen oder verbraucht.
+	// Dann ist erneutes »Passkey anlegen« sinnlos → Button ausblenden.
+	let linkDead = $state(false);
 
 	async function createPasskey() {
 		if (!token) return;
@@ -26,9 +30,13 @@
 			await register(token, attestation);
 			success = true;
 		} catch (e) {
-			// Sowohl AdminApiError (400 invalid/expired/used token) als auch
-			// WebAuthn-Abbrüche landen in derselben, lokalisierten Meldung.
-			error = m.admin_register_failed();
+			if (e instanceof AdminApiError && e.status === 400) {
+				// Token ungültig/abgelaufen/verbraucht → terminal, kein Retry möglich.
+				linkDead = true;
+			} else {
+				// WebAuthn-Abbruch, Netzwerkfehler o. Ä. → erneut versuchbar.
+				error = m.admin_register_retry();
+			}
 		} finally {
 			loading = false;
 		}
@@ -54,14 +62,14 @@
 		<button class="btn btn-primary" onclick={toLogin}>
 			{m.admin_register_login_button()}
 		</button>
-	{:else if !token}
+	{:else if !token || linkDead}
 		<h1><KeyRound size={20} />{m.admin_register_heading()}</h1>
-		<p class="register-error" role="alert">{m.admin_register_invalid_link()}</p>
+		<AdminError message={m.admin_register_invalid_link()} />
 	{:else}
 		<h1><KeyRound size={20} />{m.admin_register_heading()}</h1>
 		<p>{m.admin_register_body()}</p>
 
-		{#if error}<p class="register-error" role="alert">{error}</p>{/if}
+		{#if error}<AdminError message={error} />{/if}
 
 		<button class="btn btn-primary" onclick={createPasskey} disabled={loading}>
 			{#if loading}<Spinner />{:else}{m.admin_register_button()}{/if}
@@ -88,11 +96,6 @@
 	.register-card p {
 		color: var(--text-secondary);
 		margin: 0 0 16px;
-	}
-
-	.register-error {
-		color: var(--danger-color);
-		font-weight: 600;
 	}
 
 	.register-card .btn {

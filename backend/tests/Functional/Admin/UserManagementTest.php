@@ -165,6 +165,9 @@ final class UserManagementTest extends AdminTestCase
         // am Letzter-Admin-Schutz scheitert (Ziel ist hier ein Admin).
         $this->createAdmin('enable-chef-2@example.com', AdminRole::Admin);
         $target = $this->createAdmin('to-enable@example.com', AdminRole::Moderator);
+        // Ein echter aktiver Nutzer hat sich registriert und besitzt einen
+        // Passkey; nur dann darf enable ihn wieder auf `active` heben.
+        $this->giveCredential($target);
 
         $this->client->request('POST', "/api/admin/users/{$target->id}/disable", server: $this->hdr());
         self::assertResponseStatusCodeSame(204);
@@ -175,6 +178,26 @@ final class UserManagementTest extends AdminTestCase
 
         $this->em->refresh($target);
         self::assertSame(AdminUserStatus::Active, $target->status);
+    }
+
+    public function testEnableRestoresInvitedForNeverRegisteredUser(): void
+    {
+        $admin = $this->createAdmin('enable-chef4@example.com', AdminRole::Admin);
+        $this->loginWithCredentials($admin, 2);
+        // Ziel wurde eingeladen, hat sich aber NIE registriert (kein Passkey).
+        $target = $this->createAdmin('never-registered@example.com', AdminRole::Moderator, AdminUserStatus::Invited);
+
+        $this->client->request('POST', "/api/admin/users/{$target->id}/disable", server: $this->hdr());
+        self::assertResponseStatusCodeSame(204);
+
+        $this->client->request('POST', "/api/admin/users/{$target->id}/enable", server: $this->hdr());
+        self::assertResponseStatusCodeSame(200);
+        // Zurück auf `invited`, NICHT `active`: der Nutzer muss sich erst noch
+        // per Einladung registrieren.
+        self::assertSame('invited', $this->json()['status']);
+
+        $this->em->refresh($target);
+        self::assertSame(AdminUserStatus::Invited, $target->status);
     }
 
     public function testEnableRejectedForNonDisabledUser(): void

@@ -32,6 +32,18 @@ abstract class AdminTestCase extends ApiTestCase
     }
 
     /**
+     * Hängt dem Nutzer einen Passkey an, OHNE als er einzuloggen — markiert ihn
+     * damit als »hat sich registriert« (credentialCount() > 0). Nötig, um einen
+     * echten aktiven Nutzer von einem nie registrierten Invited-Nutzer zu
+     * unterscheiden (siehe UserEnableController::__invoke).
+     */
+    protected function giveCredential(AdminUser $u): void
+    {
+        $this->em->persist(new WebAuthnCredential($u, "regcred-{$u->id}", '{"id":"x"}', 'Registriert'));
+        $this->em->flush();
+    }
+
+    /**
      * Legt $count Credentials für $u an und loggt per Fake-WebAuthn-Ceremony
      * mit der ersten davon ein. $count=2 (Default) sorgt dafür, dass auch
      * Backup-Gate-geschützte Aktionen (reject/ban) in Tests nicht an der

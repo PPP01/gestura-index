@@ -7,9 +7,34 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import LangToggle from '$lib/components/LangToggle.svelte';
 	import { session } from '$lib/admin/session.svelte';
+	import { authLogout } from '$lib/admin/api';
 	import { m } from '$lib/paraglide/messages.js';
+	import { goto } from '$app/navigation';
+	import { localizeHref } from '$lib/paraglide/runtime';
+	import { LogOut } from '@lucide/svelte';
 
 	let { children } = $props();
+
+	let loggingOut = $state(false);
+
+	async function logout() {
+		loggingOut = true;
+		try {
+			await authLogout();
+		} catch {
+			// Auch wenn der Server-Aufruf scheitert (z. B. Cookie bereits abgelaufen),
+			// die Client-Session verwerfen und zum Login gehen — ein Logout darf nie
+			// »hängen bleiben«.
+		} finally {
+			session.clear();
+			// Zurücksetzen, BEVOR wir navigieren: das Admin-Layout bleibt über den
+			// Logout→Login-Zyklus gemountet (nur der `{#if session.user}`-Zweig
+			// wechselt). Ein stehen gebliebenes `true` würde den Button nach dem
+			// nächsten Login disabled lassen — erst ein Reload würde ihn befreien.
+			loggingOut = false;
+			goto(localizeHref('/admin/login'));
+		}
+	}
 </script>
 
 {#if session.user}
@@ -23,6 +48,14 @@
 				<div class="admin-topbar-actions">
 					<ThemeToggle />
 					<LangToggle />
+					<button
+						class="btn btn-ghost topbar-logout"
+						onclick={logout}
+						disabled={loggingOut}
+					>
+						<LogOut size={18} />
+						{m.admin_logout()}
+					</button>
 				</div>
 			</header>
 			{#if session.needsBackup}<BackupBanner />{/if}
@@ -67,6 +100,10 @@
 		display: inline-flex;
 		gap: 8px;
 		align-items: center;
+	}
+
+	.topbar-logout {
+		gap: 6px;
 	}
 
 	@media (max-width: 720px) {

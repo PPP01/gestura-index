@@ -18,6 +18,7 @@
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Badge from '$lib/components/Badge.svelte';
+	import AdminError from '$lib/components/admin/AdminError.svelte';
 
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
@@ -166,7 +167,7 @@
 				{/each}
 			</div>
 		{/if}
-		{#if entryActionError}<p class="queue-error" role="alert">{entryActionError}</p>{/if}
+		{#if entryActionError}<AdminError message={entryActionError} />{/if}
 	</section>
 
 	<section>
@@ -216,7 +217,7 @@
 				{/each}
 			</div>
 		{/if}
-		{#if versionActionError}<p class="queue-error" role="alert">{versionActionError}</p>{/if}
+		{#if versionActionError}<AdminError message={versionActionError} />{/if}
 	</section>
 {/if}
 
@@ -286,9 +287,4 @@
 		gap: 8px;
 	}
 
-	.queue-error {
-		color: var(--danger-color);
-		font-weight: 600;
-		margin-top: 12px;
-	}
 </style>

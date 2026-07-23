@@ -11,9 +11,26 @@ webauthn:
         admin:
             rp:
                 id: '%env(default:default_rp_id:WEBAUTHN_RP_ID)%'
+            # COSE-Algorithmen, die der Authenticator nutzen darf. Ohne diese
+            # Liste sind pubKeyCredParams leer und der Browser kann gar keinen
+            # Passkey erzeugen. ES256 (-7) deckt praktisch alle Plattform-/
+            # Hardware-Authenticator ab, RS256 (-257) als breiter Fallback.
+            public_key_credential_parameters:
+                - -7
+                - -257
             authenticator_selection_criteria:
                 user_verification: required
     request_profiles:
         admin:
             rp_id: '%env(default:default_rp_id:WEBAUTHN_RP_ID)%'
             user_verification: required
+
+when@dev:
+    parameters:
+        # Lokaler Passkey-Test läuft über http://localhost. webauthn-lib verlangt
+        # sonst zwingend https als Origin-Schema (CheckAllowedOrigins) und macht
+        # KEINE localhost-Ausnahme. Steht die RP-ID in securedRelyingPartyId,
+        # wird die HTTPS-Pflicht übersprungen. NUR dev — Produktion (https) bleibt
+        # strikt, dieser Parameter existiert dort nicht.
+        webauthn.secured_relying_party_ids:
+            - localhost
