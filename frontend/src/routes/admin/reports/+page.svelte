@@ -3,7 +3,8 @@
 	import { Flag } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
-	import { reports, resolveReport, type Report, type ReportReason } from '$lib/admin/api';
+	import { reports, resolveReport, AdminApiError, type Report, type ReportReason } from '$lib/admin/api';
+	import { withStepUp } from '$lib/admin/stepup';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -48,13 +49,24 @@
 		busyId = id;
 		actionError = null;
 		try {
-			// Meldungen erledigen ist laut SP4a-Backend (ReportResolveController)
-			// nicht step-up-geschützt (weder Freigeben noch Löschen prüft
-			// StepUpGuard/BackupPasskeyGate) — daher Direktaufruf ohne withStepUp.
-			await resolveReport(id, publish);
+			// Freigeben (publish=true) ist restaurativ und nicht gate-geschützt.
+			// Löschen (publish=false) ist destruktiv: der Server verlangt frisches
+			// Step-up (+ mindestens 2 Passkeys). `withStepUp` führt die Ceremony
+			// bei Bedarf durch und wiederholt die Aktion einmal.
+			if (publish) {
+				await resolveReport(id, true);
+			} else {
+				await withStepUp(() => resolveReport(id, false));
+			}
 			await loadReports();
-		} catch {
-			actionError = m.admin_reports_resolve_failed();
+		} catch (e) {
+			// 409 mit `backupRequired`: der Server verlangt für das Löschen
+			// mindestens 2 Passkeys als Backup.
+			if (e instanceof AdminApiError && e.backupRequired) {
+				actionError = m.admin_reports_backup_required();
+			} else {
+				actionError = m.admin_reports_resolve_failed();
+			}
 		} finally {
 			busyId = null;
 		}

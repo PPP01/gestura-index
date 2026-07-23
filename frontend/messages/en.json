@@ -228,6 +228,7 @@
 	"admin_reports_keep_button": "Keep",
 	"admin_reports_reject_button": "Delete",
 	"admin_reports_resolve_failed": "Resolving the report failed. Please try again.",
+	"admin_reports_backup_required": "You need at least 2 passkeys as a backup to delete an entry.",
 	"admin_users_heading": "User management",
 	"admin_users_load_failed": "Loading the users failed.",
 	"admin_users_empty_title": "No users yet",

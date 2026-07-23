@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 // Mock $env/dynamic/public für Tests
 vi.mock('$env/dynamic/public', () => ({
@@ -7,7 +7,18 @@ vi.mock('$env/dynamic/public', () => ({
 	}
 }));
 
-import { adminFetch, AdminApiError, me, authLogout, listUsers, queue, audit } from './api';
+import {
+	adminFetch,
+	AdminApiError,
+	me,
+	authLogout,
+	listUsers,
+	queue,
+	audit,
+	entryDetail,
+	adminAbsoluteScreenshotUrl,
+	registerUnauthorizedHandler
+} from './api';
 
 const BASE = 'https://api.test';
 
@@ -19,6 +30,12 @@ function jsonResponse(body: unknown, init: Partial<{ status: number; contentType
 }
 
 describe('admin api', () => {
+	// Nach jedem Test den 401-Handler zurücksetzen, damit Tests sich nicht
+	// gegenseitig beeinflussen (Handler ist Modul-Level-Singleton).
+	afterEach(() => {
+		registerUnauthorizedHandler(null);
+	});
+
 	it('sendet credentials + X-Requested-With und parst me()', async () => {
 		const fetchMock = vi.fn().mockResolvedValue(
 			jsonResponse({
@@ -128,5 +145,94 @@ describe('admin api', () => {
 		await audit(2, 20, { fetch: fetchMock, baseUrl: BASE });
 		const [url] = fetchMock.mock.calls[0];
 		expect(String(url)).toBe('https://api.test/api/admin/audit?page=2&perPage=20');
+	});
+
+	it('ruft onUnauthorized-Handler bei 401 auf und wirft anschließend', async () => {
+		const handler = vi.fn();
+		registerUnauthorizedHandler(handler);
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(jsonResponse({ title: 'Unauthorized' }, { status: 401 }));
+		await expect(
+			adminFetch('/x', { method: 'GET' }, { fetch: fetchMock, baseUrl: BASE })
+		).rejects.toMatchObject({ status: 401 });
+		expect(handler).toHaveBeenCalledOnce();
+	});
+
+	it('ruft onUnauthorized-Handler NICHT bei anderen Fehlern auf', async () => {
+		const handler = vi.fn();
+		registerUnauthorizedHandler(handler);
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(jsonResponse({ title: 'Forbidden' }, { status: 403 }));
+		await expect(
+			adminFetch('/x', { method: 'GET' }, { fetch: fetchMock, baseUrl: BASE })
+		).rejects.toMatchObject({ status: 403 });
+		expect(handler).not.toHaveBeenCalled();
+	});
+
+	it('adminAbsoluteScreenshotUrl absolutiert relative Pfade', () => {
+		expect(adminAbsoluteScreenshotUrl(null, BASE)).toBeNull();
+		expect(adminAbsoluteScreenshotUrl('/api/v1/entries/a.b/screenshot', BASE)).toBe(
+			'https://api.test/api/v1/entries/a.b/screenshot'
+		);
+		// Bereits absolute URLs bleiben unverändert
+		expect(adminAbsoluteScreenshotUrl('https://cdn.example.com/img.webp', BASE)).toBe(
+			'https://cdn.example.com/img.webp'
+		);
+	});
+
+	it('entryDetail() absolutiert screenshotUrl im Mapping', async () => {
+		const rawEntry = {
+			formatId: 'com.example.test',
+			status: 'published',
+			type: 'menu',
+			name: 'Test',
+			description: null,
+			categories: [],
+			tags: [],
+			domains: [],
+			installCount: 0,
+			currentVersion: '1.0.0',
+			deprecated: false,
+			successorFormatId: null,
+			screenshotUrl: '/api/v1/entries/com.example.test/screenshot',
+			updatedAt: '2026-01-01T00:00:00+00:00',
+			versions: [],
+			submitterId: 1,
+			submitterBanned: false,
+			openReports: []
+		};
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(rawEntry));
+		const result = await entryDetail(42, { fetch: fetchMock, baseUrl: BASE });
+		expect(result.screenshotUrl).toBe(
+			'https://api.test/api/v1/entries/com.example.test/screenshot'
+		);
+	});
+
+	it('entryDetail() lässt screenshotUrl null unberührt', async () => {
+		const rawEntry = {
+			formatId: 'com.example.test2',
+			status: 'pending',
+			type: 'engine',
+			name: 'Engine',
+			description: null,
+			categories: [],
+			tags: [],
+			domains: [],
+			installCount: 0,
+			currentVersion: null,
+			deprecated: false,
+			successorFormatId: null,
+			screenshotUrl: null,
+			updatedAt: '2026-01-01T00:00:00+00:00',
+			versions: [],
+			submitterId: 2,
+			submitterBanned: false,
+			openReports: []
+		};
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(rawEntry));
+		const result = await entryDetail(7, { fetch: fetchMock, baseUrl: BASE });
+		expect(result.screenshotUrl).toBeNull();
 	});
 });

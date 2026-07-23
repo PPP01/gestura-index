@@ -7,15 +7,27 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import LangToggle from '$lib/components/LangToggle.svelte';
 	import { session } from '$lib/admin/session.svelte';
-	import { authLogout } from '$lib/admin/api';
+	import { authLogout, registerUnauthorizedHandler } from '$lib/admin/api';
 	import { m } from '$lib/paraglide/messages.js';
 	import { goto } from '$app/navigation';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { localizeHref, deLocalizeUrl } from '$lib/paraglide/runtime';
 	import { LogOut } from '@lucide/svelte';
 
 	let { children } = $props();
 
 	let loggingOut = $state(false);
+
+	// Globaler 401-Handler: leert die Client-Session und leitet zum Login um.
+	// Läuft für JEDE gescheiterte Admin-API-Anfrage — nicht nur beim Session-Load.
+	// Schutz gegen Endlosschleife: auf Login-/Register-Seiten kein erneuter Redirect.
+	$effect(() => {
+		return registerUnauthorizedHandler(() => {
+			const path = deLocalizeUrl(new URL(window.location.href)).pathname;
+			if (path === '/admin/login' || path === '/admin/register') return;
+			session.clear();
+			goto(localizeHref('/admin/login'));
+		});
+	});
 
 	async function logout() {
 		loggingOut = true;

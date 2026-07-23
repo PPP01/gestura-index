@@ -164,6 +164,36 @@ async function toError(res: Response): Promise<AdminApiError> {
 	return new AdminApiError(res.status, title, detail, stepUpRequired, backupRequired, retryAfter);
 }
 
+/** Setzt die API-Basis vor eine relativ gelieferte Screenshot-URL; null bleibt null. */
+export function adminAbsoluteScreenshotUrl(
+	url: string | null,
+	base: string = ADMIN_API_BASE
+): string | null {
+	if (!url) return null;
+	if (url.startsWith('http://') || url.startsWith('https://')) return url;
+	return base + url;
+}
+
+// --- Globaler 401-Hook ---
+
+/**
+ * Modul-Level-Handler: wird bei jedem 401 aus adminFetch aufgerufen.
+ * Verhindert zirkuläre Importe (api.ts importiert nie den Session-Store).
+ * Registrierung durch das Admin-Layout oder den Session-Store.
+ */
+let unauthorizedHandler: (() => void) | null = null;
+
+/**
+ * Registriert einen Callback, der bei jedem 401 aus adminFetch ausgelöst wird.
+ * Gibt eine Cleanup-Funktion zurück (für $effect in Svelte-Komponenten).
+ */
+export function registerUnauthorizedHandler(handler: (() => void) | null): () => void {
+	unauthorizedHandler = handler;
+	return () => {
+		if (unauthorizedHandler === handler) unauthorizedHandler = null;
+	};
+}
+
 /** Zentrale Fetch-Funktion für die Admin-API: credentials + X-Requested-With, problem+json→Flags. */
 export async function adminFetch<T>(
 	path: string,
@@ -186,7 +216,12 @@ export async function adminFetch<T>(
 	} catch (e) {
 		throw new AdminApiError(0, 'Network error', e instanceof Error ? e.message : null);
 	}
-	if (!res.ok) throw await toError(res);
+	if (!res.ok) {
+		// 401: Session abgelaufen oder ungültig → Hook informiert das Layout,
+		// das seinerseits die Client-Session leert und zum Login navigiert.
+		if (res.status === 401) unauthorizedHandler?.();
+		throw await toError(res);
+	}
 	if (res.status === 204) return undefined as T;
 	const text = await res.text();
 	return (text ? JSON.parse(text) : undefined) as T;
@@ -261,8 +296,11 @@ export const removeCredential = (id: number, o?: AdminClientOpts) =>
 
 export const queue = (o?: AdminClientOpts) => adminFetch<QueueResponse>('/api/admin/queue', {}, o);
 
-export const entryDetail = (id: number, o?: AdminClientOpts) =>
-	adminFetch<EntryDetailAdmin>(`/api/admin/entries/${id}`, {}, o);
+export const entryDetail = async (id: number, o?: AdminClientOpts): Promise<EntryDetailAdmin> => {
+	const data = await adminFetch<EntryDetailAdmin>(`/api/admin/entries/${id}`, {}, o);
+	const base = o?.baseUrl ?? ADMIN_API_BASE;
+	return { ...data, screenshotUrl: adminAbsoluteScreenshotUrl(data.screenshotUrl, base) };
+};
 
 export const approveEntry = (id: number, o?: AdminClientOpts) =>
 	adminFetch<void>(`/api/admin/entries/${id}/approve`, { method: 'POST' }, o);

@@ -228,6 +228,7 @@
 	"admin_reports_keep_button": "Behalten",
 	"admin_reports_reject_button": "Löschen",
 	"admin_reports_resolve_failed": "Bearbeiten der Meldung fehlgeschlagen. Bitte erneut versuchen.",
+	"admin_reports_backup_required": "Für das Löschen sind mindestens 2 Passkeys als Backup nötig.",
 	"admin_users_heading": "Nutzerverwaltung",
 	"admin_users_load_failed": "Laden der Nutzer fehlgeschlagen.",
 	"admin_users_empty_title": "Noch keine Nutzer",
