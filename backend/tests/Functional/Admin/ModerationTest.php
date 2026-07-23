@@ -128,7 +128,8 @@ final class ModerationTest extends AdminTestCase
     public function testReportResolveWithPublishFalseDeletesEntryAndWritesAudit(): void
     {
         $admin = $this->createAdmin('chef-reportfalse@example.com', AdminRole::Admin);
-        $this->loginWithCredentials($admin, 1);
+        // publish:false ist destruktiv → Backup-Passkey-Gate (mind. 2 Passkeys).
+        $this->loginWithCredentials($admin, 2);
         $entry = $this->createPublishedEntry('com.example.reportfalse');
         $entry->status = EntryStatus::Hidden;
         $report = new Report($entry, ReportReason::Spam, 'spammt');

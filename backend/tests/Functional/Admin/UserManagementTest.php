@@ -6,10 +6,12 @@ namespace App\Tests\Functional\Admin;
 
 use App\Controller\Admin\UserDisableController;
 use App\Entity\AdminUser;
+use App\Entity\WebAuthnCredential;
 use App\Enum\AdminRole;
 use App\Enum\AdminUserStatus;
 use App\Exception\ApiProblem;
 use App\Repository\AdminUserRepository;
+use App\Security\BackupPasskeyGate;
 use App\Security\StepUpGuard;
 use App\Service\AdminSession;
 use App\Service\AuditLogger;
@@ -121,6 +123,14 @@ final class UserManagementTest extends AdminTestCase
     {
         $lastAdmin = $this->createAdmin('sole-admin@example.com', AdminRole::Admin);
         $actor = $this->createAdmin('bypass-actor@example.com', AdminRole::Moderator);
+        // Der Akteur braucht zwei Passkeys, sonst greift bereits das
+        // Backup-Passkey-Gate vor dem »letzter Admin«-Check.
+        $this->em->persist(new WebAuthnCredential($actor, "actor-{$actor->id}-1", '{"id":"x"}', 'Key 1'));
+        $this->em->persist(new WebAuthnCredential($actor, "actor-{$actor->id}-2", '{"id":"x"}', 'Key 2'));
+        $this->em->flush();
+        // Collection des In-Memory-Akteurs neu laden, damit credentialCount() die
+        // frisch persistierten Passkeys sieht (Backup-Gate).
+        $this->em->refresh($actor);
 
         $security = $this->createMock(Security::class);
         $security->expects(self::once())->method('getUser')->willReturn($actor);
@@ -134,6 +144,7 @@ final class UserManagementTest extends AdminTestCase
                 static::getContainer()->get(AuditLogger::class),
                 $security,
                 $this->freshStepUpGuard(),
+                new BackupPasskeyGate(),
             );
             self::fail('Erwartete ApiProblem-Exception blieb aus');
         } catch (ApiProblem $e) {
