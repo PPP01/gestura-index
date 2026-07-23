@@ -10,14 +10,38 @@ final class SubmissionTokenGuardTest extends ApiTestCase
 {
     public function testSubmissionContainingAccountTokenIsRejected(): void
     {
-        // gültiges Menü-Payload, aber ein gacc_-Token versehentlich im Namen:
-        $bogusToken = 'gacc_' . str_repeat('a', 16) . '_' . str_repeat('b', 43);
-
         $this->api('POST', '/api/v1/entries', [
-            'payload' => $this->menuPayload(['name' => ['en' => 'My ' . $bogusToken . ' menu']]),
+            'payload' => $this->menuPayload(['name' => ['en' => 'My ' . $this->accountToken() . ' menu']]),
             'categories' => ['shopping', 'other'],
         ]);
 
         self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testSubmissionContainingAccountTokenInChangelogIsRejected(): void
+    {
+        $this->api('POST', '/api/v1/entries', [
+            'payload' => $this->menuPayload(),
+            'categories' => ['shopping', 'other'],
+            'changelog' => $this->accountToken(),
+        ]);
+
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testSubmissionContainingAccountTokenInSuccessorFormatIdIsRejected(): void
+    {
+        $this->api('POST', '/api/v1/entries', [
+            'payload' => $this->menuPayload(),
+            'categories' => ['shopping', 'other'],
+            'successorFormatId' => $this->accountToken(),
+        ]);
+
+        self::assertResponseStatusCodeSame(400);
+    }
+
+    private function accountToken(): string
+    {
+        return 'gacc_' . str_repeat('a', 16) . '_' . str_repeat('b', 43);
     }
 }

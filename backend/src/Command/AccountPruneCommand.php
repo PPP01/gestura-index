@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Entity\Account;
 use App\Repository\AccountRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,7 +23,6 @@ final class AccountPruneCommand extends Command
 {
     public function __construct(
         private readonly AccountRepository $accounts,
-        private readonly EntityManagerInterface $em,
     ) {
         parent::__construct();
     }
@@ -38,22 +35,19 @@ final class AccountPruneCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $days = max(1, (int) $input->getArgument('days'));
-        $cutoff = new \DateTimeImmutable(sprintf('-%d days', $days));
+        $days = filter_var($input->getArgument('days'), FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1],
+        ]);
+        if ($days === false) {
+            $io->error('Die Inaktivitätsschwelle muss eine positive Ganzzahl sein.');
 
-        /** @var list<Account> $stale */
-        $stale = $this->accounts->createQueryBuilder('a')
-            ->where('a.lastSeenAt < :cutoff')
-            ->setParameter('cutoff', $cutoff)
-            ->getQuery()
-            ->getResult();
-
-        foreach ($stale as $account) {
-            $this->em->remove($account);
+            return Command::INVALID;
         }
-        $this->em->flush();
 
-        $io->success(sprintf('%d inaktive Konten gelöscht (älter als %d Tage).', count($stale), $days));
+        $cutoff = new \DateTimeImmutable(sprintf('-%d days', $days));
+        $deleted = $this->accounts->deleteInactiveBefore($cutoff);
+
+        $io->success(sprintf('%d inaktive Konten gelöscht (älter als %d Tage).', $deleted, $days));
 
         return Command::SUCCESS;
     }
