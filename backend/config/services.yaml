@@ -47,3 +47,10 @@ when@test:
         App\Service\WebAuthn\BundleWebAuthnCeremony:
             autowire: true
             public: true
+
+        # Öffentlich nur für Tests: AccountResolverTest holt den Service direkt
+        # über den Klassennamen aus dem Test-Container. Ohne "public" entfernt
+        # der Compiler ihn, solange noch kein Controller ihn referenziert.
+        App\Service\AccountResolver:
+            autowire: true
+            public: true

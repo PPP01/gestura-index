@@ -11,6 +11,9 @@ framework:
         # Selektorunabhängiges IP-Limit: deckelt die teure Argon2id-Verifikation
         # pro IP, damit Selector-Rotation keinen CPU-/Memory-DoS ermöglicht.
         token_auth_ip: { policy: sliding_window, limit: 60, interval: '1 hour' }
+        # Cookielose Konto-Bearer-Auth (Phase 3): selektorunabhängiges IP-Limit
+        # analog token_auth_ip, deckelt die teure Argon2id-Verifikation.
+        account_auth_ip: { policy: sliding_window, limit: 60, interval: '1 hour' }
         install:    { policy: fixed_window,   limit: 1,  interval: '1 day' }
         admin_login: { policy: sliding_window, limit: 10, interval: '15 minutes' }
         admin_register: { policy: sliding_window, limit: 10, interval: '1 hour' }
@@ -30,6 +33,7 @@ when@test:
             report_per_entry: { policy: fixed_window, limit: 1, interval: '1 day' }
             token_auth: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             token_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            account_auth_ip: { policy: sliding_window, limit: 60, interval: '1 hour' }
             install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }
             admin_login: { policy: sliding_window, limit: 1000, interval: '15 minutes' }
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
@@ -48,6 +52,7 @@ when@dev:
             report_per_entry: { policy: fixed_window, limit: 1000, interval: '1 day' }
             token_auth: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             token_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            account_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }
             admin_login: { policy: sliding_window, limit: 1000, interval: '15 minutes' }
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
