@@ -6,9 +6,11 @@ namespace App\Service;
 
 use App\Entity\Account;
 use App\Entity\Entry;
+use App\Entity\Rating;
 use App\Entity\Submitter;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
+use App\Repository\RatingRepository;
 use App\Repository\SubmitterRepository;
 use App\Repository\SyncBlobRepository;
 
@@ -30,6 +32,7 @@ final class AccountDataAssembler
         private readonly SubmitterRepository $submitters,
         private readonly EntryRepository $entries,
         private readonly EntryVersionRepository $versions,
+        private readonly RatingRepository $ratings,
     ) {
     }
 
@@ -46,6 +49,7 @@ final class AccountDataAssembler
             // (object)-Cast: ein leeres Ergebnis serialisiert als {} statt [].
             'sync' => (object) $this->assembleSync($account),
             'submitters' => $this->assembleSubmitters($account),
+            'ratings' => $this->assembleRatings($account),
         ];
     }
 
@@ -107,6 +111,23 @@ final class AccountDataAssembler
             $out[] = [
                 'semver' => $version->semver,
                 'status' => $version->status->value,
+            ];
+        }
+
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function assembleRatings(Account $account): array
+    {
+        $out = [];
+        foreach ($this->ratings->findBy(['account' => $account]) as $rating) {
+            $out[] = [
+                'formatId' => $rating->entry->formatId,
+                'stars' => $rating->stars,
+                'comment' => $rating->comment,
+                'commentStatus' => $rating->commentStatus->value,
+                'createdAt' => $rating->createdAt->format(\DateTimeInterface::ATOM),
             ];
         }
 

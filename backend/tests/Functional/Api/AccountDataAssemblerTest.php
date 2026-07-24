@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Api;
 use App\Entity\Account;
 use App\Entity\Entry;
 use App\Entity\EntryVersion;
+use App\Entity\Rating;
 use App\Entity\Submitter;
 use App\Entity\SyncBlob;
 use App\Enum\VersionStatus;
@@ -28,6 +29,7 @@ final class AccountDataAssemblerTest extends ApiTestCase
             $this->em->getRepository(Submitter::class),
             $this->em->getRepository(Entry::class),
             $this->em->getRepository(EntryVersion::class),
+            $this->em->getRepository(Rating::class),
         );
     }
 
