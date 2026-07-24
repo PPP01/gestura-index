@@ -15,6 +15,7 @@ framework:
         # analog token_auth_ip, deckelt die teure Argon2id-Verifikation.
         account_auth_ip: { policy: sliding_window, limit: 60, interval: '1 hour' }
         account_create: { policy: sliding_window, limit: 10, interval: '1 hour' }
+        sync_write: { policy: sliding_window, limit: 120, interval: '1 hour' }
         install:    { policy: fixed_window,   limit: 1,  interval: '1 day' }
         admin_login: { policy: sliding_window, limit: 10, interval: '15 minutes' }
         admin_register: { policy: sliding_window, limit: 10, interval: '1 hour' }
@@ -36,6 +37,7 @@ when@test:
             token_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             account_auth_ip: { policy: sliding_window, limit: 60, interval: '1 hour' }
             account_create: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            sync_write: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }
             admin_login: { policy: sliding_window, limit: 1000, interval: '15 minutes' }
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
@@ -56,6 +58,7 @@ when@dev:
             token_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             account_auth_ip: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             account_create: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            sync_write: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             install:    { policy: fixed_window,   limit: 1000, interval: '1 day' }
             admin_login: { policy: sliding_window, limit: 1000, interval: '15 minutes' }
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
