@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Account;
 use App\Entity\Entry;
 use App\Entity\Submitter;
 use App\Exception\ApiProblem;
@@ -31,13 +32,15 @@ final class SubmitterResolver
         private readonly RateLimitGuard $guard,
         private readonly RateLimiterFactoryInterface $tokenAuthLimiter,
         private readonly RateLimiterFactoryInterface $tokenAuthIpLimiter,
+        private readonly AccountResolver $accountResolver,
     ) {
     }
 
     /**
      * Löst den Authorization-Header auf und gibt den zugehörigen Submitter zurück.
-     * Liefert null, wenn kein Header gesendet wurde. Drosselt Fehlversuche per
-     * IP+Selector (Rate-Limit). Wirft ApiProblem 401 bei ungültigem Token.
+     * Liefert null, wenn kein Header gesendet wurde. Wirft ApiProblem 401 bei
+     * fehlendem Bearer-Prefix; die eigentliche Schutzkette (Rate-Limits,
+     * konstante Zeit) läuft in resolveFromEditToken().
      */
     public function resolve(Request $request): ?Submitter
     {
@@ -45,8 +48,22 @@ final class SubmitterResolver
         if ($header === null) {
             return null;
         }
+        if (!str_starts_with($header, 'Bearer ')) {
+            throw new ApiProblem(401, 'Invalid token');
+        }
 
-        $parsed = $this->tokens->parseAuthorizationHeader($header)
+        return $this->resolveFromEditToken(substr($header, 7), $request);
+    }
+
+    /**
+     * Verifiziert ein rohes Edit-Token (z. B. aus einem Request-Body) über
+     * dieselbe Schutzkette wie resolve(): Per-IP-Limit VOR der Argon2id-
+     * Verifikation, konstante Zeit via Dummy-Hash, Limit pro IP+Selector.
+     * Wirft ApiProblem 401 bei ungültigem Token.
+     */
+    public function resolveFromEditToken(string $editToken, Request $request): Submitter
+    {
+        $parsed = $this->tokens->parseToken($editToken)
             ?? throw new ApiProblem(401, 'Invalid token');
 
         $ip = $request->getClientIp() ?? 'unknown';
@@ -76,9 +93,27 @@ final class SubmitterResolver
      * Wie resolve(), verlangt aber zwingend einen gültigen Token und prüft
      * zusätzlich, ob der Submitter Eigentümer des Eintrags und nicht gesperrt ist.
      * Wirft ApiProblem 401 ohne Token, 403 bei Sperre oder fremdem Eintrag.
+     *
+     * gacc_-Zweig: akzeptiert statt eines Edit-Tokens ein Konto-Bearer-Token
+     * (Header `Bearer gacc_...`). Eigentum besteht dann, wenn der Submitter des
+     * Entrys mit genau diesem Konto verknüpft ist. Ban-Bündel ist ein davon
+     * getrennter 403-Fall ('Account is banned'): Ist irgendein mit dem Konto
+     * verknüpfter Submitter gesperrt, blockiert das das gesamte
+     * konto-basierte Verwalten, unabhängig von der Eigentümerschaft dieses
+     * konkreten Entrys.
      */
     public function requireOwner(Request $request, Entry $entry): Submitter
     {
+        $header = $request->headers->get('Authorization') ?? '';
+        if (str_starts_with($header, 'Bearer gacc_')) {
+            $account = $this->requireUnbannedAccount($request);
+            if ($entry->submitter->account?->id !== $account->id) {
+                throw new ApiProblem(403, 'Not the owner of this entry');
+            }
+
+            return $entry->submitter;
+        }
+
         $submitter = $this->resolve($request) ?? throw new ApiProblem(401, 'Token required');
         if ($submitter->banned) {
             throw new ApiProblem(403, 'Submitter is banned');
@@ -88,5 +123,22 @@ final class SubmitterResolver
         }
 
         return $submitter;
+    }
+
+    /**
+     * Löst das Konto aus einem gacc_-Bearer-Header auf und erzwingt die
+     * Ban-Bündel-Regel: Ist irgendein mit dem Konto verknüpfter Submitter
+     * gesperrt, ist das gesamte konto-basierte Einreichen/Verwalten blockiert
+     * (403). Gemeinsamer Guard für requireOwner() und den Submit-Pfad, damit
+     * die Sperr-Regel nicht in zwei Kopien auseinanderdriften kann.
+     */
+    public function requireUnbannedAccount(Request $request): Account
+    {
+        $account = $this->accountResolver->requireAccount($request);
+        if ($this->submitters->hasBannedForAccount($account)) {
+            throw new ApiProblem(403, 'Account is banned');
+        }
+
+        return $account;
     }
 }

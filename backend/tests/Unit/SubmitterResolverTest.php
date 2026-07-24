@@ -6,6 +6,7 @@ namespace App\Tests\Unit;
 
 use App\Exception\ApiProblem;
 use App\Repository\SubmitterRepository;
+use App\Service\AccountResolver;
 use App\Service\EditTokenService;
 use App\Service\RateLimitGuard;
 use App\Service\SubmitterResolver;
@@ -42,6 +43,10 @@ final class SubmitterResolverTest extends TestCase
             new RateLimitGuard(),
             $selectorFactory,
             $ipFactory,
+            // AccountResolver ist final (nicht mockbar) und wird von resolve()
+            // nie berührt (nur requireOwner()s gacc_-Zweig nutzt ihn) — ein
+            // konstruktorloses Objekt reicht als reiner Typ-Platzhalter.
+            (new \ReflectionClass(AccountResolver::class))->newInstanceWithoutConstructor(),
         );
     }
 

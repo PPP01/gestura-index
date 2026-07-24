@@ -27,6 +27,15 @@ final class SubmissionService
     private const CHANGELOG_MAX = 2000;
     private const ACCOUNT_TOKEN_PATTERN = '/gacc_[0-9a-f]{16}_[A-Za-z0-9_-]{43}/';
 
+    /**
+     * Ab dieser Summe freigegebener Einreichungen (über alle nicht gesperrten
+     * Submitter eines Kontos) publizieren Konto-Einreichungen sofort. Gilt NUR
+     * für Konten — anonyme Einreichungen bleiben immer in der Warteschlange
+     * (Phase-2-Entscheidung: geleaktes Token darf kein Spam-Freifahrtschein
+     * sein). transformCode geht unabhängig davon IMMER in die Warteschlange.
+     */
+    public const TRUST_THRESHOLD = 3;
+
     public function __construct(
         private readonly ExchangeValidator $validator,
         private readonly PayloadAnalyzer $analyzer,

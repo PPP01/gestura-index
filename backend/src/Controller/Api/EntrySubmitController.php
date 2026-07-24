@@ -9,9 +9,11 @@ use App\Entity\EntryVersion;
 use App\Entity\Submitter;
 use App\Enum\EntryStatus;
 use App\Enum\EntryType;
+use App\Enum\VersionStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
+use App\Repository\SubmitterRepository;
 use App\Service\EditTokenService;
 use App\Service\PayloadAnalyzer;
 use App\Service\RateLimitGuard;
@@ -45,6 +47,7 @@ final class EntrySubmitController
         Request $request,
         SubmissionService $submission,
         SubmitterResolver $resolver,
+        SubmitterRepository $submitterRepo,
         EditTokenService $tokens,
         PayloadAnalyzer $analyzer,
         EntryRepository $entries,
@@ -55,9 +58,19 @@ final class EntrySubmitController
     ): JsonResponse {
         $guard->consume($submitLimiter, $request->getClientIp() ?? 'unknown');
 
-        $submitter = $resolver->resolve($request);
-        if ($submitter?->banned === true) {
-            throw new ApiProblem(403, 'Submitter is banned');
+        // gacc_-Weiche: Konto-Einreichung nutzt deterministisch den ältesten
+        // nicht gesperrten verknüpften Submitter; nur ohne Bündel entsteht ein
+        // neuer (Edit-Token als Rückfall-Credential einmalig in der Antwort).
+        $account = null;
+        $header = $request->headers->get('Authorization') ?? '';
+        if (str_starts_with($header, 'Bearer gacc_')) {
+            $account = $resolver->requireUnbannedAccount($request);
+            $submitter = $submitterRepo->oldestActiveForAccount($account);
+        } else {
+            $submitter = $resolver->resolve($request);
+            if ($submitter?->banned === true) {
+                throw new ApiProblem(403, 'Submitter is banned');
+            }
         }
 
         $meta = $submission->parseSubmissionBody($request);
@@ -94,6 +107,7 @@ final class EntrySubmitController
             $generated = $tokens->generate();
             $freshToken = $generated->token;
             $submitter = new Submitter($generated->selector, $generated->hash);
+            $submitter->account = $account; // null bei anonymer Einreichung
             $em->persist($submitter);
         }
 
@@ -104,6 +118,20 @@ final class EntrySubmitController
         $version = new EntryVersion($entry, $payload['version'], $payload, $hash);
         $version->changelog = $meta['changelog'];
         $version->hasTransformCode = $analyzer->hasTransform($payload);
+
+        // Trust-Pfad (erstmals aktiv, NUR für Konten): ab TRUST_THRESHOLD
+        // aggregierter Freigaben publiziert die Einreichung sofort — außer bei
+        // transformCode (Supply-Chain-Schutz ist absolut). Version-Status,
+        // currentVersion und Entry-Status werden zusammen gesetzt, damit die
+        // Statusmaschinen-Invariante (published ⇒ currentVersion) hält.
+        if ($account !== null
+            && !$version->hasTransformCode
+            && $submitterRepo->sumApprovedCountForAccount($account) >= SubmissionService::TRUST_THRESHOLD
+        ) {
+            $version->status = VersionStatus::Approved;
+            $entry->currentVersion = $version;
+            $entry->status = EntryStatus::Published;
+        }
 
         $em->persist($entry);
         $em->persist($version);
