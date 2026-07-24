@@ -196,6 +196,8 @@
 	"admin_queue_empty_title": "The queue is empty",
 	"admin_queue_entries_heading": "Pending entries",
 	"admin_queue_versions_heading": "Pending versions",
+	"admin_queue_comments_heading": "Pending comments",
+	"admin_queue_comment_stars": "{count} stars",
 	"admin_queue_transform_badge": "transformCode",
 	"admin_queue_approve_button": "Approve",
 	"admin_queue_reject_button": "Reject",

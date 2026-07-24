@@ -9,9 +9,13 @@
 		rejectEntry,
 		approveVersion,
 		rejectVersion,
+		commentQueue,
+		approveComment,
+		rejectComment,
 		AdminApiError,
 		type QueueEntry,
-		type QueueVersion
+		type QueueVersion,
+		type PendingComment
 	} from '$lib/admin/api';
 	import { withStepUp } from '$lib/admin/stepup';
 	import Spinner from '$lib/components/Spinner.svelte';
@@ -31,13 +35,18 @@
 	let busyVersionId = $state<number | null>(null);
 	let versionActionError = $state<string | null>(null);
 
+	let comments = $state<PendingComment[]>([]);
+	let busyCommentId = $state<number | null>(null);
+	let commentActionError = $state<string | null>(null);
+
 	async function loadQueue() {
 		loading = true;
 		loadError = null;
 		try {
-			const res = await queue();
-			entries = res.entries;
-			versions = res.versions;
+			const [q, c] = await Promise.all([queue(), commentQueue()]);
+			entries = q.entries;
+			versions = q.versions;
+			comments = c;
 		} catch {
 			loadError = m.admin_queue_load_failed();
 		} finally {
@@ -115,6 +124,36 @@
 			busyVersionId = null;
 		}
 	}
+
+	async function onApproveComment(id: number) {
+		busyCommentId = id;
+		commentActionError = null;
+		try {
+			await approveComment(id);
+			await loadQueue();
+		} catch {
+			commentActionError = m.admin_queue_approve_failed();
+		} finally {
+			busyCommentId = null;
+		}
+	}
+
+	async function onRejectComment(id: number) {
+		busyCommentId = id;
+		commentActionError = null;
+		try {
+			await withStepUp(() => rejectComment(id));
+			await loadQueue();
+		} catch (e) {
+			if (e instanceof AdminApiError && e.backupRequired) {
+				commentActionError = m.admin_queue_backup_required();
+			} else {
+				commentActionError = m.admin_queue_reject_failed();
+			}
+		} finally {
+			busyCommentId = null;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -127,7 +166,7 @@
 	<Spinner />
 {:else if loadError}
 	<ErrorState message={loadError} onRetry={loadQueue} />
-{:else if entries.length === 0 && versions.length === 0}
+{:else if entries.length === 0 && versions.length === 0 && comments.length === 0}
 	<EmptyState title={m.admin_queue_empty_title()} />
 {:else}
 	<section>
@@ -219,6 +258,50 @@
 		{/if}
 		{#if versionActionError}<AdminError message={versionActionError} />{/if}
 	</section>
+
+	<section>
+		<h2>{m.admin_queue_comments_heading()}</h2>
+		{#if comments.length === 0}
+			<p class="queue-section-empty">{m.admin_queue_empty_title()}</p>
+		{:else}
+			<div class="queue-list">
+				{#each comments as comment (comment.id)}
+					<div class="card queue-card">
+						<div class="queue-card-head">
+							<a
+								class="queue-format-link"
+								href={localizeHref(`/admin/entries/${comment.entryId}`)}
+							>
+								{comment.formatId}
+							</a>
+							<span class="queue-semver">{m.admin_queue_comment_stars({ count: comment.stars })}</span>
+						</div>
+						{#if comment.comment}<p class="queue-comment-text">{comment.comment}</p>{/if}
+						<span class="queue-meta">
+							{new Date(comment.createdAt).toLocaleDateString(getLocale())}
+						</span>
+						<div class="queue-actions">
+							<button
+								class="btn btn-primary"
+								onclick={() => onApproveComment(comment.id)}
+								disabled={busyCommentId === comment.id}
+							>
+								{m.admin_queue_approve_button()}
+							</button>
+							<button
+								class="btn btn-danger"
+								onclick={() => onRejectComment(comment.id)}
+								disabled={busyCommentId === comment.id}
+							>
+								{m.admin_queue_reject_button()}
+							</button>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+		{#if commentActionError}<AdminError message={commentActionError} />{/if}
+	</section>
 {/if}
 
 <style>
@@ -274,6 +357,12 @@
 	}
 
 	.queue-semver {
+		color: var(--text-secondary);
+	}
+
+	.queue-comment-text {
+		flex: 1 1 100%;
+		margin: 0;
 		color: var(--text-secondary);
 	}
 

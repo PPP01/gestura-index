@@ -14,6 +14,9 @@ import {
 	authLogout,
 	listUsers,
 	queue,
+	commentQueue,
+	approveComment,
+	rejectComment,
 	audit,
 	entryDetail,
 	adminAbsoluteScreenshotUrl,
@@ -136,6 +139,21 @@ describe('admin api', () => {
 		expect(res.versions[0].hasTransformCode).toBe(true);
 		const [url] = fetchMock.mock.calls[0];
 		expect(String(url)).toBe('https://api.test/api/admin/queue');
+	});
+
+	it('commentQueue/approveComment/rejectComment treffen die richtigen Endpunkte', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		await approveComment(5, { fetch: fetchMock, baseUrl: BASE });
+		expect(fetchMock.mock.calls[0][0]).toBe(`${BASE}/api/admin/comments/5/approve`);
+		expect(fetchMock.mock.calls[0][1].method).toBe('POST');
+
+		await rejectComment(6, { fetch: fetchMock, baseUrl: BASE });
+		expect(fetchMock.mock.calls[1][0]).toBe(`${BASE}/api/admin/comments/6/reject`);
+		expect(fetchMock.mock.calls[1][1].method).toBe('POST');
+
+		const listMock = vi.fn().mockResolvedValue(jsonResponse([]));
+		await commentQueue({ fetch: listMock, baseUrl: BASE });
+		expect(listMock.mock.calls[0][0]).toBe(`${BASE}/api/admin/comments`);
 	});
 
 	it('audit() baut die Query-Parameter aus page/perPage', async () => {
