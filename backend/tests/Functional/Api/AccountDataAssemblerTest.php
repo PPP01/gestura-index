@@ -119,9 +119,14 @@ final class AccountDataAssemblerTest extends ApiTestCase
         $foreignSub->account = $other;
         $this->em->flush();
 
+        $thatEntry = $this->createPublishedEntry('com.example.iso-rating');
+        $this->em->persist(new Rating($other, $thatEntry, 5));
+        $this->em->flush();
+
         $data = $this->assembler()->assemble($mine);
 
         self::assertSame([], (array) $data['sync']);
         self::assertSame([], $data['submitters']);
+        self::assertSame([], $data['ratings']);
     }
 }

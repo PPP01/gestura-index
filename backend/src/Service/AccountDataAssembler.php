@@ -17,7 +17,8 @@ use App\Repository\SyncBlobRepository;
 /**
  * Baut die vollständige Selbstauskunft eines End-Nutzer-Kontos (»Meine Daten«,
  * Phase 3 E) als serialisierbares Array: Konto-Metadaten, Sync-Blobs inkl.
- * Chiffrat und die verknüpften Submitter mit ihren Einträgen als Referenzliste.
+ * Chiffrat, die verknüpften Submitter mit ihren Einträgen als Referenzliste
+ * sowie die eigenen Bewertungen.
  *
  * Bewusst NICHT enthalten: tokenHash (Konto UND Submitter – abgeleitetes
  * Geheimnis-Material) sowie Entry-Payloads (öffentlicher Index-Inhalt, über die
@@ -37,7 +38,7 @@ final class AccountDataAssembler
     }
 
     /**
-     * @return array{account: array<string, string>, sync: \stdClass, submitters: list<array<string, mixed>>}
+     * @return array{account: array<string, string>, sync: \stdClass, submitters: list<array<string, mixed>>, ratings: list<array<string, mixed>>}
      */
     public function assemble(Account $account): array
     {
