@@ -39,4 +39,31 @@ class SubmitterRepository extends ServiceEntityRepository
             ->setParameter('account', $account)
             ->getQuery()->getSingleScalarResult();
     }
+
+    /**
+     * Ältester nicht gesperrter Submitter eines Kontos — deterministische Wahl
+     * für Konto-Einreichungen (kein Marker-Feld nötig).
+     */
+    public function oldestActiveForAccount(Account $account): ?Submitter
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.account = :account')->andWhere('s.banned = false')
+            ->setParameter('account', $account)
+            ->orderBy('s.createdAt', 'ASC')->addOrderBy('s.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()->getOneOrNullResult();
+    }
+
+    /**
+     * Summe der approvedCounts aller nicht gesperrten Submitter eines Kontos —
+     * Grundlage der Trust-Aggregation (migrierter Ruf wirkt sofort weiter).
+     */
+    public function sumApprovedCountForAccount(Account $account): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->select('COALESCE(SUM(s.approvedCount), 0)')
+            ->where('s.account = :account')->andWhere('s.banned = false')
+            ->setParameter('account', $account)
+            ->getQuery()->getSingleScalarResult();
+    }
 }
