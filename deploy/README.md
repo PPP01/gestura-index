@@ -66,3 +66,12 @@ Die Routen unter `/admin` sind **client-only** (kein Prerendering) und werden vo
 - dabei die **prerenderten öffentlichen Seiten nicht übergehen** – die Rewrite-Regel darf nur greifen, wenn keine passende Datei/kein passendes Verzeichnis existiert (klassisches `RewriteCond %{REQUEST_FILENAME} !-f` / `!-d` vor dem Fallback auf `200.html`).
 
 Serverseitige Voraussetzungen für die Admin-Auth (bereits mit dem SP4a-Deploy erfüllt, hier nur zur Erinnerung): credentialed CORS für `https://gestura.eu`, `SESSION_COOKIE_DOMAIN=.gestura.eu`, `WEBAUTHN_RP_ID=gestura.eu`, `MAILER_DSN` gesetzt.
+
+## Phase 3: End-Nutzer-Konten (Sub-Projekt A)
+
+Anonyme, cookielose End-Nutzer-Konten (Bearer-Token `gacc_…`) unter `/api/account*`. **Keine** neuen `.env.local`-Variablen, **keine** CORS-/Cookie-Änderungen – der Konto-Realm ist header-basiert und liegt in der öffentlichen, cookielosen API (getrennt von der `/api/admin`-Firewall).
+
+- **Migration:** legt die Tabelle `account` an; läuft im normalen `deploy.sh`-Migrationsschritt mit, kein separater Aufruf.
+- **Wartung (optional als Cron):** `php85 bin/console index:account:prune [tage]` löscht Konten, die länger als `tage` (Default 365) inaktiv sind (Datensparsamkeit).
+
+⚠️ **Vorbehalt für Sub-Projekt F (Settings-Sync):** `index:account:prune` löscht über ein **DQL-Bulk-DELETE**, das die ORM-Kaskade umgeht. Sobald F `SyncBlob` (o. ä.) mit Fremdschlüssel auf `account` einführt, MUSS dieser FK DB-seitig `ON DELETE CASCADE` tragen (oder der Prune-Pfad die Blobs explizit löschen) – sonst bleiben nach dem Prune verwaiste Sync-Blobs zurück. Siehe Kommentar an `AccountRepository::deleteInactiveBefore()`.
