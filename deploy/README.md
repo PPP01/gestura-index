@@ -74,4 +74,4 @@ Anonyme, cookielose End-Nutzer-Konten (Bearer-Token `gacc_…`) unter `/api/acco
 - **Migration:** legt die Tabelle `account` an; läuft im normalen `deploy.sh`-Migrationsschritt mit, kein separater Aufruf.
 - **Wartung (optional als Cron):** `php85 bin/console index:account:prune [tage]` löscht Konten, die länger als `tage` (Default 365) inaktiv sind (Datensparsamkeit).
 
-⚠️ **Vorbehalt für Sub-Projekt F (Settings-Sync):** `index:account:prune` löscht über ein **DQL-Bulk-DELETE**, das die ORM-Kaskade umgeht. Sobald F `SyncBlob` (o. ä.) mit Fremdschlüssel auf `account` einführt, MUSS dieser FK DB-seitig `ON DELETE CASCADE` tragen (oder der Prune-Pfad die Blobs explizit löschen) – sonst bleiben nach dem Prune verwaiste Sync-Blobs zurück. Siehe Kommentar an `AccountRepository::deleteInactiveBefore()`.
+✅ **Aufgelöst mit Sub-Projekt F (Settings-Sync):** Der `sync_blob`-FK trägt DB-seitiges `ON DELETE CASCADE` – sowohl Konto-Löschen als auch das DQL-Bulk-DELETE von `index:account:prune` entfernen Sync-Blobs zuverlässig mit (Regressionstest `SyncCascadeTest`). Neue Tabellen mit FK auf `account` müssen diesem Muster folgen.
