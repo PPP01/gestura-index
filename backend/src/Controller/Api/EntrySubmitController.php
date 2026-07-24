@@ -14,7 +14,6 @@ use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
 use App\Repository\SubmitterRepository;
-use App\Service\AccountResolver;
 use App\Service\EditTokenService;
 use App\Service\PayloadAnalyzer;
 use App\Service\RateLimitGuard;
@@ -48,7 +47,6 @@ final class EntrySubmitController
         Request $request,
         SubmissionService $submission,
         SubmitterResolver $resolver,
-        AccountResolver $accountResolver,
         SubmitterRepository $submitterRepo,
         EditTokenService $tokens,
         PayloadAnalyzer $analyzer,
@@ -66,10 +64,7 @@ final class EntrySubmitController
         $account = null;
         $header = $request->headers->get('Authorization') ?? '';
         if (str_starts_with($header, 'Bearer gacc_')) {
-            $account = $accountResolver->requireAccount($request);
-            if ($submitterRepo->hasBannedForAccount($account)) {
-                throw new ApiProblem(403, 'Account is banned');
-            }
+            $account = $resolver->requireUnbannedAccount($request);
             $submitter = $submitterRepo->oldestActiveForAccount($account);
         } else {
             $submitter = $resolver->resolve($request);

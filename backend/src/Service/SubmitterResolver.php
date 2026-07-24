@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Account;
 use App\Entity\Entry;
 use App\Entity\Submitter;
 use App\Exception\ApiProblem;
@@ -92,19 +93,20 @@ final class SubmitterResolver
      * Wie resolve(), verlangt aber zwingend einen gültigen Token und prüft
      * zusätzlich, ob der Submitter Eigentümer des Eintrags und nicht gesperrt ist.
      * Wirft ApiProblem 401 ohne Token, 403 bei Sperre oder fremdem Eintrag.
+     *
+     * gacc_-Zweig: akzeptiert statt eines Edit-Tokens ein Konto-Bearer-Token
+     * (Header `Bearer gacc_...`). Eigentum besteht dann, wenn der Submitter des
+     * Entrys mit genau diesem Konto verknüpft ist. Ban-Bündel ist ein davon
+     * getrennter 403-Fall ('Account is banned'): Ist irgendein mit dem Konto
+     * verknüpfter Submitter gesperrt, blockiert das das gesamte
+     * konto-basierte Verwalten, unabhängig von der Eigentümerschaft dieses
+     * konkreten Entrys.
      */
     public function requireOwner(Request $request, Entry $entry): Submitter
     {
-        // gacc_-Weiche: Konto-Token statt Edit-Token — Eigentum besteht, wenn
-        // der Submitter des Entrys mit genau diesem Konto verknüpft ist.
-        // Ban-Bündel: ein gesperrter verknüpfter Submitter blockiert das
-        // gesamte konto-basierte Verwalten.
         $header = $request->headers->get('Authorization') ?? '';
         if (str_starts_with($header, 'Bearer gacc_')) {
-            $account = $this->accountResolver->requireAccount($request);
-            if ($this->submitters->hasBannedForAccount($account)) {
-                throw new ApiProblem(403, 'Account is banned');
-            }
+            $account = $this->requireUnbannedAccount($request);
             if ($entry->submitter->account?->id !== $account->id) {
                 throw new ApiProblem(403, 'Not the owner of this entry');
             }
@@ -121,5 +123,22 @@ final class SubmitterResolver
         }
 
         return $submitter;
+    }
+
+    /**
+     * Löst das Konto aus einem gacc_-Bearer-Header auf und erzwingt die
+     * Ban-Bündel-Regel: Ist irgendein mit dem Konto verknüpfter Submitter
+     * gesperrt, ist das gesamte konto-basierte Einreichen/Verwalten blockiert
+     * (403). Gemeinsamer Guard für requireOwner() und den Submit-Pfad, damit
+     * die Sperr-Regel nicht in zwei Kopien auseinanderdriften kann.
+     */
+    public function requireUnbannedAccount(Request $request): Account
+    {
+        $account = $this->accountResolver->requireAccount($request);
+        if ($this->submitters->hasBannedForAccount($account)) {
+            throw new ApiProblem(403, 'Account is banned');
+        }
+
+        return $account;
     }
 }

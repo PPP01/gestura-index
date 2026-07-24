@@ -47,6 +47,11 @@ final class AccountClaimController
             // Ein gesperrter Ruf lässt sich nicht in ein Konto einbringen.
             throw new ApiProblem(403, 'Submitter is banned');
         }
+        // Bewusst OHNE SELECT…FOR-UPDATE-Serialisierung (Abweichung von der
+        // lessons.md-Konvention): Zwei parallele Claims setzen voraus, dass
+        // BEIDE Parteien das geheime Edit-Token bereits besitzen — der Token
+        // verleiht ohnehin volle Kontrolle, es gibt keine Eskalation. Der
+        // letzte Schreiber gewinnt; danach greift die 409-Idempotenz-Regel.
         if ($submitter->account !== null && $submitter->account->id !== $account->id) {
             throw new ApiProblem(409, 'Submitter already claimed by another account');
         }
