@@ -20,7 +20,7 @@ final class EntrySerializer
      *
      * @return array<string, mixed>
      */
-    public function toListItem(Entry $entry): array
+    public function toListItem(Entry $entry, ?array $rating = null): array
     {
         $payload = $entry->currentVersion?->payload ?? [];
 
@@ -33,6 +33,7 @@ final class EntrySerializer
             'tags' => $entry->tags,
             'domains' => $entry->domains,
             'installCount' => $entry->installCount,
+            'rating' => $rating ?? ['average' => null, 'count' => 0],
             'currentVersion' => $entry->currentVersion?->semver,
             'deprecated' => $entry->deprecated,
             'successorFormatId' => $entry->successorFormatId,
@@ -49,9 +50,9 @@ final class EntrySerializer
      *
      * @return array<string, mixed>
      */
-    public function toDetail(Entry $entry, array $versions): array
+    public function toDetail(Entry $entry, array $versions, ?array $rating = null): array
     {
-        return $this->toListItem($entry) + [
+        return $this->toListItem($entry, $rating) + [
             'versions' => array_map(static fn (EntryVersion $v): array => [
                 'semver' => $v->semver,
                 'changelog' => $v->changelog,

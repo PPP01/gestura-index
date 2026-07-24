@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Api;
 
 use App\Entity\Account;
+use App\Entity\Rating;
 use App\Tests\Functional\ApiTestCase;
 
 final class AccountDataTest extends ApiTestCase
@@ -96,5 +97,27 @@ final class AccountDataTest extends ApiTestCase
         $this->client->request('GET', '/api/account/data', server: $this->authHdr($token));
         self::assertResponseStatusCodeSame(200);
         self::assertStringStartsNotWith('2020-01-01', $this->json()['account']['lastSeenAt']);
+    }
+
+    public function testDataIncludesOwnRatings(): void
+    {
+        $entry = $this->createPublishedEntry('com.example.rated');
+        $token = $this->createAccount();
+        $account = $this->accountFor($token);
+
+        $rating = new Rating($account, $entry, 5);
+        $rating->comment = 'top';
+        $this->em->persist($rating);
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/account/data', server: $this->authHdr($token));
+        self::assertResponseStatusCodeSame(200);
+
+        $ratings = $this->json()['ratings'];
+        self::assertCount(1, $ratings);
+        self::assertSame('com.example.rated', $ratings[0]['formatId']);
+        self::assertSame(5, $ratings[0]['stars']);
+        self::assertSame('top', $ratings[0]['comment']);
+        self::assertArrayHasKey('commentStatus', $ratings[0]);
     }
 }

@@ -6,8 +6,10 @@ namespace App\Service;
 
 use App\Entity\Entry;
 use App\Entity\EntryVersion;
+use App\Entity\Rating;
 use App\Entity\Report;
 use App\Entity\Submitter;
+use App\Enum\CommentStatus;
 use App\Enum\EntryStatus;
 use App\Enum\ReportStatus;
 use App\Enum\VersionStatus;
@@ -148,6 +150,34 @@ final class ModerationService
         }
 
         $version->status = VersionStatus::Rejected;
+        $this->em->flush();
+    }
+
+    /**
+     * Gibt einen wartenden Kommentar frei (öffentlich in /reviews sichtbar).
+     * Nur wartende Kommentare sind freigebbar.
+     */
+    public function approveComment(Rating $rating): void
+    {
+        if ($rating->commentStatus !== CommentStatus::Pending) {
+            throw new \RuntimeException('Nur wartende Kommentare können freigegeben werden');
+        }
+
+        $rating->commentStatus = CommentStatus::Approved;
+        $this->em->flush();
+    }
+
+    /**
+     * Lehnt einen wartenden Kommentar ab: blendet nur den Text aus – der
+     * Stern-Wert bleibt im Aggregat. Nur wartende Kommentare sind ablehnbar.
+     */
+    public function rejectComment(Rating $rating): void
+    {
+        if ($rating->commentStatus !== CommentStatus::Pending) {
+            throw new \RuntimeException('Nur wartende Kommentare können abgelehnt werden');
+        }
+
+        $rating->commentStatus = CommentStatus::Rejected;
         $this->em->flush();
     }
 

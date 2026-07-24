@@ -6,16 +6,19 @@ namespace App\Service;
 
 use App\Entity\Account;
 use App\Entity\Entry;
+use App\Entity\Rating;
 use App\Entity\Submitter;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
+use App\Repository\RatingRepository;
 use App\Repository\SubmitterRepository;
 use App\Repository\SyncBlobRepository;
 
 /**
  * Baut die vollständige Selbstauskunft eines End-Nutzer-Kontos (»Meine Daten«,
  * Phase 3 E) als serialisierbares Array: Konto-Metadaten, Sync-Blobs inkl.
- * Chiffrat und die verknüpften Submitter mit ihren Einträgen als Referenzliste.
+ * Chiffrat, die verknüpften Submitter mit ihren Einträgen als Referenzliste
+ * sowie die eigenen Bewertungen.
  *
  * Bewusst NICHT enthalten: tokenHash (Konto UND Submitter – abgeleitetes
  * Geheimnis-Material) sowie Entry-Payloads (öffentlicher Index-Inhalt, über die
@@ -30,11 +33,12 @@ final class AccountDataAssembler
         private readonly SubmitterRepository $submitters,
         private readonly EntryRepository $entries,
         private readonly EntryVersionRepository $versions,
+        private readonly RatingRepository $ratings,
     ) {
     }
 
     /**
-     * @return array{account: array<string, string>, sync: \stdClass, submitters: list<array<string, mixed>>}
+     * @return array{account: array<string, string>, sync: \stdClass, submitters: list<array<string, mixed>>, ratings: list<array<string, mixed>>}
      */
     public function assemble(Account $account): array
     {
@@ -46,6 +50,7 @@ final class AccountDataAssembler
             // (object)-Cast: ein leeres Ergebnis serialisiert als {} statt [].
             'sync' => (object) $this->assembleSync($account),
             'submitters' => $this->assembleSubmitters($account),
+            'ratings' => $this->assembleRatings($account),
         ];
     }
 
@@ -107,6 +112,23 @@ final class AccountDataAssembler
             $out[] = [
                 'semver' => $version->semver,
                 'status' => $version->status->value,
+            ];
+        }
+
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function assembleRatings(Account $account): array
+    {
+        $out = [];
+        foreach ($this->ratings->findBy(['account' => $account]) as $rating) {
+            $out[] = [
+                'formatId' => $rating->entry->formatId,
+                'stars' => $rating->stars,
+                'comment' => $rating->comment,
+                'commentStatus' => $rating->commentStatus->value,
+                'createdAt' => $rating->createdAt->format(\DateTimeInterface::ATOM),
             ];
         }
 

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\Entry;
 use App\Enum\Category;
 use App\Enum\EntryType;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
+use App\Repository\RatingRepository;
 use App\Service\EntrySerializer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,7 +35,7 @@ final class EntryListController
      * unverändert.
      */
     #[Route('/api/v1/entries', methods: ['GET'])]
-    public function __invoke(Request $request, EntryRepository $entries, EntrySerializer $serializer): JsonResponse
+    public function __invoke(Request $request, EntryRepository $entries, EntrySerializer $serializer, RatingRepository $ratings): JsonResponse
     {
         $categoryParam = $request->query->get('category');
         $category = $categoryParam === null ? null
@@ -65,8 +67,14 @@ final class EntryListController
             perPage: $perPage,
         );
 
+        $entryIds = array_map(static fn (Entry $e): int => $e->id, $result['items']);
+        $aggregates = $ratings->aggregatesFor($entryIds);
+
         $response = new JsonResponse([
-            'items' => array_map($serializer->toListItem(...), $result['items']),
+            'items' => array_map(
+                fn (Entry $e): array => $serializer->toListItem($e, $aggregates[$e->id] ?? null),
+                $result['items'],
+            ),
             'page' => $page,
             'perPage' => $perPage,
             'total' => $result['total'],
