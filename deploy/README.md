@@ -75,3 +75,5 @@ Anonyme, cookielose End-Nutzer-Konten (Bearer-Token `gacc_…`) unter `/api/acco
 - **Wartung (optional als Cron):** `php85 bin/console index:account:prune [tage]` löscht Konten, die länger als `tage` (Default 365) inaktiv sind (Datensparsamkeit).
 
 ✅ **Aufgelöst mit Sub-Projekt F (Settings-Sync):** Der `sync_blob`-FK trägt DB-seitiges `ON DELETE CASCADE` – sowohl Konto-Löschen als auch das DQL-Bulk-DELETE von `index:account:prune` entfernen Sync-Blobs zuverlässig mit (Regressionstest `SyncCascadeTest`). Neue Tabellen mit FK auf `account` müssen diesem Muster folgen.
+
+**Edit-Token-Migration (Sub-Projekt C):** `submitter.account_id` trägt `ON DELETE SET NULL` – Konto-Löschung/-Prune lässt Einreichungen als anonyme Edit-Token-Submitter zurück (Regressionstest `AccountSubmitterCascadeTest`). Der Trust-Pfad (Sofort-Publish ab `TRUST_THRESHOLD = 3` aggregierten Freigaben) ist damit erstmals aktiv – ausschließlich für Konto-Einreichungen.
