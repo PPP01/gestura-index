@@ -55,6 +55,7 @@ final class SyncTest extends ApiTestCase
 
         // Nachprüfung, dass der Blob unverändert bleibt:
         $this->client->request('GET', '/api/account/sync/settings', server: $this->authHdr($token));
+        self::assertResponseStatusCodeSame(200);
         self::assertSame('cipher-v2', $this->json()['ciphertext']);
     }
 
@@ -116,6 +117,9 @@ final class SyncTest extends ApiTestCase
         $this->client->request('GET', '/api/account/sync', server: $this->authHdr($token));
         self::assertResponseStatusCodeSame(200);
         self::assertSame([], (array) $this->json()['collections']);
+        // Assoziatives json_decode kollabiert {} und [] — deshalb die Roh-
+        // Antwort prüfen: das leere Ergebnis MUSS als Objekt serialisieren.
+        self::assertStringContainsString('"collections":{}', (string) $this->client->getResponse()->getContent());
 
         $this->putBlob($token, 'settings', 0, 'cipher-set');
         $this->putBlob($token, 'menus', 0, 'cipher-menus');

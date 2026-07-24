@@ -9,6 +9,7 @@ use App\Exception\ApiProblem;
 use App\Repository\SyncBlobRepository;
 use App\Service\AccountResolver;
 use App\Service\RateLimitGuard;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,10 +38,25 @@ final class SyncDeleteController
         }
         $guard->consume($syncWriteLimiter, $request->getClientIp() ?? 'unknown');
 
-        $blob = $blobs->findOneBy(['account' => $account, 'collection' => $collection])
-            ?? throw new ApiProblem(404, 'No sync data for this collection');
-        $em->remove($blob);
-        $em->flush();
+        // Löschen unter derselben Aggregat-Sperre wie der PUT (Konto-Zeile):
+        // sonst könnte ein parallel laufender PUT zwischen seinem Lesen und
+        // Schreiben den hier gelöschten Blob »wiederbeleben« bzw. ein 200 für
+        // eine verlorene Schreiboperation melden. Das 404 wird als Sentinel
+        // zurückgegeben und erst NACH dem Commit geworfen (EM-Close, lessons.md).
+        $found = $em->wrapInTransaction(function () use ($em, $blobs, $account, $collection): bool {
+            $em->lock($account, LockMode::PESSIMISTIC_WRITE);
+            $blob = $blobs->findOneBy(['account' => $account, 'collection' => $collection]);
+            if ($blob === null) {
+                return false;
+            }
+            $em->remove($blob);
+
+            return true;
+        });
+
+        if (!$found) {
+            throw new ApiProblem(404, 'No sync data for this collection');
+        }
 
         return new Response('', 204);
     }
