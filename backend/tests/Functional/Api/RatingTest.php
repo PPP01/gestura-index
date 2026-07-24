@@ -72,6 +72,7 @@ final class RatingTest extends ApiTestCase
         self::assertResponseStatusCodeSame(200);
         // Neues Konto (kein approvedCount) → Kommentar wartet:
         self::assertSame('pending', $this->json()['commentStatus']);
+        self::assertSame(5, $this->json()['stars']);
     }
 
     public function testCommentFromTrustedAccountIsApproved(): void
@@ -145,6 +146,20 @@ final class RatingTest extends ApiTestCase
         $this->createPublishedEntry('com.example.r6');
         $this->client->request('PUT', '/api/v1/entries/com.example.r6/rating',
             server: ['CONTENT_TYPE' => 'application/json'], content: json_encode(['stars' => 5], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testGetWithoutTokenIs401(): void
+    {
+        $this->createPublishedEntry('com.example.r7');
+        $this->client->request('GET', '/api/v1/entries/com.example.r7/rating');
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testDeleteWithoutTokenIs401(): void
+    {
+        $this->createPublishedEntry('com.example.r8');
+        $this->client->request('DELETE', '/api/v1/entries/com.example.r8/rating');
         self::assertResponseStatusCodeSame(401);
     }
 }
