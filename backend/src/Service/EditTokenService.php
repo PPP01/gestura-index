@@ -40,7 +40,19 @@ final class EditTokenService
         if ($header === null || !str_starts_with($header, 'Bearer ')) {
             return null;
         }
-        if (!preg_match('/^gsti_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/', trim(substr($header, 7)), $m)) {
+
+        return $this->parseToken(substr($header, 7));
+    }
+
+    /**
+     * Zerlegt ein rohes Edit-Token (ohne Bearer-Präfix) in Selector und
+     * Verifier. Gibt null zurück, wenn das Format nicht dem Muster entspricht.
+     *
+     * @return array{selector: string, verifier: string}|null
+     */
+    public function parseToken(string $token): ?array
+    {
+        if (!preg_match('/^gsti_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/', trim($token), $m)) {
             return null;
         }
 

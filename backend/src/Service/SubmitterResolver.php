@@ -36,8 +36,9 @@ final class SubmitterResolver
 
     /**
      * Löst den Authorization-Header auf und gibt den zugehörigen Submitter zurück.
-     * Liefert null, wenn kein Header gesendet wurde. Drosselt Fehlversuche per
-     * IP+Selector (Rate-Limit). Wirft ApiProblem 401 bei ungültigem Token.
+     * Liefert null, wenn kein Header gesendet wurde. Wirft ApiProblem 401 bei
+     * fehlendem Bearer-Prefix; die eigentliche Schutzkette (Rate-Limits,
+     * konstante Zeit) läuft in resolveFromEditToken().
      */
     public function resolve(Request $request): ?Submitter
     {
@@ -45,8 +46,22 @@ final class SubmitterResolver
         if ($header === null) {
             return null;
         }
+        if (!str_starts_with($header, 'Bearer ')) {
+            throw new ApiProblem(401, 'Invalid token');
+        }
 
-        $parsed = $this->tokens->parseAuthorizationHeader($header)
+        return $this->resolveFromEditToken(substr($header, 7), $request);
+    }
+
+    /**
+     * Verifiziert ein rohes Edit-Token (z. B. aus einem Request-Body) über
+     * dieselbe Schutzkette wie resolve(): Per-IP-Limit VOR der Argon2id-
+     * Verifikation, konstante Zeit via Dummy-Hash, Limit pro IP+Selector.
+     * Wirft ApiProblem 401 bei ungültigem Token.
+     */
+    public function resolveFromEditToken(string $editToken, Request $request): Submitter
+    {
+        $parsed = $this->tokens->parseToken($editToken)
             ?? throw new ApiProblem(401, 'Invalid token');
 
         $ip = $request->getClientIp() ?? 'unknown';
