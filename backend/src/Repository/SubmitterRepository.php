@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Account;
 use App\Entity\Submitter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -23,5 +24,19 @@ class SubmitterRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Submitter::class);
+    }
+
+    /**
+     * True, wenn irgendein mit dem Konto verknüpfter Submitter gesperrt ist.
+     * Ban-Bündel-Wirkung: wer Trust über das Bündel aggregiert, aggregiert
+     * auch Sperren — eine Sperre gegen ein Token wirkt gegen das ganze Konto.
+     */
+    public function hasBannedForAccount(Account $account): bool
+    {
+        return (bool) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->where('s.account = :account')->andWhere('s.banned = true')
+            ->setParameter('account', $account)
+            ->getQuery()->getSingleScalarResult();
     }
 }

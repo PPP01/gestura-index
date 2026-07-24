@@ -31,6 +31,7 @@ final class SubmitterResolver
         private readonly RateLimitGuard $guard,
         private readonly RateLimiterFactoryInterface $tokenAuthLimiter,
         private readonly RateLimiterFactoryInterface $tokenAuthIpLimiter,
+        private readonly AccountResolver $accountResolver,
     ) {
     }
 
@@ -94,6 +95,23 @@ final class SubmitterResolver
      */
     public function requireOwner(Request $request, Entry $entry): Submitter
     {
+        // gacc_-Weiche: Konto-Token statt Edit-Token — Eigentum besteht, wenn
+        // der Submitter des Entrys mit genau diesem Konto verknüpft ist.
+        // Ban-Bündel: ein gesperrter verknüpfter Submitter blockiert das
+        // gesamte konto-basierte Verwalten.
+        $header = $request->headers->get('Authorization') ?? '';
+        if (str_starts_with($header, 'Bearer gacc_')) {
+            $account = $this->accountResolver->requireAccount($request);
+            if ($this->submitters->hasBannedForAccount($account)) {
+                throw new ApiProblem(403, 'Account is banned');
+            }
+            if ($entry->submitter->account?->id !== $account->id) {
+                throw new ApiProblem(403, 'Not the owner of this entry');
+            }
+
+            return $entry->submitter;
+        }
+
         $submitter = $this->resolve($request) ?? throw new ApiProblem(401, 'Token required');
         if ($submitter->banned) {
             throw new ApiProblem(403, 'Submitter is banned');
