@@ -21,6 +21,12 @@ use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
  */
 final class AccountResolver
 {
+    /**
+     * Argon2id-Hash eines Zufallswerts: erzwingt konstante Rechenzeit bei
+     * unbekanntem Selector, damit die Antwortzeit nicht verrät, ob ein Konto
+     * existiert (Timing-Oracle-Schutz). Bewusste, dokumentierte Kopie desselben
+     * Werts in SubmitterResolver — beide Resolver folgen demselben Muster.
+     */
     private const DUMMY_HASH = '$argon2id$v=19$m=65536,t=4,p=1$QVEua0R0WlVBVUwzbG9UNg$3HdEGtQyGMrgXeKEroenDHXyp6drNFUfnpnvSMZs0YA';
 
     public function __construct(
@@ -32,7 +38,14 @@ final class AccountResolver
     ) {
     }
 
-    public function resolve(Request $request): ?Account
+    /**
+     * Löst den Authorization-Header zu einem Konto auf. Gibt null zurück, wenn
+     * kein Header gesendet wurde; wirft ApiProblem(401) bei ungültigem Token.
+     * Aktualisiert bei Erfolg lastSeenAt (Grundlage fürs Aufräumen inaktiver
+     * Konten) — außer $touchLastSeen ist false, etwa wenn der Aufrufer das Konto
+     * unmittelbar danach löscht und der zusätzliche UPDATE-Flush unnötig wäre.
+     */
+    public function resolve(Request $request, bool $touchLastSeen = true): ?Account
     {
         $header = $request->headers->get('Authorization');
         if ($header === null) {
@@ -53,14 +66,21 @@ final class AccountResolver
             throw new ApiProblem(401, 'Invalid token');
         }
 
-        $account->lastSeenAt = new \DateTimeImmutable();
-        $this->em->flush();
+        if ($touchLastSeen) {
+            $account->lastSeenAt = new \DateTimeImmutable();
+            $this->em->flush();
+        }
 
         return $account;
     }
 
-    public function requireAccount(Request $request): Account
+    /**
+     * Wie resolve(), verlangt aber zwingend einen gültigen Token und wirft
+     * ApiProblem(401), wenn keiner gesendet wurde. $touchLastSeen wird
+     * durchgereicht (siehe resolve()).
+     */
+    public function requireAccount(Request $request, bool $touchLastSeen = true): Account
     {
-        return $this->resolve($request) ?? throw new ApiProblem(401, 'Token required');
+        return $this->resolve($request, $touchLastSeen) ?? throw new ApiProblem(401, 'Token required');
     }
 }

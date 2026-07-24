@@ -27,11 +27,17 @@ final class AccountPruneCommand extends Command
         parent::__construct();
     }
 
+    /** Registriert das optionale Argument `days` (Default 365). */
     protected function configure(): void
     {
         $this->addArgument('days', InputArgument::OPTIONAL, 'Inaktivitätsschwelle in Tagen', '365');
     }
 
+    /**
+     * Validiert `days` (positive Ganzzahl, sonst Command::INVALID) und löscht
+     * über ein einziges DQL-DELETE alle Konten, deren lastSeenAt vor dem
+     * Stichtag liegt; gibt die Anzahl gelöschter Konten aus.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

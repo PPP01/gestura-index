@@ -53,4 +53,16 @@ final class AccountTest extends ApiTestCase
         $this->client->request('GET', '/api/account/me', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
         self::assertResponseStatusCodeSame(401);
     }
+
+    public function testDeleteIsIdempotentForAlreadyDeletedToken(): void
+    {
+        $token = $this->createAccount();
+        $this->client->request('DELETE', '/api/account', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
+        self::assertResponseStatusCodeSame(204);
+
+        // Zweiter DELETE mit demselben (nun gelöschten) Token: mangels gültiger
+        // Auth 401 – kein 500, kein weiterer Effekt.
+        $this->client->request('DELETE', '/api/account', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
+        self::assertResponseStatusCodeSame(401);
+    }
 }

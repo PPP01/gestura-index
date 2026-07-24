@@ -19,7 +19,9 @@ final class AccountDeleteController
     #[Route('/api/account', methods: ['DELETE'])]
     public function __invoke(Request $request, AccountResolver $resolver, EntityManagerInterface $em): Response
     {
-        $account = $resolver->requireAccount($request);
+        // touchLastSeen: false — das Konto wird sofort gelöscht, ein
+        // vorheriger lastSeenAt-UPDATE-Flush wäre verschwendet.
+        $account = $resolver->requireAccount($request, touchLastSeen: false);
         $em->remove($account);
         $em->flush();
 
