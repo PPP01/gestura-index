@@ -29,7 +29,7 @@ Der Server **kann nicht mergen** – er sieht nur Chiffrat. Daraus folgt die Arb
 | `id` | interne PK | – |
 | `account` | ManyToOne auf `Account`, FK **`ON DELETE CASCADE`** (DB-seitig) | Besitzer. Kaskade zwingend: `index:account:prune` löscht per DQL-Bulk-DELETE an der ORM vorbei (dokumentierter Vorbehalt aus A – hiermit aufgelöst) |
 | `collection` | string(16) | benannter Slot; Whitelist `settings` \| `menus` \| `engines`; `UNIQUE(account_id, collection)` |
-| `ciphertext` | LONGTEXT | opakes Chiffrat (base64-Envelope, §6) – max. 256 KB |
+| `ciphertext` | TEXT-Typ (MEDIUMTEXT) | opakes Chiffrat (base64-Envelope, §6) – max. 256 KB; MEDIUMTEXT (16 MB) liegt weit über dem Limit |
 | `version` | int | monoton steigender Zähler für optimistisches Locking |
 | `updatedAt` | datetime_immutable | einzige Metadaten-Zeitspur |
 
