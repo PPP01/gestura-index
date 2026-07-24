@@ -8,6 +8,7 @@ use App\Enum\EntryStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
 use App\Repository\EntryVersionRepository;
+use App\Repository\RatingRepository;
 use App\Service\EntrySerializer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,11 +35,14 @@ final class EntryDetailController
         EntryRepository $entries,
         EntryVersionRepository $versions,
         EntrySerializer $serializer,
+        RatingRepository $ratings,
     ): JsonResponse {
         $entry = $entries->findOneBy(['formatId' => $formatId, 'status' => EntryStatus::Published])
             ?? throw new ApiProblem(404, 'Entry not found');
 
-        $response = new JsonResponse($serializer->toDetail($entry, $versions->findApproved($entry)));
+        $aggregate = $ratings->aggregatesFor([$entry->id])[$entry->id] ?? null;
+
+        $response = new JsonResponse($serializer->toDetail($entry, $versions->findApproved($entry), $aggregate));
         $response->setEtag(sha1((string) $response->getContent()));
         $response->setPublic();
         $response->setMaxAge(300);
