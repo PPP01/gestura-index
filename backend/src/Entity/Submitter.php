@@ -31,6 +31,16 @@ class Submitter
     #[ORM\Column]
     public bool $banned = false;
 
+    /**
+     * Zugehöriges End-Nutzer-Konto (Phase 3, Edit-Token-Migration) oder null
+     * für klassische anonyme Submitter. ON DELETE SET NULL: Konto-Löschung
+     * (inkl. index:account:prune-Bulk-DELETE) lässt den Submitter samt seiner
+     * Einträge als anonymen Edit-Token-Submitter zurück — nichts geht verloren.
+     */
+    #[ORM\ManyToOne(targetEntity: Account::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    public ?Account $account = null;
+
     #[ORM\Column]
     public \DateTimeImmutable $createdAt;
 
