@@ -10,20 +10,27 @@ const { withStepUp } = vi.hoisted(() => ({
 }));
 vi.mock('$lib/admin/stepup', () => ({ withStepUp }));
 
-const { queue, approveEntry, rejectEntry, approveVersion, rejectVersion } = vi.hoisted(() => ({
-	queue: vi.fn(),
-	approveEntry: vi.fn(),
-	rejectEntry: vi.fn(),
-	approveVersion: vi.fn(),
-	rejectVersion: vi.fn()
-}));
+const { queue, approveEntry, rejectEntry, approveVersion, rejectVersion, commentQueue, approveComment, rejectComment } =
+	vi.hoisted(() => ({
+		queue: vi.fn(),
+		approveEntry: vi.fn(),
+		rejectEntry: vi.fn(),
+		approveVersion: vi.fn(),
+		rejectVersion: vi.fn(),
+		commentQueue: vi.fn(),
+		approveComment: vi.fn(),
+		rejectComment: vi.fn()
+	}));
 vi.mock('$lib/admin/api', async (orig) => ({
 	...(await orig<typeof import('$lib/admin/api')>()),
 	queue,
 	approveEntry,
 	rejectEntry,
 	approveVersion,
-	rejectVersion
+	rejectVersion,
+	commentQueue,
+	approveComment,
+	rejectComment
 }));
 
 import QueuePage from './+page.svelte';
@@ -50,6 +57,7 @@ function makeQueue() {
 describe('Moderations-Warteschlange', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		commentQueue.mockResolvedValue([]);
 	});
 
 	it('rendert Einträge und Versionen aus queue()', async () => {
@@ -126,5 +134,37 @@ describe('Moderations-Warteschlange', () => {
 			expect(screen.getByText(/warteschlange ist leer|queue is empty/i)).toBeInTheDocument()
 		);
 		expect(screen.queryByRole('button', { name: /freigeben|approve/i })).not.toBeInTheDocument();
+	});
+
+	it('rendert wartende Kommentare und gibt einen frei', async () => {
+		queue.mockResolvedValue({ entries: [], versions: [] });
+		commentQueue.mockResolvedValue([
+			{ id: 7, entryId: 1, formatId: 'com.example.rated', stars: 4, comment: 'nett', createdAt: '2026-01-03T10:00:00Z' }
+		]);
+		approveComment.mockResolvedValue(undefined);
+
+		render(QueuePage);
+		await waitFor(() => expect(screen.getByText('com.example.rated')).toBeInTheDocument());
+		expect(screen.getByText('nett')).toBeInTheDocument();
+
+		const approveButtons = screen.getAllByRole('button', { name: /freigeben|approve/i });
+		await fireEvent.click(approveButtons[0]);
+		await waitFor(() => expect(approveComment).toHaveBeenCalledWith(7));
+	});
+
+	it('lehnt einen Kommentar über withStepUp ab', async () => {
+		queue.mockResolvedValue({ entries: [], versions: [] });
+		commentQueue.mockResolvedValue([
+			{ id: 8, entryId: 1, formatId: 'com.example.rated2', stars: 2, comment: 'mies', createdAt: '2026-01-03T10:00:00Z' }
+		]);
+		rejectComment.mockResolvedValue(undefined);
+
+		render(QueuePage);
+		await waitFor(() => expect(screen.getByText('com.example.rated2')).toBeInTheDocument());
+
+		const rejectButtons = screen.getAllByRole('button', { name: /ablehnen|reject/i });
+		await fireEvent.click(rejectButtons[0]);
+		await waitFor(() => expect(rejectComment).toHaveBeenCalledWith(8));
+		expect(withStepUp).toHaveBeenCalledWith(expect.any(Function));
 	});
 });

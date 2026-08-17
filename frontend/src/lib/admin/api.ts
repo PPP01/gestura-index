@@ -48,6 +48,16 @@ export interface QueueResponse {
 	versions: QueueVersion[];
 }
 
+/** Element von GET /comments (wartende Kommentare). */
+export interface PendingComment {
+	id: number;
+	entryId: number;
+	formatId: string;
+	stars: number;
+	comment: string | null;
+	createdAt: string;
+}
+
 export interface EntryVersionAdmin {
 	semver: string;
 	changelog: string | null;
@@ -313,6 +323,15 @@ export const approveVersion = (id: number, o?: AdminClientOpts) =>
 
 export const rejectVersion = (id: number, o?: AdminClientOpts) =>
 	adminFetch<void>(`/api/admin/versions/${id}/reject`, { method: 'POST' }, o);
+
+export const commentQueue = (o?: AdminClientOpts) =>
+	adminFetch<PendingComment[]>('/api/admin/comments', {}, o);
+
+export const approveComment = (id: number, o?: AdminClientOpts) =>
+	adminFetch<void>(`/api/admin/comments/${id}/approve`, { method: 'POST' }, o);
+
+export const rejectComment = (id: number, o?: AdminClientOpts) =>
+	adminFetch<void>(`/api/admin/comments/${id}/reject`, { method: 'POST' }, o);
 
 export const reports = (o?: AdminClientOpts) => adminFetch<Report[]>('/api/admin/reports', {}, o);
 

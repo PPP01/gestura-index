@@ -196,6 +196,8 @@
 	"admin_queue_empty_title": "Die Warteschlange ist leer",
 	"admin_queue_entries_heading": "Offene Einträge",
 	"admin_queue_versions_heading": "Offene Versionen",
+	"admin_queue_comments_heading": "Wartende Kommentare",
+	"admin_queue_comment_stars": "{count} Sterne",
 	"admin_queue_transform_badge": "transformCode",
 	"admin_queue_approve_button": "Freigeben",
 	"admin_queue_reject_button": "Ablehnen",
