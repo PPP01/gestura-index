@@ -332,5 +332,17 @@
 	"c2_sec_menus_title": "Website menus",
 	"c2_sec_menus_body": "Custom context menus per website: the most important actions and destinations appear right where you're working. Menus are shareable — as a JSON export or through the Index.",
 	"c2_privacy_banner_title": "Data minimalism from the ground up.",
-	"c2_privacy_banner_body": "Gestura sends no usage data, stores no IP addresses, and requires no account. The Gestura Index is anonymous to use too. The entire codebase is AGPL-licensed and on GitHub."
+	"c2_privacy_banner_body": "Gestura sends no usage data, stores no IP addresses, and requires no account. The Gestura Index is anonymous to use too. The entire codebase is AGPL-licensed and on GitHub.",
+	"c3_page_title": "What are mouse gestures?",
+	"c3_meta_desc": "What a mouse gesture is and how it works: a direction or sequence of directions while holding the right mouse button – with eight examples, freely reassignable in Gestura.",
+	"c3_intro": "A mouse gesture is a short stroke while holding the right mouse button. The direction – or a sequence of directions – triggers an action. After a few minutes the movements sit in muscle memory: you think \"back\" and your hand does it.",
+	"c3_back": "Back",
+	"c3_forward": "Forward",
+	"c3_newtab": "New tab",
+	"c3_closetab": "Close tab",
+	"c3_scrollup": "Scroll up",
+	"c3_reload": "Reload page",
+	"c3_rocker": "Rocker gesture: alternate buttons",
+	"c3_wheel": "Wheel gesture: switch tabs",
+	"c3_footnote": "All mappings are examples – in Gestura every gesture is freely assignable."
 }

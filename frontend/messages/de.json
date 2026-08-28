@@ -332,5 +332,17 @@
 	"c2_sec_menus_title": "Website-Menüs",
 	"c2_sec_menus_body": "Eigene Kontextmenüs pro Website: die wichtigsten Aktionen und Sprungziele erscheinen dort, wo du gerade arbeitest. Menüs sind teilbar – als JSON-Export oder über den Index.",
 	"c2_privacy_banner_title": "Datensparsamkeit von Grund auf.",
-	"c2_privacy_banner_body": "Gestura sendet keine Nutzungsdaten, speichert keine IP-Adressen und verlangt kein Konto. Auch der Gestura Index ist anonym nutzbar. Der gesamte Code steht unter AGPL auf GitHub."
+	"c2_privacy_banner_body": "Gestura sendet keine Nutzungsdaten, speichert keine IP-Adressen und verlangt kein Konto. Auch der Gestura Index ist anonym nutzbar. Der gesamte Code steht unter AGPL auf GitHub.",
+	"c3_page_title": "Was sind Maus-Gesten?",
+	"c3_meta_desc": "Was eine Maus-Geste ist und wie sie funktioniert: eine Richtung oder Bewegungsfolge bei gehaltener rechter Maustaste – mit acht Beispielen, in Gestura frei anpassbar.",
+	"c3_intro": "Eine Maus-Geste ist ein kurzer Strich mit gehaltener rechter Maustaste. Die Richtung – oder eine Folge von Richtungen – löst eine Aktion aus. Nach wenigen Minuten sitzen die Bewegungen im Muskelgedächtnis: Du denkst »zurück« und die Hand macht es.",
+	"c3_back": "Zurück",
+	"c3_forward": "Vorwärts",
+	"c3_newtab": "Neuer Tab",
+	"c3_closetab": "Tab schließen",
+	"c3_scrollup": "Nach oben scrollen",
+	"c3_reload": "Seite neu laden",
+	"c3_rocker": "Rocker-Geste: Tasten im Wechsel",
+	"c3_wheel": "Wheel-Geste: Tabs wechseln",
+	"c3_footnote": "Alle Zuordnungen sind Beispiele – in Gestura ist jede Geste frei belegbar."
 }
