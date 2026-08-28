@@ -5,9 +5,21 @@
 
 	let { children } = $props();
 
-	// Der Onepager (lokalisierte Wurzel) nutzt die breite 1200px-Shell; Textseiten
-	// (docs, about, privacy …) bleiben in der schmalen 900px-Lesespalte.
-	const wide = $derived(page.route.id === '/(public)');
+	// Der Onepager (Katalog unter /index), die C1-Marketing-Startseite (/),
+	// C3 »Was sind Maus-Gesten« (4-Spalten-Gesten-Grid), C4 »Gestura im
+	// Vergleich« (5-Spalten-Vergleichsmatrix) UND C5 »Beispiele«
+	// (2×2-Showcase-Grid, RULING D) nutzen die breite 1200px-Shell
+	// (Design-Token »Seite«, siehe
+	// docs/design_handoff_gestura_index/README.md); reine Textseiten
+	// (docs, about, privacy …, C2-»Textspalte«) bleiben in der schmalen
+	// 900px-Lesespalte.
+	const wide = $derived(
+		page.route.id === '/(public)/index' ||
+			page.route.id === '/(public)' ||
+			page.route.id === '/(public)/maus-gesten' ||
+			page.route.id === '/(public)/vergleich' ||
+			page.route.id === '/(public)/beispiele'
+	);
 </script>
 
 <div class="pub">

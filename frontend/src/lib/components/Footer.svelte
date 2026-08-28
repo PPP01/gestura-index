@@ -8,7 +8,7 @@
 		<a href={localizeHref('/about')}>{m.footer_about()}</a>
 		<a href={localizeHref('/privacy')}>{m.footer_privacy()}</a>
 		<a href={localizeHref('/imprint')}>{m.footer_imprint()}</a>
-		<a href="https://github.com/PPP01/gestura-index" target="_blank" rel="noopener noreferrer">GitHub</a>
+		<a href="https://github.com/PPP01/Gestura" target="_blank" rel="noopener noreferrer">GitHub</a>
 	</nav>
 	<p class="footer-note">{m.footer_works_with()}</p>
 </footer>

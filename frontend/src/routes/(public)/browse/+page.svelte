@@ -22,5 +22,5 @@
 		sort: sort === 'installs' || sort === 'best' ? (sort as OnepagerSort) : 'newest'
 	};
 	const qs = onepagerSearchParams(filter).toString();
-	goto(localizeHref(`/${qs ? `?${qs}` : ''}`), { replaceState: true });
+	goto(localizeHref(`/index${qs ? `?${qs}` : ''}`), { replaceState: true });
 </script>

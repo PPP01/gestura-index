@@ -6,5 +6,5 @@
 	// Deep-Link auf eine Detailseite -> Onepager mit hervorgehobenem/aufgeklapptem Block.
 	const formatId = page.params.formatId ?? '';
 	const qs = formatId ? `?highlight=${encodeURIComponent(formatId)}` : '';
-	goto(localizeHref(`/${qs}`), { replaceState: true });
+	goto(localizeHref(`/index${qs}`), { replaceState: true });
 </script>

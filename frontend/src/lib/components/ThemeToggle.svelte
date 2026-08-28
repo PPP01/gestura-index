@@ -33,6 +33,24 @@
 	});
 </script>
 
-<button class="btn btn-icon-only" onclick={cycle} title={m.theme_label()} aria-label={m.theme_label()}>
-	{#if mode === 'light'}<Sun size={18} />{:else if mode === 'dark'}<Moon size={18} />{:else}<MonitorSmartphone size={18} />{/if}
+<button
+	class="btn btn-icon-only theme-toggle"
+	onclick={cycle}
+	title={m.theme_label()}
+	aria-label={m.theme_label()}
+>
+	{#if mode === 'light'}<Sun size={18} />{:else if mode === 'dark'}<Moon size={18} />{:else}<MonitorSmartphone
+			size={18}
+		/>{/if}
 </button>
+
+<style>
+	/* Design-Handoff: Theme-Toggle 32px, r9, 1px Border (statt der generischen
+	   .btn-icon-only-Maße aus gestura-common.css). */
+	.theme-toggle {
+		width: 32px;
+		height: 32px;
+		border-radius: 9px;
+		border: 1px solid var(--border-color);
+	}
+</style>
