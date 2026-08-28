@@ -296,5 +296,16 @@
 	"block_screenshot_placeholder": "Screenshot des Menüs (vom Autor)",
 	"block_reviews_heading": "Bewertungen ({count})",
 	"block_review_anon": "Anonym",
-	"block_details_error": "Details konnten nicht geladen werden"
+	"block_details_error": "Details konnten nicht geladen werden",
+	"basket_open": "Auswahl ({count})",
+	"basket_title": "Deine Auswahl",
+	"basket_remove": "Entfernen",
+	"basket_clear": "Alle entfernen",
+	"basket_download": "Als JSON herunterladen",
+	"basket_send": "An Gestura senden",
+	"basket_send_soon": "Kommt mit dem nächsten Update",
+	"basket_download_error": "Einige Einträge konnten nicht hinzugefügt werden: {ids}",
+	"basket_local_hint": "Die Auswahl bleibt lokal in deinem Browser gespeichert.",
+	"basket_empty_title": "Noch nichts gesammelt",
+	"basket_empty_hint": "Wähle Einträge über das Plus im Katalog aus. Deine Auswahl bleibt anonym und lokal."
 }

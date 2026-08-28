@@ -296,5 +296,16 @@
 	"block_screenshot_placeholder": "Screenshot provided by the author",
 	"block_reviews_heading": "Reviews ({count})",
 	"block_review_anon": "Anonymous",
-	"block_details_error": "Could not load details"
+	"block_details_error": "Could not load details",
+	"basket_open": "Selection ({count})",
+	"basket_title": "Your selection",
+	"basket_remove": "Remove",
+	"basket_clear": "Clear all",
+	"basket_download": "Download JSON",
+	"basket_send": "Send to Gestura",
+	"basket_send_soon": "Coming with the next update",
+	"basket_download_error": "Some entries could not be added: {ids}",
+	"basket_local_hint": "Your selection stays local in your browser.",
+	"basket_empty_title": "Nothing collected yet",
+	"basket_empty_hint": "Add entries via the plus in the catalog. Your selection stays anonymous and local."
 }

@@ -25,6 +25,8 @@
 	import { categoryLabel, categoryIcon, categoryColor } from '$lib/categories';
 	import EntryBlock from '$lib/components/EntryBlock.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
+	import BasketTray from '$lib/components/BasketTray.svelte';
+	import { basket } from '$lib/basket.svelte';
 	import { Search, SearchX, X } from '@lucide/svelte';
 
 	// Sprach-Weiche: die nackte Wurzel / auf die lokalisierte URL lenken.
@@ -98,6 +100,17 @@
 
 	const locale = $derived(getLocale());
 	const filtered = $derived(sortEntries(filterEntries(items, filter, locale), filter.sort));
+
+	// Katalog-Map für den Sammelkorb (Auflösen von formatId -> Eintrag, u. a.
+	// für currentVersion beim Bundle-Download).
+	const catalogMap = $derived(new Map(items.map((e) => [e.formatId, e])));
+
+	// Nicht mehr vorhandene Auswahl-IDs still abräumen, sobald der Katalog
+	// vollständig geladen ist (sonst würden bereits während des Nachladens
+	// vorhandene Einträge fälschlich als "nicht mehr im Katalog" gelten).
+	$effect(() => {
+		if (complete) basket.reconcile(new Set(items.map((e) => e.formatId)));
+	});
 
 	// Facetten aus dem geladenen Katalog.
 	const cats = $derived(categoryFacet(items));
@@ -354,6 +367,8 @@
 		{/if}
 	</section>
 </div>
+
+<BasketTray catalog={catalogMap} />
 
 <style>
 	.op-body {
