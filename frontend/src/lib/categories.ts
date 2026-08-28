@@ -12,6 +12,7 @@ import {
 	Tag
 } from '@lucide/svelte';
 import { m } from '$lib/paraglide/messages.js';
+import type { EntryType } from './api';
 
 /** Die festen Kategorie-Keys – identisch zum Backend-Enum, feste Reihenfolge. */
 export const CATEGORIES = [
@@ -45,8 +46,31 @@ export function categoryIcon(key: string): Component {
 	return ICONS[key] ?? Tag;
 }
 
+const COLORS: Record<string, string> = {
+	dev: '#8b5cf6',
+	shopping: '#e6a117',
+	video: '#ef5350',
+	news: '#fb8c4e',
+	social: '#ec4899',
+	productivity: '#4caf50',
+	search: '#5b9cf6',
+	reference: '#2bb8a8',
+	entertainment: '#d4b106',
+	other: '#8a8a93'
+};
+
+/** Kategorie-Akzentfarbe (Icon-Kachel/Badge); Fallback: Akzent. */
+export function categoryColor(key: string): string {
+	return COLORS[key] ?? '#5b9cf6';
+}
+
 /** Lokalisiertes Label einer Kategorie (Fallback: der Key selbst). */
 export function categoryLabel(key: string): string {
 	const fn = (m as unknown as Record<string, () => string>)[`cat_${key}`];
 	return typeof fn === 'function' ? fn() : key;
+}
+
+/** Lokalisiertes Label eines Eintragstyps (»Menü« / »Suchmaschine«). */
+export function entryTypeLabel(type: EntryType): string {
+	return type === 'menu' ? m.type_menu() : m.type_engine();
 }
