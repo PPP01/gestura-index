@@ -268,5 +268,7 @@
 	"admin_audit_created_header": "Datum",
 	"admin_audit_actor_system": "System",
 	"admin_audit_detail_none": "—",
-	"admin_audit_page_info": "Seite {page}"
+	"admin_audit_page_info": "Seite {page}",
+	"rating_none": "Noch nicht bewertet",
+	"rating_count": "{count} Bewertungen"
 }
