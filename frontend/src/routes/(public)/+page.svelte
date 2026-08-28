@@ -146,7 +146,7 @@
 
 	// Aktive Filter (für die entfernbare Chip-Zeile); die Sprachfacette bleibt
 	// bewusst ausgeklammert, da sie per URL-Locale vorbelegt ist und sonst
-	// dauerhaft als "aktiv" erschiene, auch ohne Nutzerzutun.
+	// dauerhaft als »aktiv« erschiene, auch ohne Nutzerzutun.
 	const hasActiveFilters = $derived(
 		Boolean(filter.type || filter.categories.length || filter.tags.length || filter.site || filter.q)
 	);
