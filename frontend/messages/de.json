@@ -279,5 +279,9 @@
 	"block_reviews_error": "Bewertungen konnten nicht geladen werden",
 	"block_screenshot_alt": "Screenshot von {name}",
 	"block_versions": "Versionen",
-	"block_domains": "Seiten"
+	"block_domains": "Seiten",
+	"block_screenshot_placeholder": "Screenshot des Menüs (vom Autor)",
+	"block_reviews_heading": "Bewertungen ({count})",
+	"block_review_anon": "Anonym",
+	"block_details_error": "Details konnten nicht geladen werden"
 }

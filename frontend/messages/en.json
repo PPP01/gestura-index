@@ -279,5 +279,9 @@
 	"block_reviews_error": "Could not load reviews",
 	"block_screenshot_alt": "Screenshot of {name}",
 	"block_versions": "Versions",
-	"block_domains": "Sites"
+	"block_domains": "Sites",
+	"block_screenshot_placeholder": "Screenshot provided by the author",
+	"block_reviews_heading": "Reviews ({count})",
+	"block_review_anon": "Anonymous",
+	"block_details_error": "Could not load details"
 }

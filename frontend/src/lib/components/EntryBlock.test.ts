@@ -69,6 +69,13 @@ describe('EntryBlock', () => {
 		await waitFor(() => expect(screen.getByText('1.0.0')).toBeInTheDocument());
 	});
 
+	it('open=true lädt Details bereits beim Mount (T4-Review-Fix: Auto-Expand-Bug)', async () => {
+		getEntry.mockResolvedValue(detail);
+		render(EntryBlock, { entry, open: true });
+		await waitFor(() => expect(getEntry).toHaveBeenCalledWith('com.example.menu'));
+		await waitFor(() => expect(screen.getByText('1.0.0')).toBeInTheDocument());
+	});
+
 	it('lädt Reviews erst on demand', async () => {
 		getEntry.mockResolvedValue(detail);
 		const reviews: ReviewListResponse = {
