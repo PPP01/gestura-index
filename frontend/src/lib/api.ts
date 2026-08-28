@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import type { LocalizedString } from './localized';
 
 /** Basis-URL der Index-API; über PUBLIC_API_BASE überschreibbar. */
 export const API_BASE = env.PUBLIC_API_BASE || 'https://api.gestura.eu';
@@ -10,12 +11,14 @@ export type ReportReason = 'spam' | 'broken_links' | 'misleading' | 'legal';
 export interface EntryListItem {
 	formatId: string;
 	type: EntryType;
-	name: string;
-	description: string | null;
+	/** Roh aus der API: String oder Sprach-Map (nicht vor-aufgelöst). */
+	name: LocalizedString;
+	description: LocalizedString | null;
 	categories: string[];
 	tags: string[];
 	domains: string[];
 	installCount: number;
+	rating: { average: number | null; count: number };
 	currentVersion: string | null;
 	deprecated: boolean;
 	successorFormatId: string | null;
@@ -173,4 +176,32 @@ export async function reportEntry(
 		},
 		opts
 	);
+}
+
+/** Ein freigegebener, anonymer Review-Eintrag (ReviewListController). */
+export interface ReviewItem {
+	stars: number;
+	comment: string | null;
+	createdAt: string;
+}
+
+export interface ReviewListResponse {
+	items: ReviewItem[];
+	page: number;
+	perPage: number;
+	total: number;
+}
+
+/** Lädt die freigegebenen Reviews eines Eintrags (paginiert, anonym). */
+export async function listReviews(
+	formatId: string,
+	page = 1,
+	opts: ClientOpts = {}
+): Promise<ReviewListResponse> {
+	const res = await request(
+		`/api/v1/entries/${encodeURIComponent(formatId)}/reviews?page=${page}`,
+		{ method: 'GET' },
+		opts
+	);
+	return (await res.json()) as ReviewListResponse;
 }
