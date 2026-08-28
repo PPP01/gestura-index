@@ -22,7 +22,7 @@
 		type OnepagerFilter,
 		type OnepagerSort
 	} from '$lib/browse-state';
-	import { categoryLabel, categoryIcon, categoryColor } from '$lib/categories';
+	import { categoryLabel, categoryIcon, categoryColor, entryTypeLabel } from '$lib/categories';
 	import EntryBlock from '$lib/components/EntryBlock.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import BasketTray from '$lib/components/BasketTray.svelte';
@@ -274,7 +274,7 @@
 				<div class="active-chips">
 					{#if filter.type}
 						<button class="chip chip-active" onclick={() => setFilter({ type: undefined })}>
-							{m.filter_group_type()}: {filter.type === 'menu' ? m.type_menu() : m.type_engine()}
+							{m.filter_group_type()}: {entryTypeLabel(filter.type)}
 							<X size={12} />
 						</button>
 					{/if}

@@ -5,7 +5,7 @@
 	import { resolveLocalized } from '$lib/localized';
 	import { getLocale } from '$lib/paraglide/runtime';
 	import { m } from '$lib/paraglide/messages.js';
-	import { categoryColor, categoryIcon } from '$lib/categories';
+	import { categoryColor, categoryIcon, entryTypeLabel } from '$lib/categories';
 	import { Trash2, X, Download, Send, Layers } from '@lucide/svelte';
 
 	let { catalog }: { catalog: Map<string, EntryListItem> } = $props();
@@ -80,7 +80,7 @@
 							<span class="tray-row-text">
 								<span class="tray-row-name">{name}</span>
 								{#if e.item}
-									<span class="tray-row-type">{e.item.type === 'menu' ? m.type_menu() : m.type_engine()}</span>
+									<span class="tray-row-type">{entryTypeLabel(e.item.type)}</span>
 								{/if}
 							</span>
 							<button

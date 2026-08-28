@@ -7,7 +7,7 @@
 		type ReviewItem
 	} from '$lib/api';
 	import { resolveLocalized, entryLanguages } from '$lib/localized';
-	import { categoryLabel, categoryIcon, categoryColor } from '$lib/categories';
+	import { categoryLabel, categoryIcon, categoryColor, entryTypeLabel } from '$lib/categories';
 	import { relativeTime } from '$lib/relative-time';
 	import { basket } from '$lib/basket.svelte';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -38,7 +38,7 @@
 	const displayDesc = $derived(resolveLocalized(entry.description, locale));
 	const langs = $derived(entryLanguages(entry.name));
 	const selected = $derived(basket.has(entry.formatId));
-	const typeLabel = $derived(entry.type === 'menu' ? m.type_menu() : m.type_engine());
+	const typeLabel = $derived(entryTypeLabel(entry.type));
 	const primaryCategory = $derived(entry.categories[0] ?? 'other');
 	const PrimaryIcon = $derived(categoryIcon(primaryCategory));
 
