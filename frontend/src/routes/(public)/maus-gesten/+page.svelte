@@ -4,19 +4,40 @@
 
 	// Acht Gesten-Karten (Screenshot 1l): sechs Pfeil-Gesten mit eigenem
 	// Polylinien-Pfad (viewBox 0 0 150 80) + zwei Sonderfälle (Rocker/Wheel)
-	// ohne Pfad-Prop. Die Mono-Kürzel sind sprachneutrale Symbole (Pfeile,
-	// L/R für die Maustasten) und daher Code-Konstanten, keine Message-Keys –
-	// einzige Ausnahme: das Wheel-Kürzel ersetzt das deutsche Wort »Rad« durch
-	// das Auf-/Ab-Symbol, damit es ebenfalls sprachneutral bleibt.
-	const cards: { kind: 'arrow' | 'rocker' | 'wheel'; path?: string; label: () => string; kuerzel: string }[] = [
-		{ kind: 'arrow', path: 'M110 40 L40 40', label: () => m.c3_back(), kuerzel: '←' },
-		{ kind: 'arrow', path: 'M40 40 L110 40', label: () => m.c3_forward(), kuerzel: '→' },
-		{ kind: 'arrow', path: 'M75 15 L75 65', label: () => m.c3_newtab(), kuerzel: '↓' },
-		{ kind: 'arrow', path: 'M60 20 L60 55 L105 55', label: () => m.c3_closetab(), kuerzel: '↓ →' },
-		{ kind: 'arrow', path: 'M75 65 L75 18', label: () => m.c3_scrollup(), kuerzel: '↑' },
-		{ kind: 'arrow', path: 'M65 20 L65 58 L84 38', label: () => m.c3_reload(), kuerzel: '↓ ↑' },
-		{ kind: 'rocker', label: () => m.c3_rocker(), kuerzel: 'L + R' },
-		{ kind: 'wheel', label: () => m.c3_wheel(), kuerzel: 'R + ↕' }
+	// ohne Pfad-Prop. `id` ist ein stabiler #each-Key (unabhängig von der
+	// aktiven Sprache – der übersetzte Label-Text taugt dafür nicht, sonst
+	// würden bei einem Sprachwechsel alle Karten neu gemountet). Die
+	// Mono-Kürzel sind größtenteils sprachneutrale Symbole (Pfeile, L/R für
+	// die Maustasten) und daher Code-Konstanten, keine Message-Keys – einzige
+	// Ausnahme: das Wheel-Kürzel enthält das deutsche Wort »Rad« und ist
+	// daher ein eigener, übersetzter Key (`c3_wheel_kuerzel`).
+	const cards: {
+		id: string;
+		kind: 'arrow' | 'rocker' | 'wheel';
+		path?: string;
+		label: () => string;
+		kuerzel: () => string;
+	}[] = [
+		{ id: 'back', kind: 'arrow', path: 'M110 40 L40 40', label: () => m.c3_back(), kuerzel: () => '←' },
+		{ id: 'forward', kind: 'arrow', path: 'M40 40 L110 40', label: () => m.c3_forward(), kuerzel: () => '→' },
+		{ id: 'newtab', kind: 'arrow', path: 'M75 15 L75 65', label: () => m.c3_newtab(), kuerzel: () => '↓' },
+		{
+			id: 'closetab',
+			kind: 'arrow',
+			path: 'M60 20 L60 55 L105 55',
+			label: () => m.c3_closetab(),
+			kuerzel: () => '↓ →'
+		},
+		{ id: 'scrollup', kind: 'arrow', path: 'M75 65 L75 18', label: () => m.c3_scrollup(), kuerzel: () => '↑' },
+		{
+			id: 'reload',
+			kind: 'arrow',
+			path: 'M65 20 L65 58 L84 38',
+			label: () => m.c3_reload(),
+			kuerzel: () => '↓ ↑'
+		},
+		{ id: 'rocker', kind: 'rocker', label: () => m.c3_rocker(), kuerzel: () => 'L + R' },
+		{ id: 'wheel', kind: 'wheel', label: () => m.c3_wheel(), kuerzel: () => m.c3_wheel_kuerzel() }
 	];
 </script>
 
@@ -32,10 +53,10 @@
 	</div>
 
 	<div class="gesture-grid">
-		{#each cards as c (c.label())}
+		{#each cards as c (c.id)}
 			<div class="card gesture-card">
 				<GestureDiagram kind={c.kind} path={c.path} label={c.label()} />
-				<span class="kuerzel">{c.kuerzel}</span>
+				<span class="kuerzel" aria-hidden="true">{c.kuerzel()}</span>
 				<span class="label">{c.label()}</span>
 			</div>
 		{/each}

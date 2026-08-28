@@ -35,4 +35,19 @@ describe('C3 »Was sind Maus-Gesten«', () => {
 		render(Page);
 		expect(screen.getByText(m.c3_footnote())).toBeInTheDocument();
 	});
+
+	it('zeigt das übersetzte Wheel-Kürzel (»R + Rad«, kein sprachneutrales Symbol-Literal)', () => {
+		const { container } = render(Page);
+		expect(screen.getByText(m.c3_wheel_kuerzel())).toBeInTheDocument();
+		expect(container.textContent).not.toContain('R + ↕');
+	});
+
+	it('versteckt alle Mono-Kürzel vor Screenreadern (Info steckt bereits im Label/aria-label)', () => {
+		const { container } = render(Page);
+		const kuerzel = container.querySelectorAll('.kuerzel');
+		expect(kuerzel).toHaveLength(8);
+		for (const el of kuerzel) {
+			expect(el.getAttribute('aria-hidden')).toBe('true');
+		}
+	});
 });

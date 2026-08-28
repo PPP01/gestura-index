@@ -344,5 +344,6 @@
 	"c3_reload": "Reload page",
 	"c3_rocker": "Rocker gesture: alternate buttons",
 	"c3_wheel": "Wheel gesture: switch tabs",
+	"c3_wheel_kuerzel": "R + Wheel",
 	"c3_footnote": "All mappings are examples – in Gestura every gesture is freely assignable."
 }
