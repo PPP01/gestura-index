@@ -270,5 +270,14 @@
 	"admin_audit_detail_none": "—",
 	"admin_audit_page_info": "Page {page}",
 	"rating_none": "Not yet rated",
-	"rating_count": "{count} ratings"
+	"rating_count": "{count} ratings",
+	"block_details": "Details",
+	"block_add": "Add to selection",
+	"block_remove": "Remove from selection",
+	"block_show_reviews": "Show reviews",
+	"block_reviews_empty": "No reviews yet",
+	"block_reviews_error": "Could not load reviews",
+	"block_screenshot_alt": "Screenshot of {name}",
+	"block_versions": "Versions",
+	"block_domains": "Sites"
 }

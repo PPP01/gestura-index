@@ -270,5 +270,14 @@
 	"admin_audit_detail_none": "—",
 	"admin_audit_page_info": "Seite {page}",
 	"rating_none": "Noch nicht bewertet",
-	"rating_count": "{count} Bewertungen"
+	"rating_count": "{count} Bewertungen",
+	"block_details": "Details",
+	"block_add": "Zur Auswahl hinzufügen",
+	"block_remove": "Aus Auswahl entfernen",
+	"block_show_reviews": "Bewertungen anzeigen",
+	"block_reviews_empty": "Noch keine Bewertungen",
+	"block_reviews_error": "Bewertungen konnten nicht geladen werden",
+	"block_screenshot_alt": "Screenshot von {name}",
+	"block_versions": "Versionen",
+	"block_domains": "Seiten"
 }
