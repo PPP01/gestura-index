@@ -5,9 +5,12 @@
 
 	let { children } = $props();
 
-	// Der Onepager (Katalog unter /index) nutzt die breite 1200px-Shell; Textseiten
-	// (docs, about, privacy …) bleiben in der schmalen 900px-Lesespalte.
-	const wide = $derived(page.route.id === '/(public)/index');
+	// Der Onepager (Katalog unter /index) UND die C1-Marketing-Startseite (/)
+	// nutzen die breite 1200px-Shell (Design-Token »Seite«, siehe
+	// docs/design_handoff_gestura_index/README.md); reine Textseiten
+	// (docs, about, privacy …, C2/C3-»Textspalten«) bleiben in der schmalen
+	// 900px-Lesespalte.
+	const wide = $derived(page.route.id === '/(public)/index' || page.route.id === '/(public)');
 </script>
 
 <div class="pub">
