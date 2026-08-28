@@ -59,3 +59,61 @@ export function debounce<T extends (...args: never[]) => void>(
 	};
 	return wrapped;
 }
+
+export type OnepagerSort = 'newest' | 'installs' | 'best';
+const SORTS: OnepagerSort[] = ['newest', 'installs', 'best'];
+
+/** Client-Filterzustand des Onepagers (Mehrfachwerte je Facette). */
+export interface OnepagerFilter {
+	q?: string;
+	type?: EntryType;
+	categories: string[];
+	tags: string[];
+	langs: string[];
+	site?: string;
+	sort: OnepagerSort;
+	highlight?: string;
+}
+
+function csv(searchParams: URLSearchParams, key: string): string[] {
+	const raw = searchParams.get(key);
+	if (!raw) return [];
+	return raw
+		.split(',')
+		.map((s) => s.trim())
+		.filter((s) => s !== '');
+}
+
+/** Liest den Onepager-Filter aus den URL-Query-Parametern. */
+export function parseOnepagerFilter(searchParams: URLSearchParams): OnepagerFilter {
+	const str = (k: string) => {
+		const v = searchParams.get(k);
+		return v && v.trim() !== '' ? v : undefined;
+	};
+	const type = str('type');
+	const sort = str('sort');
+	return {
+		q: str('q'),
+		type: type && (TYPES as string[]).includes(type) ? (type as EntryType) : undefined,
+		categories: csv(searchParams, 'category'),
+		tags: csv(searchParams, 'tag'),
+		langs: csv(searchParams, 'lang'),
+		site: str('site'),
+		sort: sort && (SORTS as string[]).includes(sort) ? (sort as OnepagerSort) : 'newest',
+		highlight: str('highlight')
+	};
+}
+
+/** Serialisiert den Onepager-Filter in kanonische Query-Parameter. */
+export function onepagerSearchParams(filter: OnepagerFilter): URLSearchParams {
+	const params = new URLSearchParams();
+	if (filter.q) params.set('q', filter.q);
+	if (filter.type) params.set('type', filter.type);
+	if (filter.categories.length) params.set('category', filter.categories.join(','));
+	if (filter.tags.length) params.set('tag', filter.tags.join(','));
+	if (filter.langs.length) params.set('lang', filter.langs.join(','));
+	if (filter.site) params.set('site', filter.site);
+	if (filter.sort && filter.sort !== 'newest') params.set('sort', filter.sort);
+	if (filter.highlight) params.set('highlight', filter.highlight);
+	return params;
+}
