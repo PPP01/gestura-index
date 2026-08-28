@@ -5,9 +5,9 @@
 
 	let { children } = $props();
 
-	// Der Onepager (lokalisierte Wurzel) nutzt die breite 1200px-Shell; Textseiten
+	// Der Onepager (Katalog unter /index) nutzt die breite 1200px-Shell; Textseiten
 	// (docs, about, privacy …) bleiben in der schmalen 900px-Lesespalte.
-	const wide = $derived(page.route.id === '/(public)');
+	const wide = $derived(page.route.id === '/(public)/index');
 </script>
 
 <div class="pub">

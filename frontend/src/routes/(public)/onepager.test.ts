@@ -7,7 +7,7 @@ import type { ClientOpts, EntryListItem, EntryListResponse, EntryQuery } from '$
 vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_API_BASE: undefined } }));
 
 // $app/state: page mit stabiler, leer-parametrisierter URL
-const url = new URL('http://localhost/en');
+const url = new URL('http://localhost/en/index');
 vi.mock('$app/state', () => ({ page: { get url() { return url; } } }));
 const goto = vi.fn();
 vi.mock('$app/navigation', () => ({ goto: (...a: unknown[]) => goto(...a) }));
@@ -31,7 +31,7 @@ vi.mock('$lib/api', async (orig) => {
 	return { ...actual, listEntries: (q: EntryQuery, opts?: ClientOpts) => listEntries(q, opts) };
 });
 
-import Page from './+page.svelte';
+import Page from './index/+page.svelte';
 
 beforeEach(() => {
 	goto.mockReset();
