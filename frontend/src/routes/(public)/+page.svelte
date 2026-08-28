@@ -107,7 +107,7 @@
 
 	// Nicht mehr vorhandene Auswahl-IDs still abräumen, sobald der Katalog
 	// vollständig geladen ist (sonst würden bereits während des Nachladens
-	// vorhandene Einträge fälschlich als "nicht mehr im Katalog" gelten).
+	// vorhandene Einträge fälschlich als »nicht mehr im Katalog« gelten).
 	$effect(() => {
 		if (complete) basket.reconcile(new Set(items.map((e) => e.formatId)));
 	});
@@ -152,7 +152,7 @@
 	);
 
 	// Highlight-Scroll: springt zum per URL hervorgehobenen Eintrag, sobald er
-	// im DOM existiert (Anker `e-<formatId>`) — wird ab Task 6/7 vom
+	// im DOM existiert (Anker `e-<formatId>`) – wird ab Task 6/7 vom
 	// Sammelkorb genutzt, um zu einem gemerkten Eintrag zu springen.
 	$effect(() => {
 		if (!browser || !filter.highlight) return;

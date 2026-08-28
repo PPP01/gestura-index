@@ -72,12 +72,13 @@
 					{#each entries as e (e.id)}
 						{@const cat = e.item?.categories[0] ?? 'other'}
 						{@const RowIcon = categoryIcon(cat)}
+						{@const name = e.item ? resolveLocalized(e.item.name, locale) || e.id : e.id}
 						<li class="tray-row">
 							<span class="icon-tile tray-row-icon" style={`--icon-color:${categoryColor(cat)}`}>
 								<RowIcon size={14} />
 							</span>
 							<span class="tray-row-text">
-								<span class="tray-row-name">{e.item ? resolveLocalized(e.item.name, locale) || e.id : e.id}</span>
+								<span class="tray-row-name">{name}</span>
 								{#if e.item}
 									<span class="tray-row-type">{e.item.type === 'menu' ? m.type_menu() : m.type_engine()}</span>
 								{/if}
@@ -85,8 +86,8 @@
 							<button
 								class="tray-row-remove"
 								onclick={() => basket.remove(e.id)}
-								aria-label={m.basket_remove()}
-								title={m.basket_remove()}
+								aria-label={m.basket_remove_named({ name })}
+								title={m.basket_remove_named({ name })}
 							>
 								<X size={14} />
 							</button>

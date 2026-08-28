@@ -300,6 +300,7 @@
 	"basket_open": "Auswahl ({count})",
 	"basket_title": "Deine Auswahl",
 	"basket_remove": "Entfernen",
+	"basket_remove_named": "Entfernen: {name}",
 	"basket_clear": "Alle entfernen",
 	"basket_download": "Als JSON herunterladen",
 	"basket_send": "An Gestura senden",
