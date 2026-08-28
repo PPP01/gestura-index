@@ -374,5 +374,19 @@
 	"c4_f_light": "Lightweight, no build step",
 	"c4_v_light": "pure JS",
 	"c4_f_rockerwheel": "Rocker & wheel gestures",
-	"c4_v_rockerwheel": "included"
+	"c4_v_rockerwheel": "included",
+	"c5_page_title": "Examples from everyday use",
+	"c5_meta_desc": "Curated examples from the Gestura Index – menus and search engines for price comparison, Wikipedia, GitHub, and news, each with its gesture and result.",
+	"c5_intro": "Curated menus and search engines from the index – this is what Gestura looks like day to day. Each preview shows the gesture and the result.",
+	"c5_preview_label": "Animated preview (GIF / video frame)",
+	"c5_cta_install": "Install",
+	"c5_cta_index": "To the index →",
+	"c5_price_name": "Price comparison menu",
+	"c5_price_desc": "Select a product name and drag – a menu opens six price comparisons at once. Ideal before every purchase.",
+	"c5_wiki_name": "Wikipedia quick search",
+	"c5_wiki_desc": "Select a term, gesture to the right: the article opens in a new tab – in DE, EN, or FR.",
+	"c5_github_name": "GitHub dev menu",
+	"c5_github_desc": "Issues, pull requests, actions, and releases of the current repo page – without moving the mouse to the navigation.",
+	"c5_news_name": "News radar",
+	"c5_news_desc": "Five news sources in one website menu – click through once each morning, done."
 }
