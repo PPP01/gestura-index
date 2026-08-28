@@ -74,8 +74,10 @@
 
 	function applyLangDefault(f: OnepagerFilter, locale: string): OnepagerFilter {
 		// Vorbelegung der Sprachfacette folgt der URL-Locale, solange der Nutzer
-		// nichts gewählt hat; frei änderbar.
-		return f.langs.length === 0 ? { ...f, langs: [locale] } : f;
+		// nichts gewählt hat; frei änderbar. Bei einem Deep-Link mit `highlight`
+		// NICHT vorbelegen – sonst würde der Ziel-Eintrag (falls nicht in der
+		// Locale-Sprache) herausgefiltert und nie hervorgehoben.
+		return f.langs.length === 0 && !f.highlight ? { ...f, langs: [locale] } : f;
 	}
 
 	// --- Filter-Zustand ---
@@ -144,11 +146,19 @@
 	const pushQ = debounce((value: string) => setFilter({ q: value || undefined }), 250);
 	onDestroy(() => pushQ.cancel());
 
-	// Aktive Filter (für die entfernbare Chip-Zeile); die Sprachfacette bleibt
-	// bewusst ausgeklammert, da sie per URL-Locale vorbelegt ist und sonst
-	// dauerhaft als »aktiv« erschiene, auch ohne Nutzerzutun.
+	// Aktive Filter (für die entfernbare Chip-Zeile). Die Sprachfacette ist
+	// bewusst ENTHALTEN: der Locale-Default soll sichtbar und entfernbar sein,
+	// sonst leert er für eine Locale unbemerkt den Katalog (z. B. wenn nur
+	// en-Einträge vorliegen und /de vorbelegt).
 	const hasActiveFilters = $derived(
-		Boolean(filter.type || filter.categories.length || filter.tags.length || filter.site || filter.q)
+		Boolean(
+			filter.type ||
+				filter.categories.length ||
+				filter.tags.length ||
+				filter.langs.length ||
+				filter.site ||
+				filter.q
+		)
 	);
 
 	// Highlight-Scroll: springt zum per URL hervorgehobenen Eintrag, sobald er
@@ -287,6 +297,12 @@
 					{#each filter.tags as tag (tag)}
 						<button class="chip chip-active" onclick={() => setFilter({ tags: toggleIn(filter.tags, tag) })}>
 							#{tag}
+							<X size={12} />
+						</button>
+					{/each}
+					{#each filter.langs as lang (lang)}
+						<button class="chip chip-active" onclick={() => setFilter({ langs: toggleIn(filter.langs, lang) })}>
+							{m.facet_languages()}: {lang.toUpperCase()}
 							<X size={12} />
 						</button>
 					{/each}
