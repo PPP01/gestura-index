@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { localizeHref, deLocalizeUrl } from '$lib/paraglide/runtime';
 	import { m } from '$lib/paraglide/messages.js';
-	import { ListChecks, Flag, Users, History, CircleUser, Menu, X } from '@lucide/svelte';
+	import { ListChecks, Flag, Users, History, FileText, CircleUser, Menu, X } from '@lucide/svelte';
 
 	let { role }: { role: 'admin' | 'moderator' } = $props();
 
@@ -14,6 +14,7 @@
 		{ href: '/admin/reports', label: m.admin_nav_reports, Icon: Flag, adminOnly: false },
 		{ href: '/admin/users', label: m.admin_nav_users, Icon: Users, adminOnly: true },
 		{ href: '/admin/audit', label: m.admin_nav_audit, Icon: History, adminOnly: true },
+		{ href: '/admin/pages', label: m.admin_nav_pages, Icon: FileText, adminOnly: true },
 		{ href: '/admin/account', label: m.admin_nav_account, Icon: CircleUser, adminOnly: false }
 	];
 

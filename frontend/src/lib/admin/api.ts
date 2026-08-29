@@ -348,6 +348,21 @@ export const banSubmitter = (id: number, o?: AdminClientOpts) =>
 export const unbanSubmitter = (id: number, o?: AdminClientOpts) =>
 	adminFetch<void>(`/api/admin/submitters/${id}/unban`, { method: 'POST' }, o);
 
+// --- Seiten-Sichtbarkeit ---
+
+/** Element von GET /pages. */
+export interface AdminPageSetting {
+	pageKey: string;
+	enabled: boolean;
+	updatedAt: string | null;
+	updatedBy: string | null;
+}
+
+export const pages = (o?: AdminClientOpts) => adminFetch<AdminPageSetting[]>('/api/admin/pages', {}, o);
+
+export const setPageEnabled = (key: string, enabled: boolean, o?: AdminClientOpts) =>
+	adminFetch<void>(`/api/admin/pages/${key}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }, o);
+
 // --- Users ---
 
 export const listUsers = async (o?: AdminClientOpts): Promise<AdminUser[]> => {
