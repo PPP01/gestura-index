@@ -18,6 +18,14 @@ vi.mock('$lib/api', async (orig) => {
 describe('Header', () => {
 	beforeEach(() => {
 		getPageVisibility.mockReset();
+		// Zustand zwischen Tests zurücksetzen: das Ausblenden läuft über ein
+		// Attribut am <html> plus localStorage (No-Flash-Mechanismus).
+		document.documentElement.removeAttribute('data-hidden-pages');
+		try {
+			localStorage.clear();
+		} catch {
+			/* ignore */
+		}
 	});
 
 	it('rendert die sechs Marketing-Nav-Links und den GitHub-Button aufs Extension-Repo', async () => {
@@ -27,17 +35,19 @@ describe('Header', () => {
 		// statt über den lokalisierten aria-label-Text selektieren.
 		//
 		// Simuliert einen scheiternden Sichtbarkeits-Fetch (z.B. offline/API down):
-		// fail-open muss dann ALLE sechs Links zeigen.
+		// fail-open lässt den zuletzt bekannten Zustand unberührt (hier leer).
 		getPageVisibility.mockRejectedValue(new Error('network error'));
 		const { container } = render(Header);
 		await waitFor(() => expect(getPageVisibility).toHaveBeenCalled());
 		const navLinks = container.querySelectorAll('.site-nav a');
 		expect(navLinks.length).toBe(6);
+		// Bei Fehler wird nichts ausgeblendet (Attribut bleibt ungesetzt).
+		expect(document.documentElement.getAttribute('data-hidden-pages')).toBeNull();
 		const gh = container.querySelector('a.gh') as HTMLAnchorElement;
 		expect(gh.getAttribute('href')).toBe('https://github.com/PPP01/Gestura');
 	});
 
-	it('blendet eine per API deaktivierte Seite aus der Nav aus', async () => {
+	it('markiert eine per API deaktivierte Seite zum Ausblenden (Attribut + localStorage), ohne den Link aus dem DOM zu entfernen', async () => {
 		getPageVisibility.mockResolvedValue({
 			'was-ist-gestura': true,
 			'maus-gesten': true,
@@ -45,18 +55,26 @@ describe('Header', () => {
 			beispiele: true
 		});
 		const { container } = render(Header);
-		// Die Ausblendung greift erst nach dem asynchronen onMount-Fetch.
-		// `.toContain('/vergleich')`-Muster wie in page.test.ts, da `localizeHref()`
-		// je nach Locale ein Sprach-Präfix voranstellt (z.B. `/en/vergleich`).
-		await waitFor(() => {
-			const navLinks = container.querySelectorAll('.site-nav a');
-			expect(navLinks.length).toBe(5);
-		});
-		const hrefs = [...container.querySelectorAll('.site-nav a')].map((a) => a.getAttribute('href') ?? '');
-		expect(hrefs.some((h) => h.includes('/vergleich'))).toBe(false);
-		expect(hrefs.some((h) => h.includes('/was-ist-gestura'))).toBe(true);
-		expect(hrefs.some((h) => h.includes('/maus-gesten'))).toBe(true);
-		expect(hrefs.some((h) => h.includes('/beispiele'))).toBe(true);
-		expect(hrefs.some((h) => h.includes('/index'))).toBe(true);
+
+		// Der Sichtbarkeits-Zustand wird nach dem asynchronen onMount-Fetch gesetzt.
+		await waitFor(() =>
+			expect(document.documentElement.getAttribute('data-hidden-pages')).toContain('vergleich')
+		);
+
+		// Kein DOM-Entfernen: alle sechs Links bleiben vorhanden (CSS blendet aus).
+		const navLinks = container.querySelectorAll('.site-nav a');
+		expect(navLinks.length).toBe(6);
+
+		// Der deaktivierte Link trägt sein data-page-slug (Ziel der CSS-Regel).
+		const vergleichLink = container.querySelector('.site-nav a[data-page-slug="vergleich"]');
+		expect(vergleichLink).not.toBeNull();
+
+		// Nur die deaktivierte Seite ist markiert; aktive nicht.
+		const hidden = document.documentElement.getAttribute('data-hidden-pages') ?? '';
+		expect(hidden.split(' ')).toContain('vergleich');
+		expect(hidden).not.toContain('beispiele');
+
+		// Für den No-Flash beim nächsten Reload in localStorage gespiegelt.
+		expect(localStorage.getItem('gestura_pages_hidden') ?? '').toContain('vergleich');
 	});
 });

@@ -22,6 +22,19 @@
 			})();
 		</script>
 		<script>
+			// No-Flash für deaktivierte Marketing-Seiten: den zuletzt bekannten
+			// Zustand aus localStorage schon vor dem ersten Paint als Attribut am
+			// <html> setzen, damit deaktivierte Nav-Links nicht kurz aufblitzen.
+			// Der Header aktualisiert den Wert nach dem Sichtbarkeits-Fetch autoritativ.
+			(function () {
+				var hidden = '';
+				try {
+					hidden = localStorage.getItem('gestura_pages_hidden') || '';
+				} catch (e) {}
+				if (hidden) document.documentElement.setAttribute('data-hidden-pages', hidden);
+			})();
+		</script>
+		<script>
 			// Sprach-Weiche für die nackte Wurzel /: schon vor dem ersten Paint auf /en
 			// bzw. /de umleiten, damit die englische Startseite nicht kurz aufblitzt.
 			// Reihenfolge wie Paraglide: Cookie → Browsersprache → en (Fallback).

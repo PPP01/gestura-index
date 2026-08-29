@@ -30,21 +30,32 @@
 		'/(public)/beispiele': 'beispiele'
 	};
 
-	let visibility = $state<Record<string, boolean>>({});
+	// Ausblenden geschieht per CSS über das Attribut `data-hidden-pages` am <html>
+	// (kein Entfernen aus dem DOM → kein Hydration-Mismatch, kein Flash). Ein
+	// Inline-Head-Script in app.html setzt das Attribut schon VOR dem ersten Paint
+	// aus dem zuletzt bekannten localStorage-Wert; dieser Fetch aktualisiert es
+	// danach autoritativ und schreibt den Wert für den nächsten Reload zurück.
+	function applyHidden(hidden: string[]): void {
+		const value = hidden.join(' ');
+		try {
+			if (value) localStorage.setItem('gestura_pages_hidden', value);
+			else localStorage.removeItem('gestura_pages_hidden');
+		} catch {
+			/* localStorage nicht verfügbar – Attribut wird trotzdem gesetzt */
+		}
+		document.documentElement.setAttribute('data-hidden-pages', value);
+	}
+
 	onMount(async () => {
 		try {
-			visibility = await getPageVisibility();
+			const vis = await getPageVisibility();
+			const hidden = Object.values(SLUG_BY_ID).filter((slug) => vis[slug] === false);
+			applyHidden(hidden);
 		} catch {
-			/* fail-open: bei Fehler alle Links zeigen; das echte Gating macht der Server */
+			/* fail-open: bei Fehler den zuletzt bekannten Zustand (Inline-Head-Script)
+			   belassen; das echte Gating macht ohnehin der Server */
 		}
 	});
-
-	const visibleNav = $derived(
-		nav.filter((item) => {
-			const slug = SLUG_BY_ID[item.id];
-			return slug === undefined || visibility[slug] !== false;
-		})
-	);
 </script>
 
 <header class="site-header">
@@ -58,9 +69,10 @@
 	</a>
 
 	<nav class="site-nav" aria-label="Hauptnavigation">
-		{#each visibleNav as item (item.href)}
+		{#each nav as item (item.href)}
 			<a
 				href={localizeHref(item.href)}
+				data-page-slug={SLUG_BY_ID[item.id]}
 				class:active={activeId === item.id}
 				class:accent={item.accent}>{item.label()}</a
 			>
@@ -158,6 +170,16 @@
 	}
 	.site-nav a.accent {
 		color: var(--accent-color);
+	}
+	/* Deaktivierte Seiten aus der Nav ausblenden – rein per CSS über das
+	   `data-hidden-pages`-Attribut am <html> (vom Inline-Head-Script vor dem
+	   ersten Paint gesetzt und vom Sichtbarkeits-Fetch aktualisiert). Kein
+	   DOM-Entfernen ⇒ kein Hydration-Mismatch, kein Flash. */
+	:global(html[data-hidden-pages~='was-ist-gestura']) .site-nav a[data-page-slug='was-ist-gestura'],
+	:global(html[data-hidden-pages~='maus-gesten']) .site-nav a[data-page-slug='maus-gesten'],
+	:global(html[data-hidden-pages~='vergleich']) .site-nav a[data-page-slug='vergleich'],
+	:global(html[data-hidden-pages~='beispiele']) .site-nav a[data-page-slug='beispiele'] {
+		display: none;
 	}
 	.header-actions {
 		display: inline-flex;
