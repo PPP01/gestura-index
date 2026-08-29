@@ -36,7 +36,7 @@ services:
 when@test:
     parameters:
         # Fixture-Verzeichnis statt echtem Frontend-Build – siehe
-        # tests/Controller/MarketingPageControllerTest.php.
+        # tests/Functional/MarketingPageControllerTest.php.
         app.frontend_build_dir: '%kernel.project_dir%/tests/fixtures/frontend-build'
 
     services:
