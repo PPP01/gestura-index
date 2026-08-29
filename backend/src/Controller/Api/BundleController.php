@@ -46,12 +46,14 @@ final class BundleController
         }
 
         $clean = [];
+        $seen = [];
         foreach ($ids as $id) {
             if (!is_string($id)) {
                 throw new ApiProblem(400, 'ids must be strings');
             }
             $id = trim($id);
-            if ($id !== '' && !in_array($id, $clean, true)) {
+            if ($id !== '' && !isset($seen[$id])) {
+                $seen[$id] = true;
                 $clean[] = $id;
             }
         }
