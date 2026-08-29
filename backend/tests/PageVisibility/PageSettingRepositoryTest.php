@@ -42,6 +42,10 @@ final class PageSettingRepositoryTest extends KernelTestCase
 
         $vergleich->enabled = false;
         $this->em->flush();
+        // Identity-Map leeren, damit findAllIndexed() das Objekt frisch aus
+        // der DB lädt statt das bereits im Speicher mutierte zurückzugeben –
+        // sonst würde der Test auch bei falschem Mapping/fehlendem Flush grün bleiben.
+        $this->em->clear();
 
         $indexed = $this->repo()->findAllIndexed();
         self::assertFalse($indexed['vergleich']);
