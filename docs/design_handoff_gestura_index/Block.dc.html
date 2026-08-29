@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<symbol id="b-code" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></symbol>
+<symbol id="b-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.6"></circle><circle cx="18" cy="20" r="1.6"></circle><path d="M2 3h3l2.4 12h11.2l2-8H6"></path></symbol>
+<symbol id="b-play" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></symbol>
+<symbol id="b-news" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="9" x2="13" y2="9"></line><line x1="7" y1="13" x2="17" y2="13"></line><line x1="7" y1="16" x2="17" y2="16"></line></symbol>
+<symbol id="b-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M17.5 14.5c2.5.3 4.5 2.3 4.5 5"></path></symbol>
+<symbol id="b-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></symbol>
+<symbol id="b-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></symbol>
+<symbol id="b-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></symbol>
+<symbol id="b-film" viewBox="0 0 24 24"><rect x="2.5" y="3" width="19" height="18" rx="2.5"></rect><line x1="7.5" y1="3" x2="7.5" y2="21"></line><line x1="16.5" y1="3" x2="16.5" y2="21"></line><line x1="2.5" y1="12" x2="21.5" y2="12"></line></symbol>
+<symbol id="b-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></symbol>
+</svg>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid {{t.div}};flex-wrap:wrap;">
+  <div style="width:20px;height:20px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;border:1.5px solid {{selBorder}};background:{{selBg}};color:#ffffff;cursor:pointer;">
+    <sc-if value="{{item.selected}}" hint-placeholder-val="{{false}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+    <sc-if value="{{unselected}}" hint-placeholder-val="{{false}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{t.muted}}" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></sc-if>
+  </div>
+  <div style="width:40px;height:40px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;background:{{item.catBg}};color:{{item.catColor}};">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#b-{{item.icon}}"></use></svg>
+  </div>
+  <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:3px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-weight:600;color:{{t.text}};font-size:14px;">{{item.name}}</span>
+      <span style="font-size:10.5px;font-weight:600;padding:1.5px 7px;border-radius:20px;background:{{typeBg}};color:{{typeColor}};">{{item.type}}</span>
+    </div>
+    <div style="font-size:12.5px;color:{{t.sub}};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:520px;">{{item.desc}}</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:2px;">
+      <sc-for list="{{item.cats}}" as="c" hint-placeholder-count="1"><span style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:{{c.bg}};color:{{c.c}};font-weight:500;">{{c.n}}</span></sc-for>
+      <sc-for list="{{item.langs}}" as="l" hint-placeholder-count="1"><span style="font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid {{t.div}};color:{{t.muted}};font-weight:600;letter-spacing:.05em;">{{l}}</span></sc-for>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-left:auto;flex:none;">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <span style="position:relative;display:inline-block;font-size:13px;line-height:1;letter-spacing:1px;color:{{t.starBase}};white-space:nowrap;">★★★★★<span style="position:absolute;left:0;top:0;width:{{item.pct}};overflow:hidden;color:#e6a117;white-space:nowrap;">★★★★★</span></span>
+      <span style="font-size:12px;color:{{t.sub}};font-variant-numeric:tabular-nums;">{{item.rating}} · {{item.count}}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:{{t.muted}};">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <span style="font-variant-numeric:tabular-nums;">{{item.installs}}</span>
+    </div>
+  </div>
+  <div style="flex:none;color:{{t.muted}};display:flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;860px&quot;,&quot;height&quot;:&quot;96px&quot;},&quot;item&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;t&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props, t = p.t || {}, it = p.item || {};
+    const sel = !!it.selected, ac = t.accent || "#5b9cf6";
+    const isMenu = it.type === "Menü";
+    return {
+      unselected: !sel,
+      selBg: sel ? ac : "transparent",
+      selBorder: sel ? ac : (t.border || "#555"),
+      typeBg: isMenu ? ac + "26" : "#4caf5026",
+      typeColor: isMenu ? ac : (t.success || "#4caf50")
+    };
+  }
+}
+</script>
+</body>
+</html>
