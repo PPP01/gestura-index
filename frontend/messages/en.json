@@ -388,5 +388,7 @@
 	"c5_github_name": "GitHub dev menu",
 	"c5_github_desc": "Issues, pull requests, actions, and releases of the current repo page – without moving the mouse to the navigation.",
 	"c5_news_name": "News radar",
-	"c5_news_desc": "Five news sources in one website menu – click through once each morning, done."
+	"c5_news_desc": "Five news sources in one website menu – click through once each morning, done.",
+	"error_not_found": "This page is not available.",
+	"error_home": "Back to home"
 }

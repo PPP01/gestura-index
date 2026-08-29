@@ -388,5 +388,7 @@
 	"c5_github_name": "GitHub Dev-Menü",
 	"c5_github_desc": "Issues, Pull Requests, Actions und Releases der aktuellen Repo-Seite – ohne die Maus zur Navigation zu bewegen.",
 	"c5_news_name": "News-Radar",
-	"c5_news_desc": "Fünf Nachrichtenquellen in einem Website-Menü – morgens einmal durchklicken, fertig."
+	"c5_news_desc": "Fünf Nachrichtenquellen in einem Website-Menü – morgens einmal durchklicken, fertig.",
+	"error_not_found": "Diese Seite ist nicht verfügbar.",
+	"error_home": "Zur Startseite"
 }
