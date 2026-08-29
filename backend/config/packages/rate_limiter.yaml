@@ -21,6 +21,7 @@ framework:
         admin_register: { policy: sliding_window, limit: 10, interval: '1 hour' }
         admin_invite: { policy: sliding_window, limit: 20, interval: '1 hour' }
         rating_write: { policy: sliding_window, limit: 60, interval: '1 hour' }
+        bundle: { policy: sliding_window, limit: 120, interval: '1 hour' }
 
 # Funktionstests feuern viele Requests von 127.0.0.1 — dort großzügige
 # Limits; die Drosselung selbst testet RateLimitGuardTest isoliert.
@@ -44,6 +45,7 @@ when@test:
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             admin_invite: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             rating_write: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            bundle: { policy: sliding_window, limit: 1000, interval: '1 hour' }
 
 # Lokale Entwicklung: dieselben großzügigen Limits wie im Test, damit
 # manuelles Durchklicken (z. B. Passkey-Registrierung/Login mit mehreren
@@ -66,3 +68,4 @@ when@dev:
             admin_register: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             admin_invite: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             rating_write: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            bundle: { policy: sliding_window, limit: 1000, interval: '1 hour' }
