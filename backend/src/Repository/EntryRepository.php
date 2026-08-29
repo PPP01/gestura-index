@@ -97,6 +97,32 @@ class EntryRepository extends ServiceEntityRepository
     }
 
     /**
+     * Lädt die veröffentlichten Einträge zu den gegebenen Format-IDs samt
+     * fetch-joined currentVersion (kein N+1). Reihenfolge ist DB-bestimmt;
+     * der Aufrufer stellt die Anfrage-Reihenfolge her. Leeres Eingabe-Array
+     * ⇒ leeres Ergebnis ohne DB-Zugriff (vermeidet ein leeres SQL-IN()).
+     *
+     * @param list<string> $formatIds
+     * @return list<Entry>
+     */
+    public function findPublishedByFormatIds(array $formatIds): array
+    {
+        if ($formatIds === []) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('e')
+            ->addSelect('v')
+            ->join('e.currentVersion', 'v')
+            ->andWhere('e.formatId IN (:ids)')
+            ->andWhere('e.status = :published')
+            ->setParameter('ids', $formatIds)
+            ->setParameter('published', EntryStatus::Published)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Maskiert LIKE-Sonderzeichen (%, _, \) in Nutzereingaben, damit sie
      * als Literale und nicht als Platzhalter ausgewertet werden.
      */
