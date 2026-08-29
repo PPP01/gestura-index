@@ -205,3 +205,12 @@ export async function listReviews(
 	);
 	return (await res.json()) as ReviewListResponse;
 }
+
+/** Sichtbarkeits-Map der schaltbaren Marketing-Seiten (Slug → sichtbar?). */
+export type PageVisibility = Record<string, boolean>;
+
+/** Öffentliche Sichtbarkeits-Map der schaltbaren Marketing-Seiten. */
+export async function getPageVisibility(opts: ClientOpts = {}): Promise<PageVisibility> {
+	const res = await request('/api/v1/pages', { method: 'GET' }, opts);
+	return (await res.json()) as PageVisibility;
+}

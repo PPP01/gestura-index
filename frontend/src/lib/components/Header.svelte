@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { locales, getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getPageVisibility } from '$lib/api';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import tileLight from '$lib/assets/logo/icon128-tile.png';
 	import tileDark from '$lib/assets/logo/icon128-darktile.png';
@@ -19,6 +21,30 @@
 	];
 	const isIndex = $derived(page.route.id === '/(public)/index');
 	const activeId = $derived(page.route.id);
+
+	// Slug je schaltbarer Nav-Route (Route-ID → Slug).
+	const SLUG_BY_ID: Record<string, string> = {
+		'/(public)/was-ist-gestura': 'was-ist-gestura',
+		'/(public)/maus-gesten': 'maus-gesten',
+		'/(public)/vergleich': 'vergleich',
+		'/(public)/beispiele': 'beispiele'
+	};
+
+	let visibility = $state<Record<string, boolean>>({});
+	onMount(async () => {
+		try {
+			visibility = await getPageVisibility();
+		} catch {
+			/* fail-open: bei Fehler alle Links zeigen; das echte Gating macht der Server */
+		}
+	});
+
+	const visibleNav = $derived(
+		nav.filter((item) => {
+			const slug = SLUG_BY_ID[item.id];
+			return slug === undefined || visibility[slug] !== false;
+		})
+	);
 </script>
 
 <header class="site-header">
@@ -32,7 +58,7 @@
 	</a>
 
 	<nav class="site-nav" aria-label="Hauptnavigation">
-		{#each nav as item (item.href)}
+		{#each visibleNav as item (item.href)}
 			<a
 				href={localizeHref(item.href)}
 				class:active={activeId === item.id}
