@@ -27,4 +27,5 @@ security:
         - { path: ^/api/admin/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/admin/users, roles: ROLE_ADMIN }
         - { path: ^/api/admin/audit, roles: ROLE_ADMIN }
+        - { path: ^/api/admin/pages, roles: ROLE_ADMIN }
         - { path: ^/api/admin, roles: ROLE_MODERATOR }
