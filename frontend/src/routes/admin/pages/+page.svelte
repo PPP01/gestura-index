@@ -63,14 +63,18 @@
 		{#each items as item (item.pageKey)}
 			<li class="card page-card">
 				<span class="name">{DISPLAY[item.pageKey]?.() ?? item.pageKey}</span>
-				<button
-					class="btn"
-					class:btn-primary={item.enabled}
-					disabled={busy === item.pageKey}
-					onclick={() => toggle(item)}
-				>
-					{item.enabled ? m.admin_pages_active() : m.admin_pages_inactive()}
-				</button>
+				<label class="toggle">
+					<input
+						type="checkbox"
+						checked={item.enabled}
+						disabled={busy === item.pageKey}
+						onchange={() => toggle(item)}
+						aria-label={`${DISPLAY[item.pageKey]?.() ?? item.pageKey}: ${
+							item.enabled ? m.admin_pages_active() : m.admin_pages_inactive()
+						}`}
+					/>
+					<span class="slider"></span>
+				</label>
 			</li>
 		{/each}
 	</ul>

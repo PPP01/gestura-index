@@ -29,7 +29,7 @@ describe('Seiten-Sichtbarkeit', () => {
 		vi.clearAllMocks();
 	});
 
-	it('rendert alle vier Seiten mit ihrem Aktiv/Deaktiviert-Status', async () => {
+	it('rendert alle vier Seiten mit einem Ein/Aus-Schalter je Zeile', async () => {
 		pages.mockResolvedValue(makePages());
 
 		render(PagesPage);
@@ -42,13 +42,20 @@ describe('Seiten-Sichtbarkeit', () => {
 		expect(screen.getByText(/beispiele|examples/i)).toBeInTheDocument();
 		expect(pages).toHaveBeenCalledTimes(1);
 
-		const buttons = screen.getAllByRole('button');
-		expect(buttons).toHaveLength(4);
-		expect(screen.getAllByRole('button', { name: /^aktiv$|^active$/i }).length).toBeGreaterThan(0);
-		expect(screen.getByRole('button', { name: /^deaktiviert$|^disabled$/i })).toBeInTheDocument();
+		// Ein Switch (Checkbox) pro Seite; der Zustand spiegelt enabled.
+		const switches = screen.getAllByRole('checkbox') as HTMLInputElement[];
+		expect(switches).toHaveLength(4);
+		expect(switches.filter((s) => s.checked)).toHaveLength(3);
+		expect(switches.filter((s) => !s.checked)).toHaveLength(1);
+
+		const vergleichSwitch = screen
+			.getByText(/vergleich|comparison/i)
+			.closest('li')
+			?.querySelector('input[type="checkbox"]') as HTMLInputElement;
+		expect(vergleichSwitch.checked).toBe(false);
 	});
 
-	it("Klick auf den deaktivierten »Vergleich«-Eintrag ruft setPageEnabled('vergleich', true) auf und lädt neu", async () => {
+	it("Umlegen des »Vergleich«-Schalters ruft setPageEnabled('vergleich', true) auf und lädt neu", async () => {
 		pages.mockResolvedValue(makePages());
 		setPageEnabled.mockResolvedValue(undefined);
 
@@ -58,10 +65,10 @@ describe('Seiten-Sichtbarkeit', () => {
 		);
 
 		const vergleichRow = screen.getByText(/vergleich|comparison/i).closest('li');
-		const toggleButton = vergleichRow?.querySelector('button');
-		expect(toggleButton).toBeTruthy();
+		const toggleSwitch = vergleichRow?.querySelector('input[type="checkbox"]');
+		expect(toggleSwitch).toBeTruthy();
 
-		await fireEvent.click(toggleButton!);
+		await fireEvent.click(toggleSwitch!);
 
 		await waitFor(() => expect(setPageEnabled).toHaveBeenCalledWith('vergleich', true));
 		await waitFor(() => expect(pages).toHaveBeenCalledTimes(2));
