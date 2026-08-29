@@ -8,11 +8,11 @@ import { basket } from '$lib/basket.svelte';
 // muss gemockt werden (siehe EntryBlock.test.ts, api.test.ts).
 vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_API_BASE: undefined } }));
 
-const downloadVersion = vi.fn();
+const getBundle = vi.fn();
 const triggerJsonDownload = vi.fn();
 vi.mock('$lib/api', async (orig) => {
 	const actual = await orig<typeof import('$lib/api')>();
-	return { ...actual, downloadVersion: (...a: unknown[]) => downloadVersion(...a) };
+	return { ...actual, getBundle: (...a: unknown[]) => getBundle(...a) };
 });
 vi.mock('$lib/download', () => ({
 	triggerJsonDownload: (...a: unknown[]) => triggerJsonDownload(...a),
@@ -45,7 +45,7 @@ const catalog = new Map([
 beforeEach(() => {
 	localStorage.clear();
 	basket.clear();
-	downloadVersion.mockReset();
+	getBundle.mockReset();
 	triggerJsonDownload.mockReset();
 });
 
@@ -87,14 +87,22 @@ describe('BasketTray', () => {
 		expect(basket.count).toBe(0);
 	});
 
-	it('lädt ein zusammengesetztes Bundle herunter', async () => {
-		downloadVersion.mockImplementation(async (id: string) => ({ gesturaMenu: 1, id }));
+	it('lädt das Bundle über einen einzigen Request herunter', async () => {
+		getBundle.mockResolvedValue({
+			gesturaBundle: 1,
+			entries: [
+				{ gesturaMenu: 1, id: 'a' },
+				{ gesturaMenu: 1, id: 'b' }
+			]
+		});
 		basket.toggle('a');
 		basket.toggle('b');
 		render(BasketTray, { catalog });
 		await fireEvent.click(screen.getByRole('button', { name: /selection \(2\)|auswahl \(2\)/i }));
 		await fireEvent.click(screen.getByRole('button', { name: /download json|als json/i }));
 		await waitFor(() => expect(triggerJsonDownload).toHaveBeenCalled());
+		expect(getBundle).toHaveBeenCalledTimes(1);
+		expect(getBundle).toHaveBeenCalledWith(['a', 'b']);
 		const [bundle, filename] = triggerJsonDownload.mock.calls[0];
 		expect(bundle).toEqual({
 			gesturaBundle: 1,
@@ -106,11 +114,8 @@ describe('BasketTray', () => {
 		expect(filename).toBe('gestura-bundle.json');
 	});
 
-	it('meldet Teil-Fehler beim Bundle-Download', async () => {
-		downloadVersion.mockImplementation(async (id: string) => {
-			if (id === 'a') throw new Error('boom');
-			return { gesturaMenu: 1, id };
-		});
+	it('meldet fehlende IDs, die der Endpunkt aus dem Bundle ausgelassen hat', async () => {
+		getBundle.mockResolvedValue({ gesturaBundle: 1, entries: [{ gesturaMenu: 1, id: 'a' }] });
 		basket.toggle('a');
 		basket.toggle('b');
 		render(BasketTray, { catalog });
@@ -118,7 +123,7 @@ describe('BasketTray', () => {
 		await fireEvent.click(screen.getByRole('button', { name: /download json|als json/i }));
 		await waitFor(() => expect(triggerJsonDownload).toHaveBeenCalled());
 		const [bundle] = triggerJsonDownload.mock.calls[0];
-		expect(bundle).toEqual({ gesturaBundle: 1, entries: [{ gesturaMenu: 1, id: 'b' }] });
+		expect(bundle).toEqual({ gesturaBundle: 1, entries: [{ gesturaMenu: 1, id: 'a' }] });
 		await waitFor(() => expect(screen.getByText(/could not be added|konnten nicht hinzugef/i)).toBeInTheDocument());
 	});
 

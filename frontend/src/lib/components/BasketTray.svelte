@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { basket } from '$lib/basket.svelte';
-	import { downloadVersion, type EntryListItem } from '$lib/api';
+	import { getBundle, type Bundle, type EntryListItem } from '$lib/api';
 	import { triggerJsonDownload } from '$lib/download';
 	import { resolveLocalized } from '$lib/localized';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -18,33 +18,33 @@
 	const entries = $derived(basket.ids.map((id) => ({ id, item: catalog.get(id) ?? null })));
 
 	/**
-	 * Sammelt je Auswahl-Eintrag den Versions-Payload (`downloadVersion`) und
-	 * bündelt sie zu `{ gesturaBundle: 1, entries: [...] }`. Einträge ohne
-	 * bekannte `currentVersion` (Katalog noch nicht geladen) oder mit
-	 * fehlgeschlagenem Fetch werden übersprungen und gesammelt gemeldet –
-	 * ein Teil-Fehler darf den Download der übrigen Einträge nicht verhindern.
+	 * Holt das Bundle für die gesamte Auswahl über einen einzigen Request
+	 * (`getBundle`). Der Endpunkt lässt unbekannte/unveröffentlichte IDs
+	 * stillschweigend aus – daher wird die zurückgelieferte Ergebnismenge
+	 * gegen die angefragten IDs abgeglichen, um fehlende Einträge gesammelt
+	 * zu melden. Ein Teil-Fehler darf den Download der übrigen Einträge
+	 * nicht verhindern.
 	 */
 	async function download() {
 		downloading = true;
 		downloadError = null;
-		const payloads: unknown[] = [];
-		const failed: string[] = [];
-		for (const id of basket.ids) {
-			const semver = catalog.get(id)?.currentVersion;
-			if (!semver) {
-				failed.push(id);
-				continue;
-			}
-			try {
-				payloads.push(await downloadVersion(id, semver));
-			} catch {
-				failed.push(id);
-			}
+		const requested = basket.ids;
+		let bundle: Bundle;
+		try {
+			bundle = await getBundle(requested);
+		} catch {
+			downloadError = m.basket_download_error({ ids: requested.join(', ') });
+			return;
+		} finally {
+			downloading = false;
 		}
-		downloading = false;
-		if (payloads.length) {
-			triggerJsonDownload({ gesturaBundle: 1, entries: payloads }, 'gestura-bundle.json');
+
+		if (bundle.entries.length) {
+			triggerJsonDownload(bundle, 'gestura-bundle.json');
 		}
+
+		const delivered = new Set(bundle.entries.map((e) => e.id ?? ''));
+		const failed = requested.filter((id) => !delivered.has(id));
 		if (failed.length) {
 			downloadError = m.basket_download_error({ ids: failed.join(', ') });
 		}

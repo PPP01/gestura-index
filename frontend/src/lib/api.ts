@@ -222,3 +222,37 @@ export async function getPageVisibility(opts: ClientOpts = {}): Promise<PageVisi
 	const res = await request('/api/v1/pages', { method: 'GET', cache: 'no-store' }, opts);
 	return (await res.json()) as PageVisibility;
 }
+
+/**
+ * Ein Bundle-Eintrag ist ein vollständiges, ansonsten opakes Austausch-
+ * Payload; nur die `id` (Format-ID) wird clientseitig gelesen, um gelieferte
+ * gegen angefragte Einträge abzugleichen.
+ */
+export interface BundleEntry {
+	id?: string;
+	[key: string]: unknown;
+}
+
+/** Server-seitig gebautes Bundle für die gewählten IDs (ein Request). */
+export interface Bundle {
+	gesturaBundle: 1;
+	entries: BundleEntry[];
+}
+
+/**
+ * Holt ein Bundle der veröffentlichten Payloads zu den gewählten IDs.
+ * Unbekannte/nicht-veröffentlichte IDs fehlen im Ergebnis – der Aufrufer
+ * gleicht angefragte gegen gelieferte IDs (entries[].id) selbst ab.
+ */
+export async function getBundle(ids: string[], opts: ClientOpts = {}): Promise<Bundle> {
+	const res = await request(
+		'/api/v1/bundle',
+		{
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ ids })
+		},
+		opts
+	);
+	return (await res.json()) as Bundle;
+}
