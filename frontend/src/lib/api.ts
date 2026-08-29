@@ -209,8 +209,16 @@ export async function listReviews(
 /** Sichtbarkeits-Map der schaltbaren Marketing-Seiten (Slug → sichtbar?). */
 export type PageVisibility = Record<string, boolean>;
 
-/** Öffentliche Sichtbarkeits-Map der schaltbaren Marketing-Seiten. */
+/**
+ * Öffentliche Sichtbarkeits-Map der schaltbaren Marketing-Seiten.
+ *
+ * `cache: 'no-store'`: der Endpunkt ist bewusst `max-age=60` cachebar (entlastet
+ * bei vielen anonymen Zugriffen), aber die Nav muss ein Um-/Wieder-Einschalten in
+ * der Admin SOFORT widerspiegeln – sonst zeigte der Browser bis zu 60 s die
+ * gecachte alte Sichtbarkeit und eine wieder aktivierte Seite bliebe scheinbar
+ * ausgeblendet. Deshalb holt genau dieser Aufruf immer frisch.
+ */
 export async function getPageVisibility(opts: ClientOpts = {}): Promise<PageVisibility> {
-	const res = await request('/api/v1/pages', { method: 'GET' }, opts);
+	const res = await request('/api/v1/pages', { method: 'GET', cache: 'no-store' }, opts);
 	return (await res.json()) as PageVisibility;
 }
