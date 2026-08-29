@@ -33,19 +33,17 @@
 		try {
 			bundle = await getBundle(requested);
 		} catch {
-			downloading = false;
 			downloadError = m.basket_download_error({ ids: requested.join(', ') });
 			return;
+		} finally {
+			downloading = false;
 		}
-		downloading = false;
 
 		if (bundle.entries.length) {
 			triggerJsonDownload(bundle, 'gestura-bundle.json');
 		}
 
-		const delivered = new Set(
-			bundle.entries.map((e) => String((e as { id?: unknown }).id ?? ''))
-		);
+		const delivered = new Set(bundle.entries.map((e) => e.id ?? ''));
 		const failed = requested.filter((id) => !delivered.has(id));
 		if (failed.length) {
 			downloadError = m.basket_download_error({ ids: failed.join(', ') });

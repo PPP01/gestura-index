@@ -36,7 +36,11 @@ final class BundleController
     ): JsonResponse {
         $guard->consume($bundleLimiter, $request->getClientIp() ?? 'unknown');
 
-        $body = json_decode($request->getContent(), true);
+        try {
+            $body = json_decode($request->getContent(), true, 8, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            throw new ApiProblem(400, 'Invalid JSON body');
+        }
         if (!is_array($body) || !array_key_exists('ids', $body)) {
             throw new ApiProblem(400, 'Invalid request body');
         }
@@ -60,10 +64,9 @@ final class BundleController
         if (count($clean) > self::MAX_IDS) {
             throw new ApiProblem(400, 'Too many ids (max ' . self::MAX_IDS . ')');
         }
-        if ($clean === []) {
-            return new JsonResponse(['gesturaBundle' => 1, 'entries' => []]);
-        }
 
+        // Leeres $clean (nur Whitespace-IDs) fällt sauber durch: der Repo-
+        // Batch-Lookup kürzt bei leerer Eingabe ohne DB-Zugriff auf [] ab.
         $byId = [];
         foreach ($entries->findPublishedByFormatIds($clean) as $entry) {
             $byId[$entry->formatId] = $entry->currentVersion->payload;
