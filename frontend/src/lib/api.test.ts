@@ -14,6 +14,7 @@ import {
 	pingInstall,
 	downloadVersionUrl,
 	absoluteScreenshotUrl,
+	getBundle,
 	ApiError
 } from './api';
 
@@ -113,5 +114,22 @@ describe('network errors', () => {
 			title: 'Network error',
 			detail: 'boom'
 		});
+	});
+});
+
+describe('getBundle', () => {
+	it('getBundle postet ids und liefert das Bundle', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(
+			new Response(JSON.stringify({ gesturaBundle: 1, entries: [{ gesturaMenu: 1, id: 'a' }] }), {
+				status: 200,
+				headers: { 'content-type': 'application/json' }
+			})
+		);
+		const bundle = await getBundle(['a', 'b'], { fetch: fetchMock });
+		expect(bundle).toEqual({ gesturaBundle: 1, entries: [{ gesturaMenu: 1, id: 'a' }] });
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(String(url)).toContain('/api/v1/bundle');
+		expect(init.method).toBe('POST');
+		expect(JSON.parse(init.body)).toEqual({ ids: ['a', 'b'] });
 	});
 });
