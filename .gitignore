@@ -7,6 +7,16 @@
 .DS_Store
 Thumbs.db
 
+# Node-Abhängigkeiten (Root-package.json für dev:all; frontend/ ignoriert
+# eigenständig)
+node_modules/
+
+# Playwright-MCP-Scratch (Konsolen-Logs, Seiten-Dumps aus Preview-Sitzungen)
+/.playwright-mcp/
+
+# Ad-hoc-Layout-Screenshots aus Preview-Sitzungen
+/onepager-layout-check.png
+
 # Claude Code (lokale Session-Daten)
 /.claude/settings.local.json
 /.claude/worktrees/
