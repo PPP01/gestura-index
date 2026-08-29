@@ -11,6 +11,10 @@ parameters:
     app.trust_threshold: '%env(int:TRUST_THRESHOLD)%'
     # Fallback-Absenderadresse für InviteMailer, falls MAILER_FROM nicht gesetzt ist.
     default_from: 'admin@gestura.eu'
+    # Pfad zum prerenderten Frontend-Build, aus dem der MarketingPageController
+    # die statische HTML der schaltbaren Marketing-Seiten liest (Prod: auf den
+    # deployten Build-Pfad überschreiben, siehe deploy/README.md).
+    app.frontend_build_dir: '%kernel.project_dir%/../frontend/build'
 
 services:
     # default configuration for services in *this* file
@@ -30,6 +34,11 @@ services:
     App\Service\WebAuthn\WebAuthnCeremony: '@App\Service\WebAuthn\BundleWebAuthnCeremony'
 
 when@test:
+    parameters:
+        # Fixture-Verzeichnis statt echtem Frontend-Build – siehe
+        # tests/Functional/MarketingPageControllerTest.php.
+        app.frontend_build_dir: '%kernel.project_dir%/tests/fixtures/frontend-build'
+
     services:
         # In Tests den deterministischen Fake statt der echten Zeremonie.
         # public, damit der Test-Container das Interface direkt auflösen kann

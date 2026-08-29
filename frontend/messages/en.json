@@ -141,6 +141,16 @@
 	"admin_nav_users": "Users",
 	"admin_nav_audit": "Audit log",
 	"admin_nav_account": "My account",
+	"admin_nav_pages": "Pages",
+	"admin_pages_title": "Page visibility",
+	"admin_pages_hint": "Disabled pages return a real 404 — for search engines too.",
+	"admin_pages_load_error": "Failed to load pages.",
+	"admin_pages_active": "Active",
+	"admin_pages_inactive": "Disabled",
+	"admin_page_was_ist_gestura": "What is Gestura",
+	"admin_page_maus_gesten": "Mouse gestures",
+	"admin_page_vergleich": "Comparison",
+	"admin_page_beispiele": "Examples",
 	"admin_topbar_role": "Role: {role}",
 	"admin_logout": "Sign out",
 	"admin_backup_banner": "Add a second passkey to protect your account from lockout.",
@@ -388,5 +398,7 @@
 	"c5_github_name": "GitHub dev menu",
 	"c5_github_desc": "Issues, pull requests, actions, and releases of the current repo page – without moving the mouse to the navigation.",
 	"c5_news_name": "News radar",
-	"c5_news_desc": "Five news sources in one website menu – click through once each morning, done."
+	"c5_news_desc": "Five news sources in one website menu – click through once each morning, done.",
+	"error_not_found": "This page is not available.",
+	"error_home": "Back to home"
 }

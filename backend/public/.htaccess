@@ -17,6 +17,12 @@ DirectoryIndex index.php
     RewriteCond %{ENV:REDIRECT_STATUS} =""
     RewriteRule ^index\.php(?:/(.*)|$) %{ENV:BASE}/$1 [R=301,L]
 
+    # Schaltbare Marketing-Seiten (Sub: Admin-Seiten-Sichtbarkeit) IMMER an
+    # Symfony leiten – der MarketingPageController liefert 200 (aktiv) oder
+    # echtes 404 (deaktiviert). Ohne diese Regel könnte ein Clean-URL-Rewrite
+    # die statische HTML direkt ausliefern und das 404 umgehen.
+    RewriteRule ^(de|en)/(was-ist-gestura|maus-gesten|vergleich|beispiele)/?$ index.php [L]
+
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 

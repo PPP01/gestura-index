@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { locales, getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getPageVisibility } from '$lib/api';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import tileLight from '$lib/assets/logo/icon128-tile.png';
 	import tileDark from '$lib/assets/logo/icon128-darktile.png';
@@ -19,6 +21,41 @@
 	];
 	const isIndex = $derived(page.route.id === '/(public)/index');
 	const activeId = $derived(page.route.id);
+
+	// Slug je schaltbarer Nav-Route (Route-ID → Slug).
+	const SLUG_BY_ID: Record<string, string> = {
+		'/(public)/was-ist-gestura': 'was-ist-gestura',
+		'/(public)/maus-gesten': 'maus-gesten',
+		'/(public)/vergleich': 'vergleich',
+		'/(public)/beispiele': 'beispiele'
+	};
+
+	// Ausblenden geschieht per CSS über das Attribut `data-hidden-pages` am <html>
+	// (kein Entfernen aus dem DOM → kein Hydration-Mismatch, kein Flash). Ein
+	// Inline-Head-Script in app.html setzt das Attribut schon VOR dem ersten Paint
+	// aus dem zuletzt bekannten localStorage-Wert; dieser Fetch aktualisiert es
+	// danach autoritativ und schreibt den Wert für den nächsten Reload zurück.
+	function applyHidden(hidden: string[]): void {
+		const value = hidden.join(' ');
+		try {
+			if (value) localStorage.setItem('gestura_pages_hidden', value);
+			else localStorage.removeItem('gestura_pages_hidden');
+		} catch {
+			/* localStorage nicht verfügbar – Attribut wird trotzdem gesetzt */
+		}
+		document.documentElement.setAttribute('data-hidden-pages', value);
+	}
+
+	onMount(async () => {
+		try {
+			const vis = await getPageVisibility();
+			const hidden = Object.values(SLUG_BY_ID).filter((slug) => vis[slug] === false);
+			applyHidden(hidden);
+		} catch {
+			/* fail-open: bei Fehler den zuletzt bekannten Zustand (Inline-Head-Script)
+			   belassen; das echte Gating macht ohnehin der Server */
+		}
+	});
 </script>
 
 <header class="site-header">
@@ -35,6 +72,7 @@
 		{#each nav as item (item.href)}
 			<a
 				href={localizeHref(item.href)}
+				data-page-slug={SLUG_BY_ID[item.id]}
 				class:active={activeId === item.id}
 				class:accent={item.accent}>{item.label()}</a
 			>
@@ -132,6 +170,16 @@
 	}
 	.site-nav a.accent {
 		color: var(--accent-color);
+	}
+	/* Deaktivierte Seiten aus der Nav ausblenden – rein per CSS über das
+	   `data-hidden-pages`-Attribut am <html> (vom Inline-Head-Script vor dem
+	   ersten Paint gesetzt und vom Sichtbarkeits-Fetch aktualisiert). Kein
+	   DOM-Entfernen ⇒ kein Hydration-Mismatch, kein Flash. */
+	:global(html[data-hidden-pages~='was-ist-gestura']) .site-nav a[data-page-slug='was-ist-gestura'],
+	:global(html[data-hidden-pages~='maus-gesten']) .site-nav a[data-page-slug='maus-gesten'],
+	:global(html[data-hidden-pages~='vergleich']) .site-nav a[data-page-slug='vergleich'],
+	:global(html[data-hidden-pages~='beispiele']) .site-nav a[data-page-slug='beispiele'] {
+		display: none;
 	}
 	.header-actions {
 		display: inline-flex;
