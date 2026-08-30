@@ -104,7 +104,7 @@ final class SeedCatalog
             $this->eng('com.you.search', 'You.com', 'https://you.com/search?q=', ['search'], ['web', 'ai'], $plus),
             $this->eng('com.swisscows.search', 'Swisscows', 'https://swisscows.com/en/web?query=', ['search'], ['web', 'privacy'], $plus),
             $this->eng('com.lite.duckduckgo', 'DuckDuckGo Lite', 'https://lite.duckduckgo.com/lite/?q=', ['search'], ['web', 'privacy', 'lite'], $plus),
-            $this->eng('com.googlescholar.search', ['en' => 'Google Scholar', 'de' => 'Google Scholar'], 'https://scholar.google.com/scholar?q=', ['reference'], ['academic', 'papers'], $plus),
+            $this->eng('com.googlescholar.search', 'Google Scholar', 'https://scholar.google.com/scholar?q=', ['reference'], ['academic', 'papers'], $plus),
             $this->eng('org.searx.search', 'SearXNG', 'https://searx.be/search?q=', ['search'], ['web', 'privacy', 'metasearch'], $plus),
         ];
     }
@@ -115,14 +115,14 @@ final class SeedCatalog
         $plus = ['plus' => true];
 
         return [
-            $this->eng('de.golem.search', 'Golem.de', 'https://suche.golem.de/search.php?q=', ['news', 'dev'], ['tech', 'deutsch', 'it'], $plus),
-            $this->eng('de.heise.search', 'heise online', 'https://www.heise.de/suche?q=', ['news', 'dev'], ['tech', 'deutsch', 'it'], $plus),
-            $this->eng('de.spiegel.search', 'DER SPIEGEL', 'https://www.spiegel.de/suche/?suchbegriff=', ['news'], ['nachrichten', 'deutsch'], $plus),
-            $this->eng('de.tagesschau.search', 'tagesschau', 'https://www.tagesschau.de/suche?searchText=', ['news'], ['nachrichten', 'deutsch'], $plus),
-            $this->eng('de.zeit.search', 'ZEIT ONLINE', 'https://www.zeit.de/suche/index?q=', ['news'], ['nachrichten', 'deutsch'], $plus),
-            $this->eng('de.mydealz.search', 'mydealz', 'https://www.mydealz.de/search?q=', ['shopping'], ['deals', 'deutsch', 'schnäppchen'], $plus),
-            $this->eng('de.sueddeutsche.search', 'Süddeutsche Zeitung', 'https://www.sueddeutsche.de/suche?query=', ['news'], ['nachrichten', 'deutsch'], $plus),
-            $this->eng('de.faz.search', 'FAZ.NET', 'https://www.faz.net/suche/?query=', ['news'], ['nachrichten', 'deutsch'], $plus),
+            $this->eng('de.golem.search', ['de' => 'Golem.de'], 'https://suche.golem.de/search.php?q=', ['news', 'dev'], ['tech', 'deutsch', 'it'], $plus),
+            $this->eng('de.heise.search', ['de' => 'heise online'], 'https://www.heise.de/suche?q=', ['news', 'dev'], ['tech', 'deutsch', 'it'], $plus),
+            $this->eng('de.spiegel.search', ['de' => 'DER SPIEGEL'], 'https://www.spiegel.de/suche/?suchbegriff=', ['news'], ['nachrichten', 'deutsch'], $plus),
+            $this->eng('de.tagesschau.search', ['de' => 'tagesschau'], 'https://www.tagesschau.de/suche?searchText=', ['news'], ['nachrichten', 'deutsch'], $plus),
+            $this->eng('de.zeit.search', ['de' => 'ZEIT ONLINE'], 'https://www.zeit.de/suche/index?q=', ['news'], ['nachrichten', 'deutsch'], $plus),
+            $this->eng('de.mydealz.search', ['de' => 'mydealz'], 'https://www.mydealz.de/search?q=', ['shopping'], ['deals', 'deutsch', 'schnäppchen'], $plus),
+            $this->eng('de.sueddeutsche.search', ['de' => 'Süddeutsche Zeitung'], 'https://www.sueddeutsche.de/suche?query=', ['news'], ['nachrichten', 'deutsch'], $plus),
+            $this->eng('de.faz.search', ['de' => 'FAZ.NET'], 'https://www.faz.net/suche/?query=', ['news'], ['nachrichten', 'deutsch'], $plus),
         ];
     }
 
@@ -132,12 +132,12 @@ final class SeedCatalog
         $plus = ['plus' => true];
 
         return [
-            $this->eng('com.google.news', ['en' => 'Google News', 'de' => 'Google News'], 'https://news.google.com/search?q=', ['news'], ['news'], $plus),
-            $this->eng('com.theguardian.search', 'The Guardian', 'https://www.theguardian.com/search?q=', ['news'], ['news', 'english'], $plus),
-            $this->eng('com.bbc.search', 'BBC', 'https://www.bbc.co.uk/search?q=', ['news'], ['news', 'english'], $plus),
-            $this->eng('com.reuters.search', 'Reuters', 'https://www.reuters.com/site-search/?query=', ['news'], ['news', 'english'], $plus),
-            $this->eng('com.arstechnica.search', 'Ars Technica', 'https://arstechnica.com/search/?q=', ['news', 'dev'], ['tech', 'english'], $plus),
-            $this->eng('com.techcrunch.search', 'TechCrunch', 'https://techcrunch.com/?s=', ['news', 'dev'], ['tech', 'english'], $plus),
+            $this->eng('com.google.news', 'Google News', 'https://news.google.com/search?q=', ['news'], ['news'], $plus),
+            $this->eng('com.theguardian.search', ['en' => 'The Guardian'], 'https://www.theguardian.com/search?q=', ['news'], ['news', 'english'], $plus),
+            $this->eng('com.bbc.search', ['en' => 'BBC'], 'https://www.bbc.co.uk/search?q=', ['news'], ['news', 'english'], $plus),
+            $this->eng('com.reuters.search', ['en' => 'Reuters'], 'https://www.reuters.com/site-search/?query=', ['news'], ['news', 'english'], $plus),
+            $this->eng('com.arstechnica.search', ['en' => 'Ars Technica'], 'https://arstechnica.com/search/?q=', ['news', 'dev'], ['tech', 'english'], $plus),
+            $this->eng('com.techcrunch.search', ['en' => 'TechCrunch'], 'https://techcrunch.com/?s=', ['news', 'dev'], ['tech', 'english'], $plus),
         ];
     }
 
@@ -163,7 +163,9 @@ final class SeedCatalog
         foreach ($wikiLangs as $code => $native) {
             $out[] = $this->eng(
                 "org.wikipedia.$code",
-                ['en' => "Wikipedia ($native)", 'de' => "Wikipedia ($native)"],
+                // Einsprachig: die $code-Wikipedia ist genau diese Sprache,
+                // nicht mehrsprachig – Name nur unter dem echten Sprachcode.
+                [$code => "Wikipedia ($native)"],
                 "https://$code.wikipedia.org/w/index.php?search=",
                 ['reference'],
                 ['wiki', 'encyclopedia', $code],
@@ -171,15 +173,15 @@ final class SeedCatalog
             );
         }
 
-        $out[] = $this->eng('org.wiktionary.en', 'Wiktionary (English)', 'https://en.wiktionary.org/w/index.php?search=', ['reference'], ['dictionary', 'en'], $plus);
-        $out[] = $this->eng('org.wiktionary.de', 'Wiktionary (Deutsch)', 'https://de.wiktionary.org/w/index.php?search=', ['reference'], ['dictionary', 'de'], $plus);
+        $out[] = $this->eng('org.wiktionary.en', ['en' => 'Wiktionary (English)'], 'https://en.wiktionary.org/w/index.php?search=', ['reference'], ['dictionary', 'en'], $plus);
+        $out[] = $this->eng('org.wiktionary.de', ['de' => 'Wiktionary (Deutsch)'], 'https://de.wiktionary.org/w/index.php?search=', ['reference'], ['dictionary', 'de'], $plus);
         $out[] = $this->eng('org.wikidata.search', 'Wikidata', 'https://www.wikidata.org/w/index.php?search=', ['reference'], ['data', 'wiki'], $plus);
-        $out[] = $this->eng('com.wolframalpha.search', 'Wolfram Alpha', 'https://www.wolframalpha.com/input?i=', ['reference'], ['math', 'compute'], $plus);
-        $out[] = $this->eng('com.britannica.search', 'Encyclopædia Britannica', 'https://www.britannica.com/search?query=', ['reference'], ['encyclopedia', 'en'], $plus);
-        $out[] = $this->eng('gov.nih.pubmed', 'PubMed', 'https://pubmed.ncbi.nlm.nih.gov/?term=', ['reference'], ['academic', 'medicine'], $plus);
-        $out[] = $this->eng('org.semanticscholar.search', 'Semantic Scholar', 'https://www.semanticscholar.org/search?q=', ['reference'], ['academic', 'papers'], $plus);
-        $out[] = $this->eng('com.dictionaryleo.search', 'LEO Wörterbuch', 'https://dict.leo.org/englisch-deutsch/', ['reference'], ['dictionary', 'de', 'en']);
-        $out[] = $this->eng('com.dwds.search', 'DWDS', 'https://www.dwds.de/?q=', ['reference'], ['dictionary', 'de'], $plus);
+        $out[] = $this->eng('com.wolframalpha.search', ['en' => 'Wolfram Alpha'], 'https://www.wolframalpha.com/input?i=', ['reference'], ['math', 'compute'], $plus);
+        $out[] = $this->eng('com.britannica.search', ['en' => 'Encyclopædia Britannica'], 'https://www.britannica.com/search?query=', ['reference'], ['encyclopedia', 'en'], $plus);
+        $out[] = $this->eng('gov.nih.pubmed', ['en' => 'PubMed'], 'https://pubmed.ncbi.nlm.nih.gov/?term=', ['reference'], ['academic', 'medicine'], $plus);
+        $out[] = $this->eng('org.semanticscholar.search', ['en' => 'Semantic Scholar'], 'https://www.semanticscholar.org/search?q=', ['reference'], ['academic', 'papers'], $plus);
+        $out[] = $this->eng('com.dictionaryleo.search', ['de' => 'LEO Wörterbuch'], 'https://dict.leo.org/englisch-deutsch/', ['reference'], ['dictionary', 'de', 'en']);
+        $out[] = $this->eng('com.dwds.search', ['de' => 'DWDS'], 'https://www.dwds.de/?q=', ['reference'], ['dictionary', 'de'], $plus);
 
         return $out;
     }
@@ -238,16 +240,19 @@ final class SeedCatalog
         $plus = ['plus' => true];
         $out = [];
 
+        // TLD => [Regionsname, Sprache der Region] – jede Regional-Seite ist
+        // einsprachig in ihrer Landessprache, nicht mehrsprachig.
         $amazonTlds = [
-            'de' => 'Deutschland', 'com' => 'US', 'co.uk' => 'UK', 'fr' => 'France',
-            'it' => 'Italia', 'es' => 'España', 'nl' => 'Nederland', 'pl' => 'Polska',
-            'se' => 'Sverige', 'ca' => 'Canada', 'com.au' => 'Australia', 'co.jp' => 'Japan',
+            'de' => ['Deutschland', 'de'], 'com' => ['US', 'en'], 'co.uk' => ['UK', 'en'],
+            'fr' => ['France', 'fr'], 'it' => ['Italia', 'it'], 'es' => ['España', 'es'],
+            'nl' => ['Nederland', 'nl'], 'pl' => ['Polska', 'pl'], 'se' => ['Sverige', 'sv'],
+            'ca' => ['Canada', 'en'], 'com.au' => ['Australia', 'en'], 'co.jp' => ['Japan', 'ja'],
         ];
-        foreach ($amazonTlds as $tld => $region) {
+        foreach ($amazonTlds as $tld => [$region, $lang]) {
             $idTld = str_replace('.', '-', $tld);
             $out[] = $this->eng(
                 "com.amazon.$idTld",
-                "Amazon ($region)",
+                [$lang => "Amazon ($region)"],
                 "https://www.amazon.$tld/s?k=",
                 ['shopping'],
                 ['shopping', 'amazon'],
@@ -255,12 +260,15 @@ final class SeedCatalog
             );
         }
 
-        $ebayTlds = ['de' => 'Deutschland', 'com' => 'US', 'co.uk' => 'UK', 'fr' => 'France', 'it' => 'Italia'];
-        foreach ($ebayTlds as $tld => $region) {
+        $ebayTlds = [
+            'de' => ['Deutschland', 'de'], 'com' => ['US', 'en'], 'co.uk' => ['UK', 'en'],
+            'fr' => ['France', 'fr'], 'it' => ['Italia', 'it'],
+        ];
+        foreach ($ebayTlds as $tld => [$region, $lang]) {
             $idTld = str_replace('.', '-', $tld);
             $out[] = $this->eng(
                 "com.ebay.$idTld",
-                "eBay ($region)",
+                [$lang => "eBay ($region)"],
                 "https://www.ebay.$tld/sch/i.html?_nkw=",
                 ['shopping'],
                 ['shopping', 'auction'],
@@ -268,12 +276,12 @@ final class SeedCatalog
             );
         }
 
-        $out[] = $this->eng('de.idealo.search', 'idealo', 'https://www.idealo.de/preisvergleich/MainSearchProductCategory.html?q=', ['shopping'], ['preisvergleich', 'deutsch'], $plus);
-        $out[] = $this->eng('de.geizhals.search', 'Geizhals', 'https://geizhals.de/?fs=', ['shopping'], ['preisvergleich', 'deutsch'], $plus);
+        $out[] = $this->eng('de.idealo.search', ['de' => 'idealo'], 'https://www.idealo.de/preisvergleich/MainSearchProductCategory.html?q=', ['shopping'], ['preisvergleich', 'deutsch'], $plus);
+        $out[] = $this->eng('de.geizhals.search', ['de' => 'Geizhals'], 'https://geizhals.de/?fs=', ['shopping'], ['preisvergleich', 'deutsch'], $plus);
         $out[] = $this->eng('com.etsy.search', 'Etsy', 'https://www.etsy.com/search?q=', ['shopping'], ['handmade'], $plus);
         $out[] = $this->eng('com.aliexpress.search', 'AliExpress', 'https://www.aliexpress.com/wholesale?SearchText=', ['shopping'], ['shopping'], $plus);
-        $out[] = $this->eng('de.otto.search', 'OTTO', 'https://www.otto.de/suche/', ['shopping'], ['shopping', 'deutsch']);
-        $out[] = $this->eng('com.ebaykleinanzeigen.search', 'Kleinanzeigen', 'https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=', ['shopping'], ['classifieds', 'deutsch'], $plus);
+        $out[] = $this->eng('de.otto.search', ['de' => 'OTTO'], 'https://www.otto.de/suche/', ['shopping'], ['shopping', 'deutsch']);
+        $out[] = $this->eng('com.ebaykleinanzeigen.search', ['de' => 'Kleinanzeigen'], 'https://www.kleinanzeigen.de/s-suchanfrage.html?keywords=', ['shopping'], ['classifieds', 'deutsch'], $plus);
 
         return $out;
     }
@@ -374,7 +382,7 @@ final class SeedCatalog
                 $this->srch('s-deepl', 'deepl'),
                 $this->srch('s-wikipedia', 'wikipedia'),
             ], ['search'], ['search', 'quicklinks']),
-            $this->menu('gestura.menu.shopping', ['en' => 'Shopping', 'de' => 'Shopping'], [], [
+            $this->menu('gestura.menu.shopping', 'Shopping', [], [
                 $this->srch('sh-brave', 'brave'),
                 $this->srch('sh-google', 'google'),
                 $this->srch('sh-amazon', 'amazon'),
@@ -485,40 +493,40 @@ final class SeedCatalog
     private function germanSiteMenus(): array
     {
         return [
-            $this->menu('de.golem.menu', 'Golem.de', ['*golem.de*'], [
+            $this->menu('de.golem.menu', ['de' => 'Golem.de'], ['*golem.de*'], [
                 $this->link('go-home', ['en' => 'Home', 'de' => 'Startseite'], 'house', 'https://www.golem.de/'),
                 $this->link('go-news', ['en' => 'News', 'de' => 'News'], 'newspaper', 'https://www.golem.de/news/'),
                 $this->link('go-audio', 'Audio/Podcast', 'headphones', 'https://www.golem.de/audio/'),
                 $this->link('go-jobs', 'Jobs', 'briefcase', 'https://jobs.golem.de/'),
             ], ['news', 'dev'], ['tech', 'deutsch'], ['homepage' => 'https://www.golem.de/']),
-            $this->menu('de.tagesschau.menu', 'tagesschau', ['*tagesschau.de*'], [
+            $this->menu('de.tagesschau.menu', ['de' => 'tagesschau'], ['*tagesschau.de*'], [
                 $this->link('ts-home', ['en' => 'Home', 'de' => 'Startseite'], 'house', 'https://www.tagesschau.de/'),
                 $this->link('ts-inland', 'Inland', 'mapPin', 'https://www.tagesschau.de/inland'),
                 $this->link('ts-ausland', 'Ausland', 'globe', 'https://www.tagesschau.de/ausland'),
                 $this->link('ts-wirtschaft', 'Wirtschaft', 'trendingUp', 'https://www.tagesschau.de/wirtschaft'),
                 $this->link('ts-livestream', 'Livestream', 'play', 'https://www.tagesschau.de/livestream'),
             ], ['news'], ['nachrichten', 'deutsch'], ['homepage' => 'https://www.tagesschau.de/']),
-            $this->menu('de.spiegel.menu', 'DER SPIEGEL', ['*spiegel.de*'], [
+            $this->menu('de.spiegel.menu', ['de' => 'DER SPIEGEL'], ['*spiegel.de*'], [
                 $this->link('sp-home', ['en' => 'Home', 'de' => 'Startseite'], 'house', 'https://www.spiegel.de/'),
                 $this->link('sp-politik', 'Politik', 'landmark', 'https://www.spiegel.de/politik/'),
                 $this->link('sp-wirtschaft', 'Wirtschaft', 'trendingUp', 'https://www.spiegel.de/wirtschaft/'),
                 $this->link('sp-panorama', 'Panorama', 'globe', 'https://www.spiegel.de/panorama/'),
                 $this->link('sp-netzwelt', 'Netzwelt', 'cpu', 'https://www.spiegel.de/netzwelt/'),
             ], ['news'], ['nachrichten', 'deutsch'], ['homepage' => 'https://www.spiegel.de/']),
-            $this->menu('de.mydealz.menu', 'mydealz', ['*mydealz.de*'], [
+            $this->menu('de.mydealz.menu', ['de' => 'mydealz'], ['*mydealz.de*'], [
                 $this->link('md-hot', ['en' => 'Hot deals', 'de' => 'Heiße Deals'], 'flame', 'https://www.mydealz.de/hot'),
                 $this->link('md-new', ['en' => 'New', 'de' => 'Neu'], 'sparkles', 'https://www.mydealz.de/new'),
                 $this->link('md-discussed', ['en' => 'Discussed', 'de' => 'Diskutiert'], 'messageCircle', 'https://www.mydealz.de/discussed'),
                 $this->link('md-vouchers', ['en' => 'Vouchers', 'de' => 'Gutscheine'], 'ticket', 'https://www.mydealz.de/gutscheine'),
             ], ['shopping'], ['deals', 'deutsch'], ['homepage' => 'https://www.mydealz.de/']),
-            $this->menu('com.msn.menu', 'MSN', ['*msn.com*'], [
+            $this->menu('com.msn.menu', ['de' => 'MSN'], ['*msn.com*'], [
                 $this->link('msn-home', ['en' => 'Home', 'de' => 'Startseite'], 'house', 'https://www.msn.com/de-de'),
                 $this->link('msn-news', ['en' => 'News', 'de' => 'Nachrichten'], 'newspaper', 'https://www.msn.com/de-de/nachrichten'),
                 $this->link('msn-weather', ['en' => 'Weather', 'de' => 'Wetter'], 'cloud', 'https://www.msn.com/de-de/wetter'),
                 $this->link('msn-sport', 'Sport', 'trophy', 'https://www.msn.com/de-de/sport'),
                 $this->link('msn-finance', ['en' => 'Finance', 'de' => 'Finanzen'], 'trendingUp', 'https://www.msn.com/de-de/finanzen'),
             ], ['news'], ['portal', 'deutsch'], ['homepage' => 'https://www.msn.com/de-de']),
-            $this->menu('de.heise.menu', 'heise online', ['*heise.de*'], [
+            $this->menu('de.heise.menu', ['de' => 'heise online'], ['*heise.de*'], [
                 $this->link('he-home', ['en' => 'Home', 'de' => 'Startseite'], 'house', 'https://www.heise.de/'),
                 $this->link('he-news', 'News', 'newspaper', 'https://www.heise.de/newsticker/'),
                 $this->link('he-ct', "c't", 'bookOpen', 'https://www.heise.de/ct/'),
@@ -540,7 +548,7 @@ final class SeedCatalog
                 $this->link('amz-deals', ['en' => 'Deals', 'de' => 'Angebote'], 'tag', 'https://www.amazon.de/gp/goldbox'),
                 $this->link('amz-returns', ['en' => 'Returns', 'de' => 'Rücksendungen'], 'rotateCcw', 'https://www.amazon.de/gp/css/returns/homepage.html'),
             ], ['shopping'], ['shopping', 'amazon'], ['homepage' => 'https://www.amazon.de/', 'icon' => 'shoppingCart']),
-            $this->menu('de.idealo.menu', 'idealo', ['*idealo.de*'], [
+            $this->menu('de.idealo.menu', ['de' => 'idealo'], ['*idealo.de*'], [
                 $this->link('id-home', ['en' => 'Home', 'de' => 'Startseite'], 'house', 'https://www.idealo.de/'),
                 $this->link('id-deals', ['en' => 'Deals', 'de' => 'Schnäppchen'], 'tag', 'https://www.idealo.de/preisvergleich/Schnaeppchen.html'),
             ], ['shopping'], ['preisvergleich', 'deutsch'], ['homepage' => 'https://www.idealo.de/']),

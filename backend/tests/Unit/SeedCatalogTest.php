@@ -64,6 +64,23 @@ final class SeedCatalogTest extends KernelTestCase
         }
     }
 
+    public function testNameMapsAreNotPointlessDuplicates(): void
+    {
+        // Ein mehrsprachiger Name mit identischen Werten (z. B. {en:X, de:X})
+        // ist Unsinn – sprach-/regionsspezifische Einträge tragen genau ihre
+        // Sprache, universelle bleiben ein einfacher String (= multilanguage).
+        foreach ($this->catalog->entries() as $entry) {
+            $name = $entry->payload['name'];
+            if (\is_array($name) && \count($name) > 1) {
+                self::assertGreaterThan(
+                    1,
+                    \count(array_unique($name)),
+                    'Mehrsprachiger Name mit identischen Werten: ' . $entry->formatId,
+                );
+            }
+        }
+    }
+
     public function testMetadataRespectsSubmissionLimits(): void
     {
         foreach ($this->catalog->entries() as $entry) {
