@@ -1,6 +1,6 @@
 import type { EntryListItem } from './api';
 import type { OnepagerFilter, OnepagerSort } from './browse-state';
-import { resolveLocalized, entryLanguages } from './localized';
+import { resolveLocalized, entryLanguages, MULTILANGUAGE } from './localized';
 import { CATEGORIES } from './categories';
 
 export interface FacetOption {
@@ -23,7 +23,17 @@ export function entryMatchesFilter(
 	if (filter.type && item.type !== filter.type) return false;
 	if (filter.categories.length && !hasIntersection(item.categories, filter.categories)) return false;
 	if (filter.tags.length && !hasIntersection(item.tags, filter.tags)) return false;
-	if (filter.langs.length && !hasIntersection(entryLanguages(item.name), filter.langs)) return false;
+	// Universelle (*) Einträge sind in jeder Sprache nutzbar – sie matchen jeden
+	// Sprachfilter, statt nur unter »*« auffindbar zu sein (sonst blendete die
+	// per-Locale vorbelegte Facette z. B. YouTube für deutsche Nutzer aus).
+	const itemLangs = entryLanguages(item.name);
+	if (
+		filter.langs.length &&
+		!itemLangs.includes(MULTILANGUAGE) &&
+		!hasIntersection(itemLangs, filter.langs)
+	) {
+		return false;
+	}
 	if (filter.site) {
 		const needle = filter.site.toLowerCase();
 		if (!item.domains.some((d) => d.toLowerCase().includes(needle))) return false;
