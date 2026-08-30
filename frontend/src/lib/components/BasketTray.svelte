@@ -93,14 +93,16 @@
 			sending = false;
 		}
 
-		document.dispatchEvent(new CustomEvent('gestura:import', { detail: JSON.stringify(bundle) }));
+		// §2.1: detail als String – einmal serialisieren, für Event und Schätzung nutzen.
+		const payload = JSON.stringify(bundle);
+		document.dispatchEvent(new CustomEvent('gestura:import', { detail: payload }));
 		sendDone = true;
 
 		// §5: exakte Schätzung der gespeicherten Form aus dem echten Bundle –
 		// UTF-8-Bytes (TextEncoder), nicht String-Länge, weil die storage.sync-
 		// Grenze in Bytes gilt und Umlaute je 2 Bytes belegen. Weicher Hinweis,
 		// kein Deckel: die Extension ist die eigentliche Kontrolle.
-		const rawBytes = new TextEncoder().encode(JSON.stringify(bundle)).length;
+		const rawBytes = new TextEncoder().encode(payload).length;
 		if (rawBytes * STORED_SIZE_RATIO > SEND_SIZE_HINT_BYTES) {
 			sizeHint = true;
 		}
