@@ -22,7 +22,7 @@
 		type OnepagerFilter,
 		type OnepagerSort
 	} from '$lib/browse-state';
-	import { categoryLabel, categoryIcon, categoryColor, entryTypeLabel } from '$lib/categories';
+	import { categoryLabel, categoryIcon, categoryColor, entryTypeLabel, languageLabel } from '$lib/categories';
 	import EntryBlock from '$lib/components/EntryBlock.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import BasketTray from '$lib/components/BasketTray.svelte';
@@ -249,7 +249,7 @@
 							class:on={filter.langs.includes(opt.value)}
 							onclick={() => setFilter({ langs: toggleIn(filter.langs, opt.value) })}
 						>
-							<span class="facet-row-label">{opt.value.toUpperCase()}</span>
+							<span class="facet-row-label">{languageLabel(opt.value)}</span>
 							<span class="facet-row-count">{optionCount(items, filter, 'langs', opt.value, locale)}</span>
 						</button>
 					{/each}
@@ -302,7 +302,7 @@
 					{/each}
 					{#each filter.langs as lang (lang)}
 						<button class="chip chip-active" onclick={() => setFilter({ langs: toggleIn(filter.langs, lang) })}>
-							{m.facet_languages()}: {lang.toUpperCase()}
+							{m.facet_languages()}: {languageLabel(lang)}
 							<X size={12} />
 						</button>
 					{/each}

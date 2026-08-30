@@ -13,6 +13,7 @@ import {
 } from '@lucide/svelte';
 import { m } from '$lib/paraglide/messages.js';
 import type { EntryType } from './api';
+import { MULTILANGUAGE } from './localized';
 
 /** Die festen Kategorie-Keys – identisch zum Backend-Enum, feste Reihenfolge. */
 export const CATEGORIES = [
@@ -71,6 +72,11 @@ export function categoryLabel(key: string): string {
 }
 
 /** Lokalisiertes Label eines Eintragstyps (»Menü« / »Suchmaschine«). */
+/** Anzeige-Label eines Sprach-Facettenwerts: »*« → »Alle Sprachen«, sonst Code. */
+export function languageLabel(code: string): string {
+	return code === MULTILANGUAGE ? m.lang_all() : code.toUpperCase();
+}
+
 export function entryTypeLabel(type: EntryType): string {
 	return type === 'menu' ? m.type_menu() : m.type_engine();
 }
