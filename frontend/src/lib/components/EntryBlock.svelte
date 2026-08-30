@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		getEntry,
+		downloadVersion,
 		listReviews,
 		type EntryListItem,
 		type EntryDetail,
@@ -13,6 +14,7 @@
 	import { getLocale } from '$lib/paraglide/runtime';
 	import { m } from '$lib/paraglide/messages.js';
 	import Badge from './Badge.svelte';
+	import MenuPreview from './MenuPreview.svelte';
 	import StarRating from './StarRating.svelte';
 	import Spinner from './Spinner.svelte';
 	import { ChevronDown, Check, Plus, TriangleAlert, Download, Image } from '@lucide/svelte';
@@ -27,6 +29,9 @@
 	let detail = $state<EntryDetail | null>(null);
 	let detailLoading = $state(false);
 	let detailError = $state(false);
+	/** Roh-Payload der aktuellen Version – Datenquelle der Live-Vorschau (nur Menüs). */
+	let previewPayload = $state<unknown>(null);
+	let previewLoading = $state(false);
 
 	let reviewsOpen = $state(false);
 	let reviews = $state<ReviewItem[] | null>(null);
@@ -57,6 +62,28 @@
 			detailError = true;
 		} finally {
 			detailLoading = false;
+		}
+		if (detail) loadPreview(detail);
+	}
+
+	/**
+	 * Holt den Roh-Payload der aktuellen Version für die Live-Vorschau.
+	 *
+	 * Bewusst der Versions-Endpunkt und NICHT `pingInstall` – das Ansehen einer
+	 * Vorschau ist keine Installation und darf den Zähler nicht bewegen. Ein
+	 * Fehler bleibt still: die Karte zeigt dann den Platzhalter, statt eine
+	 * Fehlermeldung an eine Stelle zu setzen, an der es nichts zu tun gibt.
+	 */
+	async function loadPreview(loaded: EntryDetail) {
+		if (loaded.type !== 'menu' || !loaded.currentVersion) return;
+		if (previewPayload !== null || previewLoading) return;
+		previewLoading = true;
+		try {
+			previewPayload = await downloadVersion(loaded.formatId, loaded.currentVersion);
+		} catch {
+			previewPayload = null;
+		} finally {
+			previewLoading = false;
 		}
 	}
 
@@ -202,7 +229,10 @@
 								alt={m.block_screenshot_alt({ name: displayName })}
 								loading="lazy"
 							/>
-						{:else}
+						{/if}
+						{#if previewPayload}
+							<MenuPreview payload={previewPayload} name={displayName} />
+						{:else if !detail.screenshotUrl && !previewLoading}
 							<div class="shot-placeholder">
 								<Image size={28} />
 								<span>{m.block_screenshot_placeholder()}</span>
@@ -476,6 +506,9 @@
 	}
 	.expand-shot {
 		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		min-width: 0;
 	}
 	.expand-shot img {
 		width: 100%;

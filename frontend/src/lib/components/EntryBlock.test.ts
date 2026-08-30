@@ -11,10 +11,29 @@ vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_API_BASE: undefined } }));
 
 const getEntry = vi.fn();
 const listReviews = vi.fn();
+const downloadVersion = vi.fn();
 vi.mock('$lib/api', async (orig) => {
 	const actual = await orig<typeof import('$lib/api')>();
-	return { ...actual, getEntry: (...a: unknown[]) => getEntry(...a), listReviews: (...a: unknown[]) => listReviews(...a) };
+	return {
+		...actual,
+		getEntry: (...a: unknown[]) => getEntry(...a),
+		listReviews: (...a: unknown[]) => listReviews(...a),
+		downloadVersion: (...a: unknown[]) => downloadVersion(...a)
+	};
 });
+
+/** Roh-Payload im Austauschformat – Datenquelle der Live-Vorschau. */
+const payload = {
+	gesturaMenu: 1,
+	id: 'com.example.menu',
+	version: '1.0.0',
+	name: 'Example',
+	items: [
+		{ id: 'i1', action: 'openCustomUrl', label: { en: 'Home', de: 'Start' }, icon: 'house', customUrl: 'https://example.com/' },
+		{ id: 'i2', type: 'separator' },
+		{ id: 'i3', action: 'back' }
+	]
+};
 
 const entry: EntryListItem = {
 	formatId: 'com.example.menu',
@@ -43,6 +62,8 @@ beforeEach(() => {
 	basket.clear();
 	getEntry.mockReset();
 	listReviews.mockReset();
+	downloadVersion.mockReset();
+	downloadVersion.mockRejectedValue(new Error('nicht gemockt'));
 });
 
 describe('EntryBlock', () => {
@@ -74,6 +95,36 @@ describe('EntryBlock', () => {
 		render(EntryBlock, { entry, open: true });
 		await waitFor(() => expect(getEntry).toHaveBeenCalledWith('com.example.menu'));
 		await waitFor(() => expect(screen.getByText('1.0.0')).toBeInTheDocument());
+	});
+
+	it('rendert die Live-Vorschau des Menüs statt des Screenshot-Platzhalters', async () => {
+		getEntry.mockResolvedValue(detail);
+		downloadVersion.mockResolvedValue(payload);
+		render(EntryBlock, { entry, open: true });
+		await waitFor(() => expect(downloadVersion).toHaveBeenCalledWith('com.example.menu', '1.0.0'));
+		await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+		// Aktions-Item ohne Label fällt auf den Aktionsnamen zurück (Test-Locale = en).
+		expect(screen.getByText('Go Back')).toBeInTheDocument();
+		expect(screen.getByRole('separator')).toBeInTheDocument();
+		expect(screen.queryByText(/screenshot provided|screenshot des menüs/i)).not.toBeInTheDocument();
+	});
+
+	it('zeigt den Platzhalter, wenn der Vorschau-Payload nicht ladbar ist', async () => {
+		getEntry.mockResolvedValue(detail); // downloadVersion lehnt per beforeEach ab
+		render(EntryBlock, { entry, open: true });
+		await waitFor(() => expect(downloadVersion).toHaveBeenCalled());
+		await waitFor(() =>
+			expect(screen.getByText(/screenshot provided|screenshot des menüs/i)).toBeInTheDocument()
+		);
+		expect(screen.queryByRole('list', { name: /menu preview|menü-vorschau/i })).not.toBeInTheDocument();
+	});
+
+	it('holt für Suchmaschinen-Einträge keinen Vorschau-Payload', async () => {
+		const engine = { ...entry, type: 'engine' as const, formatId: 'com.example.engine' };
+		getEntry.mockResolvedValue({ ...detail, ...engine });
+		render(EntryBlock, { entry: engine, open: true });
+		await waitFor(() => expect(getEntry).toHaveBeenCalled());
+		expect(downloadVersion).not.toHaveBeenCalled();
 	});
 
 	it('lädt Reviews erst on demand', async () => {

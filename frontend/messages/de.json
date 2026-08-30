@@ -409,5 +409,18 @@
 	"c5_news_name": "News-Radar",
 	"c5_news_desc": "Fünf Nachrichtenquellen in einem Website-Menü – morgens einmal durchklicken, fertig.",
 	"error_not_found": "Diese Seite ist nicht verfügbar.",
-	"error_home": "Zur Startseite"
+	"error_home": "Zur Startseite",
+	"block_preview_caption": "Live-Vorschau",
+	"block_preview_label": "Menü-Vorschau von {name}",
+	"block_preview_empty": "Dieses Menü enthält keine anzeigbaren Einträge.",
+	"menu_action_back": "Zurück",
+	"menu_action_forward": "Vorwärts",
+	"menu_action_refresh": "Aktuellen Tab aktualisieren",
+	"menu_action_new_tab": "Neuer Tab",
+	"menu_action_scroll_up": "Nach oben scrollen",
+	"menu_action_scroll_down": "Nach unten scrollen",
+	"menu_action_scroll_to_top": "Zum Anfang scrollen",
+	"menu_action_scroll_to_bottom": "Zum Ende scrollen",
+	"menu_action_open_url": "Benutzerdefinierte URL öffnen",
+	"menu_action_search_link": "Such-Link öffnen"
 }

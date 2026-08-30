@@ -409,5 +409,18 @@
 	"c5_news_name": "News radar",
 	"c5_news_desc": "Five news sources in one website menu – click through once each morning, done.",
 	"error_not_found": "This page is not available.",
-	"error_home": "Back to home"
+	"error_home": "Back to home",
+	"block_preview_caption": "Live preview",
+	"block_preview_label": "Menu preview of {name}",
+	"block_preview_empty": "This menu has no displayable entries.",
+	"menu_action_back": "Go Back",
+	"menu_action_forward": "Go Forward",
+	"menu_action_refresh": "Refresh Current Tab",
+	"menu_action_new_tab": "New Tab",
+	"menu_action_scroll_up": "Scroll Up",
+	"menu_action_scroll_down": "Scroll Down",
+	"menu_action_scroll_to_top": "Scroll to Top",
+	"menu_action_scroll_to_bottom": "Scroll to Bottom",
+	"menu_action_open_url": "Open Custom URL",
+	"menu_action_search_link": "Open search link"
 }
