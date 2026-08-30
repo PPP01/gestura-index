@@ -2,6 +2,7 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"onepager_title": "Gestura Index",
 	"facet_languages": "Languages",
+	"lang_all": "All languages",
 	"facet_tags": "Tags",
 	"facet_categories": "Categories",
 	"facet_more": "more",

@@ -18,12 +18,19 @@ export function resolveLocalized(
 	return first ?? '';
 }
 
+/** Marker für sprach-neutrale (universelle) Einträge in der Sprach-Facette. */
+export const MULTILANGUAGE = '*';
+
 /**
- * Ermittelt die im Namensfeld vorhandenen Sprachen (Format-Konvention:
- * einfacher String = en-Fallback).
+ * Ermittelt die Sprachen eines Eintrags aus seinem Namensfeld.
+ *
+ * Eine Sprach-Map führt genau ihre Schlüssel (z. B. nur `de` für eine deutsche
+ * Seite, nur `fr` für die französische Wikipedia). Ein einfacher String hat
+ * bewusst KEINE Sprachbindung – eine Marke wie »YouTube« oder »GitHub« ist
+ * universell – und zählt daher als `*` (multilanguage), nicht als »en«.
  */
 export function entryLanguages(value: LocalizedString | null | undefined): string[] {
 	if (value == null) return [];
-	if (typeof value === 'string') return ['en'];
+	if (typeof value === 'string') return [MULTILANGUAGE];
 	return Object.keys(value);
 }

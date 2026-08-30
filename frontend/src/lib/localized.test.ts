@@ -21,8 +21,8 @@ describe('resolveLocalized', () => {
 });
 
 describe('entryLanguages', () => {
-	it('zählt einen String-Namen als en', () => {
-		expect(entryLanguages('Hello')).toEqual(['en']);
+	it('zählt einen String-Namen als multilanguage (*)', () => {
+		expect(entryLanguages('Hello')).toEqual(['*']);
 	});
 	it('liefert alle Map-Schlüssel', () => {
 		expect(entryLanguages({ en: 'Hi', de: 'Hallo' }).sort()).toEqual(['de', 'en']);

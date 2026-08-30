@@ -7,7 +7,7 @@
 		type ReviewItem
 	} from '$lib/api';
 	import { resolveLocalized, entryLanguages } from '$lib/localized';
-	import { categoryLabel, categoryIcon, categoryColor, entryTypeLabel } from '$lib/categories';
+	import { categoryLabel, categoryIcon, categoryColor, entryTypeLabel, languageLabel } from '$lib/categories';
 	import { relativeTime } from '$lib/relative-time';
 	import { basket } from '$lib/basket.svelte';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -145,7 +145,7 @@
 						>
 					{/each}
 					{#each langs as lang (lang)}
-						<span class="lang-badge">{lang.toUpperCase()}</span>
+						<span class="lang-badge">{languageLabel(lang)}</span>
 					{/each}
 				</div>
 			</div>

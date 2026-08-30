@@ -47,9 +47,11 @@ describe('filterEntries', () => {
 		const r = filterEntries(items, { ...base, categories: ['dev'], tags: ['rss'] }, 'en');
 		expect(r.map((e) => e.formatId)).toEqual(['c']);
 	});
-	it('Sprachfacette: String-Name zählt als en, Map nach Schlüsseln', () => {
+	it('Sprachfacette: String-Name ist universell (*) und matcht jeden Sprachfilter', () => {
+		// a={en,de}, b="Beta" (universell), c={de}. b matcht überall.
 		expect(filterEntries(items, { ...base, langs: ['en'] }, 'en').map((e) => e.formatId).sort()).toEqual(['a', 'b']);
-		expect(filterEntries(items, { ...base, langs: ['de'] }, 'en').map((e) => e.formatId).sort()).toEqual(['a', 'c']);
+		expect(filterEntries(items, { ...base, langs: ['de'] }, 'en').map((e) => e.formatId).sort()).toEqual(['a', 'b', 'c']);
+		expect(filterEntries(items, { ...base, langs: ['*'] }, 'en').map((e) => e.formatId).sort()).toEqual(['b']);
 	});
 	it('Freitext über aufgelösten Namen', () => {
 		expect(filterEntries(items, { ...base, q: 'alfa' }, 'de').map((e) => e.formatId)).toEqual(['a']);
@@ -97,10 +99,12 @@ describe('Facetten-Ableitung', () => {
 		entry({ name: { de: 'C' }, tags: [], categories: ['news'] })
 	];
 	it('languageFacet zählt Sprachen', () => {
+		// {en,de} → en+de; 'B' (String) → universell (*); {de} → de.
 		expect(languageFacet(items)).toEqual(
 			expect.arrayContaining([
 				{ value: 'de', count: 2 },
-				{ value: 'en', count: 2 }
+				{ value: 'en', count: 1 },
+				{ value: '*', count: 1 }
 			])
 		);
 	});
