@@ -11,7 +11,6 @@
 
 <section class="card">
 	<p>{m.imprint_intro()}</p>
-	<p class="note">{m.imprint_placeholder_note()}</p>
 </section>
 
 <section class="card">
@@ -23,13 +22,24 @@
 		</div>
 		<div>
 			<dt>{m.imprint_field_address()}</dt>
-			<dd>{m.imprint_value_address()}</dd>
+			<dd>
+				<address>
+					{m.imprint_value_street()}<br />
+					{m.imprint_value_city()}<br />
+					{m.imprint_value_country()}
+				</address>
+			</dd>
 		</div>
 		<div>
 			<dt>{m.imprint_field_email()}</dt>
-			<dd>{m.imprint_value_email()}</dd>
+			<dd><a href="mailto:{m.imprint_value_email()}">{m.imprint_value_email()}</a></dd>
 		</div>
 	</dl>
+</section>
+
+<section class="card">
+	<h2>{m.imprint_note_heading()}</h2>
+	<p class="note">{m.imprint_noncommercial()}</p>
 </section>
 
 <style>
@@ -45,6 +55,7 @@
 
 	.imprint-fields div {
 		display: flex;
+		align-items: flex-start;
 		gap: 8px;
 	}
 
@@ -55,5 +66,9 @@
 
 	dd {
 		margin: 0;
+	}
+
+	address {
+		font-style: normal;
 	}
 </style>
