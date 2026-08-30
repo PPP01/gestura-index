@@ -28,7 +28,9 @@ Sechs Fallen (Extension-Bericht §2): (1) `detail` **muss** ein String sein; (2)
 | Punkt | Ort | Status |
 | --- | --- | --- |
 | Bundle-Import-Dialog + Sammel-Vorschau | Extension | ✅ erledigt (Bericht §1) |
-| Inline-Kanal `gestura:import` | Extension | ✅ erledigt |
+| Inline-Kanal `gestura:import` (Hinweg) | Extension | ✅ erledigt |
+| Rückweg `gestura:import-result` | Extension | ✅ erledigt (Nachtrag [gestura-import-rueckmeldung.md](gestura-import-rueckmeldung.md)) |
+| **Rückweg auswerten** (Status + Zähler, 15-s-Fallback) | Index | ✅ erledigt – [BasketTray.svelte](../frontend/src/lib/components/BasketTray.svelte) |
 | Menü→Engine-Abhängigkeit (Import-Seite) | Extension | ✅ erledigt (Bericht §3) |
 | Speicheranzeige + Import-Gate | Extension | ✅ erledigt (Bericht §4/5) |
 | **Button live schalten** (B4) | Index | ✅ erledigt – [BasketTray.svelte](../frontend/src/lib/components/BasketTray.svelte) |
@@ -75,6 +77,7 @@ Wo ein Menüeintrag eine Suche ist, ist `engineId` gegenüber einer ausgeschrieb
 
 - [x] Klick auf »An Gestura senden« auf `gestura.eu` reicht das Bundle inline an die Extension (Vertrag §2).
 - [x] Zu große Auswahl bekommt einen weichen Hinweis auf den Datei-Download (§5); die Extension bleibt das eigentliche Gate.
+- [x] Rückmeldung `gestura:import-result` wird ausgewertet (imported/cancelled/failed + Zähler), mit eigenem 15-s-Fallback, falls sie ausbleibt.
 - [ ] Extension gemergt/released → Kanal in echtem Browser manuell abgenommen.
 - [ ] Schema-Kopie erneuert (nach Extension-`main`).
 - [ ] Menü→Engine-Submission-Regel umgesetzt (nach Erhalt der Engine-ID-Liste).

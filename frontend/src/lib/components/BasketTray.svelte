@@ -15,7 +15,7 @@
 	let downloadError = $state<string | null>(null);
 	let sending = $state(false);
 	let sendError = $state<string | null>(null);
-	let sendDone = $state(false);
+	let sendNote = $state<string | null>(null);
 	let sizeHint = $state(false);
 
 	/**
@@ -77,11 +77,17 @@
 	 * - `data-gestura-inline` sitzt am Button selbst (§2.2, siehe Template).
 	 * - Schlägt `getBundle` fehl, zeigen wir unsere eigene Meldung – die
 	 *   Extension meldet nichts (§2.4).
+	 *
+	 * Rückweg (Nachtrag zum Vertrag): die Extension meldet die Nutzer-
+	 * Entscheidung per `gestura:import-result` zurück (String-`detail` wie auf
+	 * dem Hinweg, `status` = imported|cancelled|failed plus Zähler). Die Meldung
+	 * KANN ausbleiben (Tab/Options-Seite geschlossen, Extension neu geladen),
+	 * darum bleibt der eigene 15-s-Fallback bestehen – wer zuerst kommt, gewinnt.
 	 */
 	async function send() {
 		sending = true;
 		sendError = null;
-		sendDone = false;
+		sendNote = null;
 		sizeHint = false;
 		let bundle: Bundle;
 		try {
@@ -95,8 +101,38 @@
 
 		// §2.1: detail als String – einmal serialisieren, für Event und Schätzung nutzen.
 		const payload = JSON.stringify(bundle);
+
+		let settled = false;
+		function onResult(e: Event) {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
+			try {
+				const r = JSON.parse((e as CustomEvent).detail) as {
+					status?: string;
+					menus?: number;
+					engines?: number;
+				};
+				if (r.status === 'imported') {
+					sendNote = m.basket_send_imported({ menus: r.menus ?? 0, engines: r.engines ?? 0 });
+				} else if (r.status === 'cancelled') {
+					sendNote = m.basket_send_cancelled();
+				} else if (r.status === 'failed') {
+					sendNote = m.basket_send_failed();
+				}
+			} catch {
+				/* fehlerhaftes detail ignorieren – dann bleibt schlicht keine Meldung stehen */
+			}
+		}
+		const timer = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			document.removeEventListener('gestura:import-result', onResult);
+			sendNote = m.basket_send_pending();
+		}, 15000);
+		document.addEventListener('gestura:import-result', onResult, { once: true });
+
 		document.dispatchEvent(new CustomEvent('gestura:import', { detail: payload }));
-		sendDone = true;
 
 		// §5: exakte Schätzung der gespeicherten Form aus dem echten Bundle –
 		// UTF-8-Bytes (TextEncoder), nicht String-Länge, weil die storage.sync-
@@ -167,7 +203,7 @@
 					<p class="tray-hint">{m.basket_local_hint()}</p>
 					{#if downloadError}<p class="tray-err">{downloadError}</p>{/if}
 					{#if sendError}<p class="tray-err">{sendError}</p>{/if}
-					{#if sendDone}<p class="tray-note">{m.basket_send_done()}</p>{/if}
+					{#if sendNote}<p class="tray-note">{sendNote}</p>{/if}
 					{#if sizeHint}<p class="tray-note">{m.basket_size_hint()}</p>{/if}
 				</div>
 			{/if}

@@ -172,6 +172,62 @@ describe('BasketTray', () => {
 		document.removeEventListener('gestura:import', importSpy as EventListener);
 	});
 
+	// Rückweg: die "Extension" antwortet auf den Hinweg mit gestura:import-result.
+	function replyOnceWith(result: unknown) {
+		document.addEventListener(
+			'gestura:import',
+			(() =>
+				document.dispatchEvent(
+					new CustomEvent('gestura:import-result', { detail: JSON.stringify(result) })
+				)) as EventListener,
+			{ once: true }
+		);
+	}
+
+	async function clickSendFor(id: string) {
+		getBundle.mockResolvedValue({ gesturaBundle: 1, entries: [{ gesturaMenu: 1, id }] });
+		basket.toggle(id);
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(1\)|auswahl \(1\)/i }));
+		await fireEvent.click(screen.getByRole('button', { name: /send to gestura|an gestura senden/i }));
+	}
+
+	it('bestätigt bei "imported" mit den übernommenen Zählern', async () => {
+		replyOnceWith({ status: 'imported', menus: 2, engines: 1 });
+		await clickSendFor('a');
+		await waitFor(() =>
+			expect(screen.getByText(/applied in your browser|im browser übernommen/i)).toBeInTheDocument()
+		);
+	});
+
+	it('lässt bei "cancelled" den Korb stehen und meldet den Abbruch neutral', async () => {
+		replyOnceWith({ status: 'cancelled', menus: 0, engines: 0 });
+		await clickSendFor('a');
+		await waitFor(() =>
+			expect(screen.getByText(/cancelled|abgebrochen/i)).toBeInTheDocument()
+		);
+		expect(basket.count).toBe(1);
+	});
+
+	it('weist bei "failed" auf den Speicherplatz hin', async () => {
+		replyOnceWith({ status: 'failed' });
+		await clickSendFor('a');
+		await waitFor(() =>
+			expect(screen.getByText(/storage space|speicherplatz/i)).toBeInTheDocument()
+		);
+	});
+
+	it('fällt nach 15 s ohne Rückmeldung auf den neutralen Hinweis zurück', async () => {
+		vi.useFakeTimers();
+		try {
+			await clickSendFor('a');
+			await vi.advanceTimersByTimeAsync(15000);
+			expect(screen.getByText(/gestura settings|gestura-einstellungen/i)).toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it('weist bei großer Auswahl auf den Datei-Download als kappenfreien Weg hin', async () => {
 		const filler = 'x'.repeat(4000);
 		getBundle.mockResolvedValue({
