@@ -13,6 +13,21 @@
 	let open = $state(false);
 	let downloading = $state(false);
 	let downloadError = $state<string | null>(null);
+	let sending = $state(false);
+	let sendError = $state<string | null>(null);
+	let sendNote = $state<string | null>(null);
+	let sizeHint = $state(false);
+
+	/**
+	 * Schwelle für den weichen Speicher-Hinweis (§5 des Extension-Berichts).
+	 * Bewusst konservativ: die echte Grenze (chrome.storage.sync, 8192 Bytes je
+	 * Item, minus schon belegter Delta-Speicher) kennen wir nicht – der Nutzer
+	 * hat sie, wir nicht. Wir schätzen nur die gespeicherte Form unseres Korbs.
+	 */
+	const SEND_SIZE_HINT_BYTES = 5000;
+	/** Gespeicherte Form ist ~15–20 % kleiner als das rohe JSON (Labels auf eine
+	 *  Sprache eingedampft, Item-IDs neu vergeben) – Bericht §5. */
+	const STORED_SIZE_RATIO = 0.82;
 
 	const locale = $derived(getLocale());
 	const entries = $derived(basket.ids.map((id) => ({ id, item: catalog.get(id) ?? null })));
@@ -47,6 +62,85 @@
 		const failed = requested.filter((id) => !delivered.has(id));
 		if (failed.length) {
 			downloadError = m.basket_download_error({ ids: failed.join(', ') });
+		}
+	}
+
+	/**
+	 * Live-Übergabe an die Extension (Vertrag §2). Die Seite holt das Bundle
+	 * selbst und reicht es per DOM-Event weiter – die Extension fetcht auf
+	 * diesem Weg nichts (kein Fetch-Proxy-Missbrauch, keine Cross-Origin-Frage).
+	 *
+	 * Vertrags-Feinheiten, die hier zwingend eingehalten werden:
+	 * - `detail` ist ein **String** (§2.1): überquert die Welten-Grenze ohne
+	 *   Firefox-Sonderbehandlung, und die Größenprüfung der Extension greift so
+	 *   vor dem Parsen.
+	 * - `data-gestura-inline` sitzt am Button selbst (§2.2, siehe Template).
+	 * - Schlägt `getBundle` fehl, zeigen wir unsere eigene Meldung – die
+	 *   Extension meldet nichts (§2.4).
+	 *
+	 * Rückweg (Nachtrag zum Vertrag): die Extension meldet die Nutzer-
+	 * Entscheidung per `gestura:import-result` zurück (String-`detail` wie auf
+	 * dem Hinweg, `status` = imported|cancelled|failed plus Zähler). Die Meldung
+	 * KANN ausbleiben (Tab/Options-Seite geschlossen, Extension neu geladen),
+	 * darum bleibt der eigene 15-s-Fallback bestehen – wer zuerst kommt, gewinnt.
+	 */
+	async function send() {
+		sending = true;
+		sendError = null;
+		sendNote = null;
+		sizeHint = false;
+		let bundle: Bundle;
+		try {
+			bundle = await getBundle(basket.ids);
+		} catch {
+			sendError = m.basket_send_error();
+			return;
+		} finally {
+			sending = false;
+		}
+
+		// §2.1: detail als String – einmal serialisieren, für Event und Schätzung nutzen.
+		const payload = JSON.stringify(bundle);
+
+		let settled = false;
+		function onResult(e: Event) {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
+			try {
+				const r = JSON.parse((e as CustomEvent).detail) as {
+					status?: string;
+					menus?: number;
+					engines?: number;
+				};
+				if (r.status === 'imported') {
+					sendNote = m.basket_send_imported({ menus: r.menus ?? 0, engines: r.engines ?? 0 });
+				} else if (r.status === 'cancelled') {
+					sendNote = m.basket_send_cancelled();
+				} else if (r.status === 'failed') {
+					sendNote = m.basket_send_failed();
+				}
+			} catch {
+				/* fehlerhaftes detail ignorieren – dann bleibt schlicht keine Meldung stehen */
+			}
+		}
+		const timer = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			document.removeEventListener('gestura:import-result', onResult);
+			sendNote = m.basket_send_pending();
+		}, 15000);
+		document.addEventListener('gestura:import-result', onResult, { once: true });
+
+		document.dispatchEvent(new CustomEvent('gestura:import', { detail: payload }));
+
+		// §5: exakte Schätzung der gespeicherten Form aus dem echten Bundle –
+		// UTF-8-Bytes (TextEncoder), nicht String-Länge, weil die storage.sync-
+		// Grenze in Bytes gilt und Umlaute je 2 Bytes belegen. Weicher Hinweis,
+		// kein Deckel: die Extension ist die eigentliche Kontrolle.
+		const rawBytes = new TextEncoder().encode(payload).length;
+		if (rawBytes * STORED_SIZE_RATIO > SEND_SIZE_HINT_BYTES) {
+			sizeHint = true;
 		}
 	}
 </script>
@@ -98,11 +192,19 @@
 					<button class="btn btn-primary tray-footer-btn" onclick={download} disabled={downloading}>
 						<Download size={16} /> {m.basket_download()}
 					</button>
-					<button class="btn btn-secondary tray-footer-btn tray-send" disabled title={m.basket_send_soon()}>
+					<button
+						class="btn btn-secondary tray-footer-btn tray-send"
+						data-gestura-inline
+						onclick={send}
+						disabled={sending}
+					>
 						<Send size={16} /> {m.basket_send()}
 					</button>
 					<p class="tray-hint">{m.basket_local_hint()}</p>
 					{#if downloadError}<p class="tray-err">{downloadError}</p>{/if}
+					{#if sendError}<p class="tray-err">{sendError}</p>{/if}
+					{#if sendNote}<p class="tray-note">{sendNote}</p>{/if}
+					{#if sizeHint}<p class="tray-note">{m.basket_size_hint()}</p>{/if}
 				</div>
 			{/if}
 		</div>
@@ -268,6 +370,11 @@
 		margin: 0;
 		font-size: 12px;
 		color: var(--danger-color);
+	}
+	.tray-note {
+		margin: 0;
+		font-size: 12px;
+		color: var(--text-secondary);
 	}
 	.tray-empty {
 		display: flex;
