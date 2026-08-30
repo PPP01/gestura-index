@@ -1,80 +1,80 @@
 # TODO – Live-»An Gestura senden« (Bundle-Import in der Extension)
 
-> **Zweck:** Umsetzungs-Checkliste für den **vertagten** Live-Handover aus Sub-Projekt B. B v1 hat in diesem Repo den Backend-Endpunkt `POST /api/v1/bundle` und den Datei-Download gebaut; der »An Gestura senden«-Button in [`BasketTray.svelte`](../frontend/src/lib/components/BasketTray.svelte) ist bewusst **deaktiviert**, bis die hier gelisteten Punkte stehen.
+> **Stand: 30. August 2026.** Der Live-Handover ist inzwischen **inline** gelöst und auf beiden Seiten weitgehend umgesetzt. Diese Datei verfolgt nur noch den **Rest** und die zwei blockierten Punkte. Ursprünglich war sie die vollständige Umsetzungs-Checkliste; die erledigten Blöcke sind unten als solche markiert, statt sie zu löschen.
 >
-> **Vertrag (Quelle der Wahrheit):** [Sub-B-Spec §8](superpowers/specs/2026-08-29-bundle-uebergabe-sub-b-design.md) und [Fundament-Doc §6](superpowers/specs/2026-08-27-oeffentlicher-index-onepager-design.md). Diese TODO bündelt das nur in abhakbare Schritte – bei Widerspruch gilt die Spec.
+> **Vertrag (Quelle der Wahrheit):** Der Extension-Bericht vom 30.08.2026 sowie das Extension-`README.md`, Abschnitt **»For site operators«** (autoritativ dokumentiert). Ergänzend [Sub-B-Spec §8](superpowers/specs/2026-08-29-bundle-uebergabe-sub-b-design.md) und [Fundament-Doc §6](superpowers/specs/2026-08-27-oeffentlicher-index-onepager-design.md). Bei Widerspruch gilt der Extension-Bericht / das README.
 >
-> **Zwei Repos:** Der Live-Handover braucht Arbeit im **Extension-Repo** (`/mnt/c/Programme.alt/Gestura/`, GPL-3, plain JS, kein Build) **und** in **diesem Repo** (Index). Die Blöcke sind unten getrennt.
+> **Zwei Repos:** Extension-Repo (`/mnt/c/Programme.alt/Gestura/`, GPL-3, plain JS, kein Build) und dieses Repo (Index).
 
-## Warum vertagt (Kurzfassung)
+## Der Übergabe-Vertrag (Kurzfassung)
 
-Der Betreiber-Button-Kanal der Extension erzwingt **Same-Origin** zwischen dem `<a rel="gestura-menu" href>` und der Seite, und der Import-Dialog kennt heute nur die **Einzelformate** `gesturaMenu`/`gesturaEngine`. Für ein Bundle von `gestura.eu` an `api.gestura.eu` (getrennte Origins) fehlen daher: Bundle-Parsing **und** eine Cross-Origin-Lösung **und** eine GET-fähige Bundle-URL.
+Die Seite holt ihr Bundle selbst und reicht es per DOM-Event an die Extension weiter – die Extension fetcht auf diesem Weg **nichts**:
 
----
-
-## Block A – Extension-Repo (`/mnt/c/Programme.alt/Gestura/`)
-
-### A1 · Schema um den Bundle-Wrapper erweitern (autoritativ)
-- [ ] In `js/exchange-schema.json` den Wrapper `{ "gesturaBundle": 1, "entries": [ <gesturaMenu|gesturaEngine>, … ] }` als Typ ergänzen (jeder `entries`-Eintrag = bestehendes Einzelformat, per `$ref`).
-- [ ] Danach die Kopie nach `gestura-index/schema/exchange-schema.json` **neu herüberkopieren** (Kopie-Regel – im Index-Repo nie direkt editieren).
-- **Abnahme:** Schema validiert ein Beispiel-Bundle; die Index-Kopie ist byte-gleich.
-
-### A2 · Validator: Bundle erkennen und je Eintrag prüfen
-- [ ] `js/menu-exchange.js` (Referenz-Validator) um einen Bundle-Zweig ergänzen: `gesturaBundle: 1` erkennen, über `entries` iterieren, **jeden** Eintrag einzeln mit der bestehenden Einzel-Validierung prüfen (Aktions-Whitelist, `https:`-only, Größen-/Anzahllimits, SemVer, eindeutige Item-IDs).
-- [ ] Teil-Ergebnis zurückgeben: welche Einträge gültig/ungültig sind (für die Sammel-Vorschau), statt beim ersten Fehler abzubrechen.
-- **Abnahme:** Unit-Tests (vitest) für ein gemischtes Bundle (gültig + ein ungültiger Eintrag) – gültige werden akzeptiert, ungültige einzeln gemeldet.
-
-### A3 · Import-Dialog: Bundle-Zweig + Sammel-Vorschau
-- [ ] Im Import-Dialog (`<menu-import-dialog>`; Aufhänger `js/components/options-page.js` `#checkPendingImport`, das `pendingImport` aus `chrome.storage.session` zieht) einen Bundle-Fall ergänzen: bei `gesturaBundle: 1` **über `entries` iterieren** und eine **Sammel-Vorschau** zeigen (Liste mit je Favicon/Name/Transform-Warnung/Chrome-only-Hinweis, wie bei Einzel-Import).
-- [ ] Pro Eintrag die bestehende Wahl »Standard ersetzen« vs. »neu hinzufügen« anbieten (bzw. sammel-tauglich bündeln).
-- [ ] Ungültige Einträge in der Vorschau markieren, Import der übrigen zulassen.
-- **Abnahme:** Manuelles Einspielen eines 3er-Bundles zeigt drei Vorschau-Zeilen; Import legt drei Einträge an; ein ungültiger Eintrag blockiert die anderen nicht.
-
-### A4 · Cross-Origin-Lösung (eine der beiden Varianten wählen)
-Heute: `js/content.js` fängt Klicks auf `a[rel~="gestura-menu"]` nur bei **Same-Origin** ab; `js/background.js` `importFromSite` prüft Origin nochmals (Defense-in-Depth), holt die JSON mit **100-KB-Kappe**, `credentials: 'omit'`.
-
-- [ ] **Variante 1 (empfohlen):** Gestura-Index-Origin als **vertrauenswürdige Quelle** zulassen – konfigurierbare Ausnahme von der Same-Origin-Regel **nur** für den Host der Index-API (z. B. `api.gestura.eu`, als Konstante/Einstellung). Origin-Prüfung in `content.js` **und** `background.js` entsprechend anpassen; alles andere bleibt Same-Origin.
-- [ ] **Variante 2 (Alternative):** Übergabe über einen **Same-Origin-Pfad unter `gestura.eu`** (siehe Index-Block B2) – dann keine Extension-Origin-Ausnahme nötig.
-- **Abnahme:** Ein Klick auf den Index-Button lädt das Bundle ohne »Cross-origin import blocked«; ein beliebiger fremder Cross-Origin-`rel="gestura-menu"`-Link bleibt weiterhin blockiert (Regression).
-
----
-
-## Block B – Index-Repo (dieses Repo)
-
-### B1 · GET-fähige Bundle-URL für den Betreiber-Button
-Der Betreiber-Button ist ein `<a href>`, das die Extension per **GET** (`fetch`, `credentials: 'omit'`) holt. Der aktuelle Endpunkt ist **POST** (bewusst, wegen URL-Längenlimit beim Datei-Download).
-
-- [ ] **GET-Variante** bereitstellen: entweder `GET /api/v1/bundle?ids=…` (size-gekappt, da 100-KB-Kappe der Übergabe ohnehin greift) **oder** eine kurzlebige, GET-bare Bundle-URL (z. B. server-seitig hinterlegtes Korb-Token → `GET /api/v1/bundle/{token}`).
-- [ ] Antwort weiterhin `{ gesturaBundle: 1, entries: [...] }`; **100-KB-Kappe** serverseitig durchsetzen (413/400 mit klarer Meldung, wenn das Bundle zu groß ist).
-- **Abnahme:** `curl` gegen die GET-URL liefert das Bundle; ein zu großes Bundle wird sauber abgelehnt.
-
-### B2 · (nur falls A4-Variante 2) Same-Origin-Auslieferung unter `gestura.eu`
-- [ ] `/api/v1/bundle` (bzw. die GET-Variante) unter dem Website-Origin `gestura.eu` erreichbar machen (Reverse-Proxy/Rewrite auf dem statischen Frontend-Docroot). **Achtung:** Shared-Hosting-Risiko (mod_proxy evtl. nicht verfügbar) – vor Variante 2 verifizieren.
-
-### B3 · Sammelkorb-Größenkappe im Frontend
-- [ ] In [`BasketTray.svelte`](../frontend/src/lib/components/BasketTray.svelte) vor dem **Live-Senden** (nicht beim Datei-Download!) prüfen, ob das Bundle die **100-KB**-Übergabekappe überschreiten würde, und mit klarer Meldung deckeln (»Auswahl zu groß fürs Senden – als Datei herunterladen«). Neue i18n-Keys nur in `messages/en.json`+`de.json`.
-
-### B4 · »An Gestura senden«-Button aktivieren
-- [ ] Erst wenn A1–A4 **und** B1 (ggf. B2/B3) stehen: den heute `disabled` Button in [`BasketTray.svelte`](../frontend/src/lib/components/BasketTray.svelte) live schalten – erzeugt/navigiert den `rel="gestura-menu"`-Betreiber-Button auf die GET-Bundle-URL.
-- [ ] Tooltip/`basket_send_soon`-Text entfernen bzw. durch echten Aktions-Text ersetzen.
-
----
-
-## Reihenfolge / Abhängigkeiten
-
-```
-A1 (Schema) ─┐
-A2 (Validator) ─┤─→ A3 (Import-Dialog)
-B1 (GET-URL) ───┼─→ A4 (Cross-Origin) ─→ B4 (Button live)
-                └─→ B3 (Größenkappe) ───┘
-B2 nur bei A4-Variante 2.
+```js
+btn.addEventListener('click', async () => {
+    const bundle = await getBundle(basket.ids);      // bestehender POST /api/v1/bundle
+    document.dispatchEvent(new CustomEvent('gestura:import', {
+        detail: JSON.stringify(bundle),              // ← String, kein Objekt
+    }));
+});
 ```
 
-**Wachstumspfad (nicht jetzt):** Falls Körbe regelmäßig > 100 KB werden, statt eines fertigen Bundles ein **ID-Manifest** (`{ ids: [...] }`) ausliefern, das die Extension **Eintrag für Eintrag** unter der Kappe nachlädt (kappenfrei, dafür N Requests). Siehe Fundament-Doc §6.
+Sechs Fallen (Extension-Bericht §2): (1) `detail` **muss** ein String sein; (2) `data-gestura-inline` gehört auf den **Button selbst**, nicht auf einen Container; (3) der Klick muss echt sein (`isTrusted`); (4) das Fenster ist **15 s** offen und nimmt **einen** Payload – der Fetch muss in der Frist zurück sein; (5) ein SvelteKit-Routenwechsel schließt das Fenster nicht (nur der Timeout); (6) der eigene Klick-Handler läuft weiter (die Extension unterdrückt die Propagation bewusst nicht). Alle URLs in den Einträgen müssen `https:` sein; die Übergabe selbst darf über `http://localhost` laufen.
 
-## Definition of Done (Live-Handover)
+**Transport-Limits:** 100 KB je Eintrag, 1 MB je Bundle, 200 Einträge. Der *echte* Engpass ist aber nicht der Transport, sondern `chrome.storage.sync` (8192 Bytes je Item; nur Deltas werden gespeichert, importierte Menüs sind Vollkopien) – siehe §5-Punkt unten.
 
-- [ ] Ein Klick auf »An Gestura senden« auf `gestura.eu` öffnet in der Extension die Sammel-Vorschau des ausgewählten Korbs.
-- [ ] Gültige Einträge importierbar, ungültige einzeln gemeldet; `transformCode`-Warnung sichtbar.
-- [ ] Fremde Cross-Origin-`rel="gestura-menu"`-Links bleiben blockiert (kein Sicherheits-Regress).
-- [ ] Zu große Körbe werden vor dem Senden abgefangen (Datei-Download bleibt kappenfrei).
+## Status-Überblick
+
+| Punkt | Ort | Status |
+| --- | --- | --- |
+| Bundle-Import-Dialog + Sammel-Vorschau | Extension | ✅ erledigt (Bericht §1) |
+| Inline-Kanal `gestura:import` | Extension | ✅ erledigt |
+| Menü→Engine-Abhängigkeit (Import-Seite) | Extension | ✅ erledigt (Bericht §3) |
+| Speicheranzeige + Import-Gate | Extension | ✅ erledigt (Bericht §4/5) |
+| **Button live schalten** (B4) | Index | ✅ erledigt – [BasketTray.svelte](../frontend/src/lib/components/BasketTray.svelte) |
+| **Weicher Größen-Hinweis** (B3, neu gefasst) | Index | ✅ erledigt – Hinweis ab ~5 KB, kein Deckel |
+| GET-fähige Bundle-URL (B1) | Index | ❌ **gestrichen** – Inline-Übergabe braucht kein GET |
+| Same-Origin-Reverse-Proxy (B2) | Index | ❌ **gestrichen** – entfällt mit der Inline-Übergabe |
+| **Schema-Kopie erneuern** | Index | ⏳ **wartet** – autoritative Quelle noch auf Extension-Branch |
+| **Submission-Regel Menü→Engine** | Index | ⏳ **blockiert** – braucht Liste der eingebauten Engine-IDs |
+| Extension released? | Extension | ⚠️ **nein** – fertig auf Branch, nicht gemergt/gepusht/released |
+
+## ⚠️ Wichtiger Vorbehalt
+
+Die Extension-Arbeit liegt fertig und reviewed auf einem Branch (24 Commits über `main`), ist aber **nicht gemergt, nicht gepusht, nicht released**. Bis das geschieht, versteht **kein** ausgelieferter Browser das `gestura:import`-Event – der »An Gestura senden«-Button feuert ins Leere, und der **Datei-Download bleibt der einzige real funktionierende Weg**. Der Button ist bewusst schon live (Vertrag ist eingefroren); die neutrale Bestätigungsmeldung (»…öffnet sich kein Fenster, ist Gestura evtl. nicht installiert…«) fängt den Zustand ab.
+
+Außerdem: Im Extension-Repo gibt es **kein jsdom** – der Import-Dialog und der gesamte Übergabekanal sind reviewed, aber **nicht automatisiert getestet** (getestet sind nur Validator, Bundle-Prüfung, Speicher-Rechnung). Die manuelle Browser-Abnahme steht aus. Wenn hier die Live-Übergabe gebaut wird, ist das faktisch der erste vollständige Test des Kanals – **abweichendes Verhalten melden, statt drumherum zu bauen** (die Fehlerwahrscheinlichkeit liegt eher im Extension-Code).
+
+---
+
+## Offen: Schema-Kopie erneuern
+
+Das Extension-`js/exchange-schema.json` hat jetzt `$defs.bundle` und zwei neue Limits (`bundleEntriesMax: 200`, `bundleBlobMax: 1048576`).
+
+- [ ] Sobald die Extension nach `main` gemergt ist: `js/exchange-schema.json` nach `schema/exchange-schema.json` **neu herüberkopieren** (Kopie-Regel – im Index-Repo nie direkt editieren).
+- [ ] Backend-Validierung gegen den Bundle-Wrapper prüfen/ergänzen, falls nötig.
+- **Warum wartend:** Der Bundle-Vertrag gilt zwar als eingefroren, liegt aber autoritativ noch auf dem Extension-Branch (`feat/menu-item-labels`), nicht auf Extension-`main`. Eine Kopie vom Branch würde einen noch änderbaren Stand einfrieren. Entscheidung: erst nach dem Extension-Merge kopieren.
+
+## Blockiert: Submission-Regel »Menü → eigene Suchmaschine« (Bericht §3)
+
+Ein `searchLink`-Menüpunkt kann statt einer URL eine `engineId` tragen. Zeigt sie auf eine **eigene** Engine, die der Nutzer nicht hat, verweigert die Extension jetzt das Menü (früher verschwand der Eintrag stillschweigend). Für den Index heißt das:
+
+- [ ] **Einreichung:** ein Menü mit einer `engineId`, die weder eingebaut ist noch als eigener Eintrag im Index existiert, ablehnen **oder** in die Moderation schicken (Entscheidung offen).
+- [ ] **Korb:** legt jemand ein solches Menü hinein, muss die zugehörige Engine automatisch mitwandern – sonst kommt das Menü beim Nutzer gesperrt an.
+- **Warum blockiert:** Beides setzt voraus, dass wir eine `engineId` als »eingebaut vs. unbekannt« klassifizieren können. Dafür fehlt uns die **Liste der eingebauten Engine-IDs** aus der Extension. Sobald sie vorliegt: eigener Brainstorm (Reject vs. Moderation; wie/wo wir die Liste pflegen; Korb-Mitwandern im Frontend). [ExchangeValidator.php:163](../backend/src/Service/ExchangeValidator.php#L163) erzwingt heute nur die Struktur-Regel (`searchLink` braucht `engineId` **oder** https-`url`), **nicht** die Referenz-Auflösung.
+
+## Optionaler Ausbau (nicht jetzt)
+
+- [ ] Listen-API könnte je Eintrag eine geschätzte Speichergröße mitliefern; dann könnte der Korb live (schon beim Stöbern) mitrechnen, statt erst beim Klick. Bewusst zurückgestellt – der weiche Hinweis schätzt beim Klick aus dem echten Bundle.
+
+## Praxis-Empfehlung für Katalog-Inhalte
+
+Wo ein Menüeintrag eine Suche ist, ist `engineId` gegenüber einer ausgeschriebenen `url` rund **44 % billiger** im `storage.sync` **und** respektiert die Engine-Einstellungen des Nutzers. Für **eingebaute** Engines kostet die Referenz null zusätzlichen Speicher. Bei eigenen Katalog-Menüs also `engineId` bevorzugen, wo möglich.
+
+## Definition of Done (Live-Handover, gesamt)
+
+- [x] Klick auf »An Gestura senden« auf `gestura.eu` reicht das Bundle inline an die Extension (Vertrag §2).
+- [x] Zu große Auswahl bekommt einen weichen Hinweis auf den Datei-Download (§5); die Extension bleibt das eigentliche Gate.
+- [ ] Extension gemergt/released → Kanal in echtem Browser manuell abgenommen.
+- [ ] Schema-Kopie erneuert (nach Extension-`main`).
+- [ ] Menü→Engine-Submission-Regel umgesetzt (nach Erhalt der Engine-ID-Liste).
