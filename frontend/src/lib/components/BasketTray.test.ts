@@ -127,11 +127,67 @@ describe('BasketTray', () => {
 		await waitFor(() => expect(screen.getByText(/could not be added|konnten nicht hinzugef/i)).toBeInTheDocument());
 	});
 
-	it('"An Gestura senden" ist deaktiviert', async () => {
+	it('sendet das Bundle per gestura:import-Event mit stringifiziertem Detail', async () => {
+		const bundle = {
+			gesturaBundle: 1,
+			entries: [
+				{ gesturaMenu: 1, id: 'a' },
+				{ gesturaMenu: 1, id: 'b' }
+			]
+		};
+		getBundle.mockResolvedValue(bundle);
+		const importSpy = vi.fn();
+		document.addEventListener('gestura:import', importSpy as EventListener);
+		basket.toggle('a');
+		basket.toggle('b');
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(2\)|auswahl \(2\)/i }));
+		const sendBtn = screen.getByRole('button', { name: /send to gestura|an gestura senden/i });
+		expect(sendBtn).not.toBeDisabled();
+		// Vertrag §2.2: Marker gehört auf den Button selbst.
+		expect(sendBtn).toHaveAttribute('data-gestura-inline');
+		await fireEvent.click(sendBtn);
+		await waitFor(() => expect(importSpy).toHaveBeenCalledTimes(1));
+		expect(getBundle).toHaveBeenCalledWith(['a', 'b']);
+		const event = importSpy.mock.calls[0][0] as CustomEvent;
+		// Vertrag §2.1: detail MUSS ein String sein, kein Objekt.
+		expect(typeof event.detail).toBe('string');
+		expect(JSON.parse(event.detail)).toEqual(bundle);
+		document.removeEventListener('gestura:import', importSpy as EventListener);
+	});
+
+	it('zeigt eine eigene Fehlermeldung, wenn das Bundle beim Senden nicht geladen werden kann', async () => {
+		getBundle.mockRejectedValue(new Error('network'));
+		const importSpy = vi.fn();
+		document.addEventListener('gestura:import', importSpy as EventListener);
 		basket.toggle('a');
 		render(BasketTray, { catalog });
 		await fireEvent.click(screen.getByRole('button', { name: /selection \(1\)|auswahl \(1\)/i }));
-		const sendBtn = screen.getByRole('button', { name: /send to gestura|an gestura senden/i });
-		expect(sendBtn).toBeDisabled();
+		await fireEvent.click(screen.getByRole('button', { name: /send to gestura|an gestura senden/i }));
+		await waitFor(() =>
+			expect(screen.getByText(/not reach the index|nicht erreichbar/i)).toBeInTheDocument()
+		);
+		// Vertrag §2.4: schlägt der Fetch fehl, feuern wir kein Übergabe-Event.
+		expect(importSpy).not.toHaveBeenCalled();
+		document.removeEventListener('gestura:import', importSpy as EventListener);
+	});
+
+	it('weist bei großer Auswahl auf den Datei-Download als kappenfreien Weg hin', async () => {
+		const filler = 'x'.repeat(4000);
+		getBundle.mockResolvedValue({
+			gesturaBundle: 1,
+			entries: [
+				{ gesturaMenu: 1, id: 'a', big: filler },
+				{ gesturaMenu: 1, id: 'b', big: filler }
+			]
+		});
+		basket.toggle('a');
+		basket.toggle('b');
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(2\)|auswahl \(2\)/i }));
+		await fireEvent.click(screen.getByRole('button', { name: /send to gestura|an gestura senden/i }));
+		await waitFor(() =>
+			expect(screen.getByText(/cap-free way|kappenfreie/i)).toBeInTheDocument()
+		);
 	});
 });
