@@ -43,7 +43,7 @@ export type PreviewItem =
  * damit die Funktion allein von ihren Argumenten abhängt – das Label aus dem
  * Payload und der Aktions-Fallback dürfen nicht auseinanderlaufen.
  */
-function actionLabel(action: string, locale: string): string {
+export function actionLabel(action: string, locale: string): string {
 	const opts = { locale: isLocale(locale) ? locale : baseLocale };
 	switch (action) {
 		case 'back':

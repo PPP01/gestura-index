@@ -16,7 +16,7 @@ vi.mock('$app/navigation', () => ({ goto: (...a: unknown[]) => goto(...a) }));
 function item(id: string, over: Partial<EntryListItem> = {}): EntryListItem {
 	return {
 		formatId: id, type: 'menu', name: id, description: null, categories: ['dev'],
-		tags: ['git'], domains: ['example.com'], installCount: 1,
+		tags: ['git'], domains: ['example.com'], itemCount: 2, installCount: 1,
 		rating: { average: null, count: 0 }, currentVersion: '1.0.0',
 		deprecated: false, successorFormatId: null, screenshotUrl: null,
 		updatedAt: '2026-01-01T00:00:00Z', ...over

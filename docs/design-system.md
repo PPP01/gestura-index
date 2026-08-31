@@ -52,6 +52,28 @@ mit den Styles der Extension. Regeln dazu:
 - Einzige Zutat, die es in der Extension nicht gibt: eine Höhenbegrenzung
   (`max-height` + Scrollen), damit ein 100-Item-Menü die Karte nicht sprengt.
 
+## Der Inhalt-Kasten: was importiere ich?
+
+Neben der Vorschau (»wie sieht es aus«) beantwortet der Kasten **Inhalt** in
+der linken Spalte die andere Frage: **was steckt drin**. Beide speisen sich aus
+demselben Payload-Request.
+
+- **Menü:** jeder Eintrag mit Label und Ziel darunter – URL, `Suchmaschine: <id>`
+  oder der Aktionsname. Ziel-URLs sind **Text, keine Links**: der Index soll kein
+  Weiterleiter für eingereichte Fremd-URLs werden (dieselbe Wahl trifft der
+  Import-Dialog der Extension).
+- **Bewusst andere Filterung als die Vorschau:** hier stehen **alle** Items,
+  auch die, die im echten Menü nie erscheinen (keine bzw. `none`-Aktion) – sie
+  werden als solche markiert. Importiert werden sie schließlich mit.
+- **Suchmaschine:** URL-Vorlage mit hervorgehobener Stelle des Suchbegriffs
+  (`%s`-Form und Präfix-Form, siehe `js/search-url.js`), die gesetzten
+  Verhaltens-Flags als Chips und – zugeklappt hinter einer Warnung – der
+  mitgelieferte `transformCode` im Klartext. Wer ausführbaren Code importiert,
+  muss ihn vorher lesen können; die Extension zeigt ihn im Import-Dialog
+  ebenfalls.
+- Die volle Beschreibung steht hier, weil sie in der Kartenzeile auf eine Zeile
+  gekürzt ist.
+
 ## Die eine gewollte Abweichung: Max-Width
 
 Auf großen Monitoren (4K) zerfällt das Extension-Layout (Navigation klebt links außen). Die Website legt deshalb **alles** – Header, Navigation, Inhalt – in eine zentrierte Shell:

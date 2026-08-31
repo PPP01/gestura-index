@@ -19,6 +19,7 @@ function entry(over: Partial<EntryListItem>): EntryListItem {
 		categories: [],
 		tags: [],
 		domains: [],
+		itemCount: 2,
 		installCount: 0,
 		rating: { average: null, count: 0 },
 		currentVersion: '1.0.0',

@@ -28,6 +28,7 @@ function item(id: string): EntryListItem {
 		categories: [],
 		tags: [],
 		domains: [],
+		itemCount: 2,
 		installCount: 0,
 		rating: { average: null, count: 0 },
 		currentVersion: '1.2.0',

@@ -18,6 +18,11 @@ final class EntrySerializer
      * screenshotUrl verweist auf den statusgeprüften GET-Endpunkt (null wenn
      * kein Screenshot vorhanden) – nie auf eine direkte Docroot-Datei.
      *
+     * itemCount gehört bewusst in die LISTE und nicht erst in die Detailsicht:
+     * ohne das Feld müsste die Website den Payload jedes einzelnen Eintrags
+     * laden, nur um »6 Einträge« anzuzeigen – ein Request pro Karte. Hier kostet
+     * es nichts, der Payload liegt bereits geladen vor.
+     *
      * @return array<string, mixed>
      */
     public function toListItem(Entry $entry, ?array $rating = null): array
@@ -32,6 +37,7 @@ final class EntrySerializer
             'categories' => $entry->categoryKeys(),
             'tags' => $entry->tags,
             'domains' => $entry->domains,
+            'itemCount' => $this->itemCount($payload),
             'installCount' => $entry->installCount,
             'rating' => $rating ?? ['average' => null, 'count' => 0],
             'currentVersion' => $entry->currentVersion?->semver,
@@ -40,6 +46,19 @@ final class EntrySerializer
             'screenshotUrl' => $entry->screenshotPath === null ? null : '/api/v1/entries/' . $entry->formatId . '/screenshot',
             'updatedAt' => $entry->updatedAt->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    /**
+     * Zählt die Einträge eines Menü-Payloads.
+     *
+     * Gibt null zurück, wenn der Payload keine Item-Liste trägt – das ist bei
+     * jeder Suchmaschine der Normalfall und keine Ausnahme.
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function itemCount(array $payload): ?int
+    {
+        return \is_array($payload['items'] ?? null) ? \count($payload['items']) : null;
     }
 
     /**

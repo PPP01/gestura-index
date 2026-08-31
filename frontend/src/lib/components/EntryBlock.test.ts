@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/svelte';
 import EntryBlock from './EntryBlock.svelte';
 import type { EntryListItem, EntryDetail, ReviewListResponse } from '$lib/api';
 import { basket } from '$lib/basket.svelte';
@@ -43,6 +43,7 @@ const entry: EntryListItem = {
 	categories: ['dev'],
 	tags: ['git'],
 	domains: ['example.com'],
+	itemCount: 3,
 	installCount: 42,
 	rating: { average: 4.5, count: 8 },
 	currentVersion: '1.0.0',
@@ -74,6 +75,18 @@ describe('EntryBlock', () => {
 		expect(screen.getByText(/42/)).toBeInTheDocument();
 	});
 
+	// Ohne Aufklappen erkennbar, wie umfangreich ein Menü ist – die Zahl kommt
+	// aus der LISTEN-Antwort, kostet also keinen zusätzlichen Request.
+	it('zeigt die Item-Zahl schon an der eingeklappten Karte', () => {
+		render(EntryBlock, { entry });
+		expect(screen.getByTitle(/entries|einträge/i)).toHaveTextContent('3');
+	});
+
+	it('zeigt für Suchmaschinen keine Item-Zahl', () => {
+		render(EntryBlock, { entry: { ...entry, type: 'engine', itemCount: null } });
+		expect(screen.queryByTitle(/entries|einträge/i)).not.toBeInTheDocument();
+	});
+
 	it('Auswahl-Toggle legt in den Korb und wieder heraus', async () => {
 		render(EntryBlock, { entry });
 		const toggle = screen.getByRole('button', { name: /add to selection|zur auswahl/i });
@@ -102,10 +115,13 @@ describe('EntryBlock', () => {
 		downloadVersion.mockResolvedValue(payload);
 		render(EntryBlock, { entry, open: true });
 		await waitFor(() => expect(downloadVersion).toHaveBeenCalledWith('com.example.menu', '1.0.0'));
-		await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+		// Gezielt IM Vorschau-Menü suchen: die Labels stehen zusätzlich im
+		// Inhalt-Kasten, dort aber mit Ziel-URL statt in Menü-Optik.
+		const menu = await screen.findByRole('list', { name: /menu preview|menü-vorschau/i });
+		expect(within(menu).getByText('Home')).toBeInTheDocument();
 		// Aktions-Item ohne Label fällt auf den Aktionsnamen zurück (Test-Locale = en).
-		expect(screen.getByText('Go Back')).toBeInTheDocument();
-		expect(screen.getByRole('separator')).toBeInTheDocument();
+		expect(within(menu).getByText('Go Back')).toBeInTheDocument();
+		expect(within(menu).getByRole('separator')).toBeInTheDocument();
 		expect(screen.queryByText(/screenshot provided|screenshot des menüs/i)).not.toBeInTheDocument();
 	});
 
@@ -119,12 +135,30 @@ describe('EntryBlock', () => {
 		expect(screen.queryByRole('list', { name: /menu preview|menü-vorschau/i })).not.toBeInTheDocument();
 	});
 
-	it('holt für Suchmaschinen-Einträge keinen Vorschau-Payload', async () => {
+	it('zeigt für Suchmaschinen die URL-Vorlage statt einer Menü-Vorschau', async () => {
 		const engine = { ...entry, type: 'engine' as const, formatId: 'com.example.engine' };
 		getEntry.mockResolvedValue({ ...detail, ...engine });
+		downloadVersion.mockResolvedValue({
+			gesturaEngine: 1,
+			id: 'com.example.engine',
+			version: '1.0.0',
+			name: 'Example',
+			url: 'https://e.test/?q=',
+			plus: true
+		});
 		render(EntryBlock, { entry: engine, open: true });
-		await waitFor(() => expect(getEntry).toHaveBeenCalled());
-		expect(downloadVersion).not.toHaveBeenCalled();
+		await waitFor(() => expect(screen.getByText('https://e.test/?q=')).toBeInTheDocument());
+		expect(screen.getByText(/spaces as \+|leerzeichen als \+/i)).toBeInTheDocument();
+		// Eine Engine hat kein In-Page-Menü – also auch keine Menü-Vorschau.
+		expect(screen.queryByRole('list', { name: /menu preview|menü-vorschau/i })).not.toBeInTheDocument();
+	});
+
+	it('listet die Ziel-URLs des Menüs im Inhalt-Kasten', async () => {
+		getEntry.mockResolvedValue(detail);
+		downloadVersion.mockResolvedValue(payload);
+		render(EntryBlock, { entry, open: true });
+		// Niemand soll importieren müssen, ohne die Ziele gesehen zu haben.
+		await waitFor(() => expect(screen.getByText('https://example.com/')).toBeInTheDocument());
 	});
 
 	it('lädt Reviews erst on demand', async () => {

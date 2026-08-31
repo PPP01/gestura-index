@@ -17,6 +17,7 @@ function item(id: string, over: Partial<EntryListItem> = {}): EntryListItem {
 		categories: ['dev'],
 		tags: ['git'],
 		domains: ['example.com'],
+		itemCount: 2,
 		installCount: 1,
 		rating: { average: null, count: 0 },
 		currentVersion: '1.0.0',

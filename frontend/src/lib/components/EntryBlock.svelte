@@ -15,9 +15,10 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import Badge from './Badge.svelte';
 	import MenuPreview from './MenuPreview.svelte';
+	import EntryContents from './EntryContents.svelte';
 	import StarRating from './StarRating.svelte';
 	import Spinner from './Spinner.svelte';
-	import { ChevronDown, Check, Plus, TriangleAlert, Download, Image } from '@lucide/svelte';
+	import { ChevronDown, Check, Plus, TriangleAlert, Download, Image, List } from '@lucide/svelte';
 
 	let { entry, open = false }: { entry: EntryListItem; open?: boolean } = $props();
 
@@ -29,9 +30,13 @@
 	let detail = $state<EntryDetail | null>(null);
 	let detailLoading = $state(false);
 	let detailError = $state(false);
-	/** Roh-Payload der aktuellen Version – Datenquelle der Live-Vorschau (nur Menüs). */
-	let previewPayload = $state<unknown>(null);
-	let previewLoading = $state(false);
+	/**
+	 * Roh-Payload der aktuellen Version – Datenquelle für BEIDE Detail-Ansichten:
+	 * die Live-Vorschau (nur Menüs) und den Inhalt-Kasten (Menüs wie Engines).
+	 * Ein Request, zwei Auswertungen.
+	 */
+	let payload = $state<unknown>(null);
+	let payloadLoading = $state(false);
 
 	let reviewsOpen = $state(false);
 	let reviews = $state<ReviewItem[] | null>(null);
@@ -63,27 +68,28 @@
 		} finally {
 			detailLoading = false;
 		}
-		if (detail) loadPreview(detail);
+		if (detail) loadPayload(detail);
 	}
 
 	/**
-	 * Holt den Roh-Payload der aktuellen Version für die Live-Vorschau.
+	 * Holt den Roh-Payload der aktuellen Version.
 	 *
-	 * Bewusst der Versions-Endpunkt und NICHT `pingInstall` – das Ansehen einer
-	 * Vorschau ist keine Installation und darf den Zähler nicht bewegen. Ein
-	 * Fehler bleibt still: die Karte zeigt dann den Platzhalter, statt eine
-	 * Fehlermeldung an eine Stelle zu setzen, an der es nichts zu tun gibt.
+	 * Bewusst der Versions-Endpunkt und NICHT `pingInstall` – das Ansehen von
+	 * Details ist keine Installation und darf den Zähler nicht bewegen. Ein
+	 * Fehler bleibt still: die Karte zeigt dann den Screenshot-Platzhalter und
+	 * keinen Inhalt-Kasten, statt eine Fehlermeldung an eine Stelle zu setzen,
+	 * an der es nichts zu tun gibt.
 	 */
-	async function loadPreview(loaded: EntryDetail) {
-		if (loaded.type !== 'menu' || !loaded.currentVersion) return;
-		if (previewPayload !== null || previewLoading) return;
-		previewLoading = true;
+	async function loadPayload(loaded: EntryDetail) {
+		if (!loaded.currentVersion) return;
+		if (payload !== null || payloadLoading) return;
+		payloadLoading = true;
 		try {
-			previewPayload = await downloadVersion(loaded.formatId, loaded.currentVersion);
+			payload = await downloadVersion(loaded.formatId, loaded.currentVersion);
 		} catch {
-			previewPayload = null;
+			payload = null;
 		} finally {
-			previewLoading = false;
+			payloadLoading = false;
 		}
 	}
 
@@ -166,6 +172,11 @@
 				</div>
 				{#if displayDesc}<p class="block-desc">{displayDesc}</p>{/if}
 				<div class="block-tags">
+					{#if entry.itemCount !== null}
+						<span class="count-badge" title={m.block_items()}>
+							<List size={11} />{entry.itemCount}
+						</span>
+					{/if}
 					{#each entry.categories.slice(0, 3) as cat (cat)}
 						<span class="cat-badge" style={`--cat-color:${categoryColor(cat)}`}
 							>{categoryLabel(cat)}</span
@@ -196,6 +207,12 @@
 			{:else if detail}
 				<div class="expand-grid">
 					<div class="expand-col">
+						{#if payload}
+							<div class="expand-box">
+								<h4 class="expand-heading">{m.block_contents()}</h4>
+								<EntryContents {payload} type={entry.type} />
+							</div>
+						{/if}
 						<div class="expand-box">
 							<h4 class="expand-heading">{m.block_versions()}</h4>
 							<ul class="versions">
@@ -230,9 +247,9 @@
 								loading="lazy"
 							/>
 						{/if}
-						{#if previewPayload}
-							<MenuPreview payload={previewPayload} name={displayName} />
-						{:else if !detail.screenshotUrl && !previewLoading}
+						{#if entry.type === 'menu' && payload}
+							<MenuPreview {payload} name={displayName} />
+						{:else if !detail.screenshotUrl && !payloadLoading}
 							<div class="shot-placeholder">
 								<Image size={28} />
 								<span>{m.block_screenshot_placeholder()}</span>
@@ -385,6 +402,19 @@
 		border-radius: 999px;
 		color: var(--cat-color);
 		background: oklch(from var(--cat-color) l c h / 12%);
+	}
+	/* Zahl statt »6 Einträge«: hält den Chip kurz und umgeht die Pluralform –
+	   dasselbe Muster wie der Install-Zähler rechts. */
+	.count-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 10.5px;
+		font-weight: 600;
+		padding: 2px 7px 2px 6px;
+		border-radius: 999px;
+		border: 1px solid var(--border-color);
+		color: var(--text-secondary);
 	}
 	.lang-badge {
 		font-size: 10px;

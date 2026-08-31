@@ -87,7 +87,14 @@ abstract class ApiTestCase extends WebTestCase
         if ($submitter === null) {
             [$submitter] = $this->createSubmitterWithToken();
         }
-        $payload = $this->menuPayload(['id' => $formatId] + $payloadOverrides);
+        // Engine-Overrides dürfen NICHT über den Menü-Default gelegt werden:
+        // sonst trägt ein »Engine«-Fixture heimlich items und patterns mit sich
+        // und verfälscht alles, was daraus abgeleitet wird (Domains, Suchtext,
+        // itemCount). Der Typ bestimmt daher die Basis, nicht nur das Label.
+        $overrides = ['id' => $formatId] + $payloadOverrides;
+        $payload = isset($overrides['gesturaEngine'])
+            ? array_replace($this->enginePayload(), $overrides)
+            : $this->menuPayload($overrides);
         $type = isset($payload['gesturaEngine']) ? EntryType::Engine : EntryType::Menu;
         $analyzer = new PayloadAnalyzer();
 

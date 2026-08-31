@@ -17,6 +17,8 @@ export interface EntryListItem {
 	categories: string[];
 	tags: string[];
 	domains: string[];
+	/** Anzahl der Menü-Einträge; null bei Suchmaschinen (die haben keine). */
+	itemCount: number | null;
 	installCount: number;
 	rating: { average: number | null; count: number };
 	currentVersion: string | null;

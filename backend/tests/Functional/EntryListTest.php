@@ -24,6 +24,27 @@ final class EntryListTest extends ApiTestCase
         self::assertSame(['en' => 'Example Shop', 'de' => 'Beispiel-Shop'], $data['items'][0]['name']);
     }
 
+    /**
+     * Die Website zeigt die Item-Zahl bereits an der eingeklappten Karte. Ohne
+     * das Feld in der LISTE müsste sie dafür den Payload jedes Eintrags einzeln
+     * nachladen – ein Request pro Karte.
+     */
+    public function testListCarriesItemCountForMenusAndNullForEngines(): void
+    {
+        $this->createPublishedEntry('com.example.shop', ['items' => [
+            ['id' => 'a', 'action' => 'openCustomUrl', 'customUrl' => 'https://example.com/a'],
+            ['id' => 'b', 'type' => 'separator'],
+            ['id' => 'c', 'action' => 'back'],
+        ]]);
+        $this->createPublishedEntry('com.example.search', $this->enginePayload());
+
+        $this->api('GET', '/api/v1/entries');
+
+        $counts = array_column($this->json()['items'], 'itemCount', 'formatId');
+        self::assertSame(3, $counts['com.example.shop']);
+        self::assertNull($counts['com.example.search']);
+    }
+
     public function testAbsurdlyLargePageIsCappedAndDoesNotError(): void
     {
         $this->createPublishedEntry('com.example.one');
