@@ -35,3 +35,20 @@ describe('basket', () => {
 		expect(basket.ids).toEqual(['a']);
 	});
 });
+
+describe('removeMany', () => {
+	it('entfernt genau die übergebenen IDs in einem Zug', () => {
+		basket.clear();
+		for (const id of ['a', 'b', 'c']) basket.toggle(id);
+		basket.removeMany(['a', 'c', 'gibtsNicht']);
+		expect(basket.ids).toEqual(['b']);
+	});
+
+	it('lässt den Zustand unangetastet, wenn nichts zu entfernen ist', () => {
+		basket.clear();
+		basket.toggle('a');
+		const before = basket.ids;
+		basket.removeMany(['x']);
+		expect(basket.ids).toBe(before);
+	});
+});

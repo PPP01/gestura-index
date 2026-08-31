@@ -441,5 +441,14 @@
 	"engine_transform_heading": "Enthaltener Code",
 	"engine_transform_warning": "Diese Suchmaschine bringt ausführbares JavaScript mit. Lies den Code, bevor du sie importierst.",
 	"engine_transform_show": "Code anzeigen",
-	"block_items": "Einträge"
+	"block_items": "Einträge",
+	"basket_group_menus": "Menüs",
+	"basket_group_engines": "Suchmaschinen",
+	"basket_group_unknown": "Nicht im Katalog",
+	"basket_clear_menus": "Alle Menüs entfernen",
+	"basket_clear_engines": "Alle Suchmaschinen entfernen",
+	"basket_clear_group": "Alle entfernen",
+	"basket_close": "Auswahl schließen",
+	"basket_pill_done": "Übernommen",
+	"basket_send_partial": "Teilweise übernommen: {menus} Menüs, {engines} Suchmaschinen. Deine Auswahl bleibt stehen – welche du behalten hast, erfahren wir nicht."
 }

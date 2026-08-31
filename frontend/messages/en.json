@@ -441,5 +441,14 @@
 	"engine_transform_heading": "Included code",
 	"engine_transform_warning": "This search engine ships executable JavaScript. Read the code before importing it.",
 	"engine_transform_show": "Show code",
-	"block_items": "Entries"
+	"block_items": "Entries",
+	"basket_group_menus": "Menus",
+	"basket_group_engines": "Search engines",
+	"basket_group_unknown": "Not in the catalog",
+	"basket_clear_menus": "Remove all menus",
+	"basket_clear_engines": "Remove all search engines",
+	"basket_clear_group": "Remove all",
+	"basket_close": "Close selection",
+	"basket_pill_done": "Imported",
+	"basket_send_partial": "Partly applied: {menus} menus, {engines} search engines. Your selection stays — we cannot tell which ones you kept."
 }

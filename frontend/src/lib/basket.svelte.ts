@@ -44,6 +44,18 @@ export const basket = {
 		ids = ids.filter((x) => x !== id);
 		persist();
 	},
+	/**
+	 * Entfernt mehrere IDs in EINEM Zug – für »Alle Menüs entfernen« und
+	 * »Alle Suchmaschinen entfernen«. Einzeln in einer Schleife zu entfernen
+	 * würde denselben Zustand mehrfach schreiben und neu rendern.
+	 */
+	removeMany(remove: Iterable<string>): void {
+		const drop = new Set(remove);
+		const next = ids.filter((id) => !drop.has(id));
+		if (next.length === ids.length) return;
+		ids = next;
+		persist();
+	},
 	clear(): void {
 		ids = [];
 		persist();

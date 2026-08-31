@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import BasketTray from './BasketTray.svelte';
 import type { EntryListItem } from '$lib/api';
 import { basket } from '$lib/basket.svelte';
@@ -19,10 +20,10 @@ vi.mock('$lib/download', () => ({
 	buildDownloadFilename: () => 'x.json'
 }));
 
-function item(id: string): EntryListItem {
+function item(id: string, type: EntryListItem['type'] = 'menu'): EntryListItem {
 	return {
 		formatId: id,
-		type: 'menu',
+		type,
 		name: id,
 		description: null,
 		categories: [],
@@ -40,7 +41,8 @@ function item(id: string): EntryListItem {
 }
 const catalog = new Map([
 	['a', item('a')],
-	['b', item('b')]
+	['b', item('b')],
+	['e1', item('e1', 'engine')]
 ]);
 
 beforeEach(() => {
@@ -51,6 +53,72 @@ beforeEach(() => {
 });
 
 describe('BasketTray', () => {
+	// Menüs und Suchmaschinen werden getrennt importiert – im Korb sollen sie
+	// deshalb auch getrennt stehen, nicht in der Klick-Reihenfolge vermischt.
+	it('gruppiert die Auswahl nach Menüs und Suchmaschinen', async () => {
+		basket.toggle('e1');
+		basket.toggle('a');
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(2\)|auswahl \(2\)/i }));
+
+		const heads = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent?.trim());
+		expect(heads?.[0]).toMatch(/menus|menüs/i);
+		expect(heads?.[1]).toMatch(/search engines|suchmaschinen/i);
+		// Menüs zuerst – unabhängig davon, dass die Engine zuerst gewählt wurde.
+		const names = [...document.querySelectorAll('.tray-row-name')].map((n) => n.textContent);
+		expect(names).toEqual(['a', 'e1']);
+	});
+
+	// Bisher schloss das Panel nur ein zweiter Klick auf den Pill – darauf muss
+	// man erst kommen. Der Pill-Toggle bleibt, das X kommt hinzu.
+	it('schließt das Panel über den Schließen-Knopf', async () => {
+		basket.toggle('a');
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(1\)|auswahl \(1\)/i }));
+		expect(screen.getByText(/^your selection$|^deine auswahl$/i)).toBeInTheDocument();
+
+		await fireEvent.click(
+			screen.getByRole('button', { name: /close selection|auswahl schließen/i })
+		);
+		expect(screen.queryByText(/^your selection$|^deine auswahl$/i)).not.toBeInTheDocument();
+		// Nur zu, nicht geleert.
+		expect(basket.ids).toEqual(['a']);
+	});
+
+	it('bietet den Schließen-Knopf auch im Leerzustand', async () => {
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(0\)|auswahl \(0\)/i }));
+		await fireEvent.click(
+			screen.getByRole('button', { name: /close selection|auswahl schließen/i })
+		);
+		expect(screen.queryByText(/nothing collected yet|noch nichts gesammelt/i)).not.toBeInTheDocument();
+	});
+
+	it('leert eine Gruppe, ohne die andere anzurühren', async () => {
+		basket.toggle('a');
+		basket.toggle('b');
+		basket.toggle('e1');
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(3\)|auswahl \(3\)/i }));
+
+		await fireEvent.click(
+			screen.getByRole('button', { name: /remove all menus|alle menüs entfernen/i })
+		);
+		expect(basket.ids).toEqual(['e1']);
+		// Die Menü-Gruppe verschwindet mit ihrem letzten Eintrag.
+		expect(screen.queryByText(/^menus$|^menüs$/i)).not.toBeInTheDocument();
+		expect(screen.getByText('e1')).toBeInTheDocument();
+	});
+
+	it('behält Korb-Einträge, die der geladene Katalog nicht kennt', async () => {
+		basket.toggle('unbekannt');
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(1\)|auswahl \(1\)/i }));
+		expect(screen.getByText(/not in the catalog|nicht im katalog/i)).toBeInTheDocument();
+		// Ohne diese Gruppe ließe sich der Eintrag nicht mehr entfernen.
+		expect(screen.getByText('unbekannt')).toBeInTheDocument();
+	});
+
 	it('zeigt einen neutralen Pill mit Leerzustand, solange die Auswahl leer ist', async () => {
 		render(BasketTray, { catalog });
 		const pill = screen.getByRole('button', { name: /selection \(0\)|auswahl \(0\)/i });
@@ -74,9 +142,10 @@ describe('BasketTray', () => {
 		basket.toggle('b');
 		render(BasketTray, { catalog });
 		await fireEvent.click(screen.getByRole('button', { name: /selection \(2\)|auswahl \(2\)/i }));
-		const removeButtons = screen.getAllByRole('button', { name: /remove|entfernen/i });
-		await fireEvent.click(removeButtons[0]);
-		expect(basket.count).toBe(1);
+		// Gezielt der Zeilen-Knopf: seit der Gruppierung gibt es auch
+		// »Remove all menus«, das würde beide Zeilen auf einmal treffen.
+		await fireEvent.click(screen.getByRole('button', { name: /^remove: a$|^entfernen: a$/i }));
+		expect(basket.ids).toEqual(['b']);
 	});
 
 	it('"alle entfernen" leert den Korb', async () => {
@@ -193,12 +262,64 @@ describe('BasketTray', () => {
 		await fireEvent.click(screen.getByRole('button', { name: /send to gestura|an gestura senden/i }));
 	}
 
-	it('bestätigt bei "imported" mit den übernommenen Zählern', async () => {
-		replyOnceWith({ status: 'imported', menus: 2, engines: 1 });
+	/*
+	 * Der Fall, der in der Praxis scheiterte (Nachtrag 3 des Übergabe-Vertrags):
+	 * Der Nutzer steht im Import-Dialog der Erweiterung, das dauert länger als
+	 * der 15-Sekunden-Hinweis. Früher meldete genau dieser Timeout den Listener
+	 * ab – die Meldung kam an und traf ins Leere. Die anderen Rückweg-Tests
+	 * antworten sofort und hätten das nie bemerkt.
+	 */
+	it('nimmt die Rückmeldung auch lange nach dem 15-Sekunden-Hinweis noch an', async () => {
+		vi.useFakeTimers();
+		try {
+			await clickSendFor('a'); // ohne replyOnceWith: die Antwort kommt später
+			await vi.advanceTimersByTimeAsync(16_000);
+			await tick();
+			expect(screen.getByText(/sent to gestura|an gestura gesendet/i)).toBeInTheDocument();
+
+			// Erst jetzt bestätigt der Nutzer im Dialog der Erweiterung.
+			document.dispatchEvent(
+				new CustomEvent('gestura:import-result', {
+					detail: JSON.stringify({ status: 'imported', menus: 1, engines: 0 })
+				})
+			);
+			await tick();
+			// Vollständig übernommen ⇒ Panel zu, Bestätigung am Pill.
+			expect(
+				screen.getByRole('button', { name: /imported|übernommen/i })
+			).toBeInTheDocument();
+			expect(basket.ids).toEqual([]);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	// Nach vollständiger Übernahme ist Aufräumen die Rückmeldung: Panel zu, die
+	// gesendeten Einträge raus, Bestätigung am Pill (der Nutzer steht beim Import
+	// im Tab der Erweiterung und sieht unsere Seite erst danach wieder).
+	it('räumt nach vollständiger Übernahme auf und bestätigt am Pill', async () => {
+		replyOnceWith({ status: 'imported', menus: 1, engines: 0 });
 		await clickSendFor('a');
+		await waitFor(() => expect(basket.ids).toEqual([]));
+		expect(screen.queryByText(/^your selection$|^deine auswahl$/i)).not.toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /imported|übernommen/i })).toBeInTheDocument();
+	});
+
+	// Teilübernahme: die Rückmeldung sagt nur WIE VIELE der Nutzer behalten hat,
+	// nicht WELCHE – also darf der Korb nicht angetastet werden.
+	it('lässt den Korb stehen, wenn nur ein Teil übernommen wurde', async () => {
+		getBundle.mockResolvedValue({ gesturaBundle: 1, entries: [{ gesturaMenu: 1, id: 'a' }] });
+		basket.toggle('a');
+		basket.toggle('b');
+		replyOnceWith({ status: 'imported', menus: 1, engines: 0 });
+		render(BasketTray, { catalog });
+		await fireEvent.click(screen.getByRole('button', { name: /selection \(2\)|auswahl \(2\)/i }));
+		await fireEvent.click(screen.getByRole('button', { name: /send to gestura|an gestura senden/i }));
+
 		await waitFor(() =>
-			expect(screen.getByText(/applied in your browser|im browser übernommen/i)).toBeInTheDocument()
+			expect(screen.getByText(/partly applied|teilweise übernommen/i)).toBeInTheDocument()
 		);
+		expect(basket.ids).toEqual(['a', 'b']);
 	});
 
 	it('lässt bei "cancelled" den Korb stehen und meldet den Abbruch neutral', async () => {
