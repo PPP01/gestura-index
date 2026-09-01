@@ -21,6 +21,9 @@
 		return match?.[1];
 	}
 
+	/** Höhe der Badge-Reihe in Pixeln (Design C1: 48). */
+	let { height = 54 }: { height?: number } = $props();
+
 	const CHROME =
 		'https://chromewebstore.google.com/detail/gestura-mouse-gestures/ddcendiamegpalekoneonjkenhcamjnj';
 	const EDGE =
@@ -49,11 +52,11 @@
 	];
 </script>
 
-<div class="store-badges">
+<div class="store-badges" style={`--badge-height:${height}px`}>
 	{#each stores as s (s.href)}
 		<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.alt}>
 			{#if s.src}
-				<img src={s.src} alt={s.alt} height="54" />
+				<img src={s.src} alt={s.alt} />
 			{:else}
 				<span class="btn">{s.fallback}</span>
 			{/if}
@@ -69,7 +72,7 @@
 		align-items: center;
 	}
 	.store-badges img {
-		height: 54px;
+		height: var(--badge-height);
 		width: auto;
 		display: block;
 	}

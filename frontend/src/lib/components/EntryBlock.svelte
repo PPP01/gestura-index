@@ -335,7 +335,11 @@
 		border-color: transparent;
 	}
 	.block-clickable {
-		flex: 1 1 auto;
+		/* flex-basis 0 statt auto: der Umbruch-Algorithmus von flex-wrap misst die
+		   HYPOTHETISCHE Hauptgröße (bei `auto` = Inhaltsbreite), nicht min-width.
+		   Mit `auto` rutscht die Zeile in schmalen Containern (Teaser-Panel der
+		   Startseite) komplett unter den Auswahl-Toggle. */
+		flex: 1 1 0;
 		min-width: 0;
 		display: flex;
 		align-items: flex-start;
@@ -349,7 +353,11 @@
 		border-radius: 10px;
 	}
 	.block-body {
-		flex: 1 1 auto;
+		/* flex-basis = min-width (nicht `auto`), damit Bewertung/Zähler und Chevron
+		   in schmalen Containern auf derselben Zeile bleiben statt darunter zu
+		   rutschen – gleicher Umbruch-Effekt wie bei .block-clickable oben. Erst
+		   wenn wirklich zu wenig Platz ist (mobil), bricht die rechte Spalte um. */
+		flex: 1 1 200px;
 		min-width: 200px;
 		display: flex;
 		flex-direction: column;
