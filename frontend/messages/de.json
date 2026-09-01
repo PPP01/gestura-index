@@ -462,5 +462,6 @@
 	"c1_teaser_eyebrow": "GESTURA INDEX",
 	"c1_teaser_heading_count": "Nicht bei Null anfangen: {total} fertige Menüs & Suchmaschinen.",
 	"c1_teaser_body": "Von der Community geteilt, anonym bewertet, mit einem Klick als JSON in deine Extension.",
-	"c1_teaser_cta": "Index entdecken"
+	"c1_teaser_cta": "Index entdecken",
+	"install_bar_title": "Gestura für deinen Browser"
 }
