@@ -207,12 +207,14 @@ final class UpdateCheckTest extends ApiTestCase
 
     public function testChangelogByteBudgetKeepsEveryElementButNullsLaterChangelogs(): void
     {
-        // Nicht-ASCII-Zeichen kosten beim Kodieren ohne JSON_UNESCAPED_UNICODE
-        // bis zu 6 Byte pro Zeichen (\uXXXX) – nach der 1000-Zeichen-Kürzung
-        // also bis zu 6002 Byte je changelog inkl. Anführungszeichen. 40
-        // solche Elemente (240 KiB an changelog-Rohdaten) reißen sicher durch
-        // das 200-KiB-Budget des Controllers, ohne die Vertragsgrenze von 200
-        // Elementen zu berühren.
+        // Nicht-ASCII-Zeichen kosten beim Kodieren bis zu 6 Byte pro Zeichen
+        // (\uXXXX) – nach der 1000-Zeichen-Kürzung also bis zu 6002 Byte je
+        // changelog inkl. Anführungszeichen. Escapte und unescapte Kodierung
+        // sind für CJK-Text gleich lang (deckt daher NICHT die
+        // JSON_HEX_*-Flags ab, siehe Testfall mit Apostroph+Et-Zeichen
+        // unten). 40 solche Elemente (240 KiB an changelog-Rohdaten) reißen
+        // sicher durch das 100-KiB-Budget des Controllers, ohne die
+        // Vertragsgrenze von 200 Elementen zu berühren.
         $count = 40;
         for ($i = 0; $i < $count; ++$i) {
             $formatId = sprintf('com.example.budget%02d', $i);
@@ -245,9 +247,49 @@ final class UpdateCheckTest extends ApiTestCase
             self::assertFalse($sawNull, 'Nach dem ersten null-changelog dürfen keine weiteren changelogs mehr folgen');
             self::assertSame(1000, mb_strlen($update['changelog']));
         }
-        // Bei 40 Elementen à maximal 6002 Byte (240 KiB) muss das 200-KiB-
+        // Bei 40 Elementen à maximal 6002 Byte (240 KiB) muss das 100-KiB-
         // Budget mindestens ein Element zum Verstummen bringen.
         self::assertTrue($sawNull, 'Testaufbau muss das Budget tatsächlich überschreiten');
+    }
+
+    public function testChangelogByteBudgetAccountsForJsonHexEscaping(): void
+    {
+        // JsonResponse::DEFAULT_ENCODING_OPTIONS (15 = JSON_HEX_TAG|
+        // JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) eskaliert " ' & < > zu
+        // \u00XX-Escapes (6 Byte statt 1 Byte) – nur in der ECHTEN Antwort,
+        // nicht bei einer Kostenmessung mit den json_encode-Standardflags.
+        // Ganz gewöhnlicher englischer Fließtext mit Apostroph und
+        // Kaufmanns-Und (kein CJK, keine Sonderzeichen-Häufung) reicht, um
+        // den Unterschied wirksam werden zu lassen: gemessen kostet der
+        // 1000-Zeichen-Ausschnitt dieses Texts 1002 Byte mit den
+        // Standardflags, aber 1232 Byte mit den echten Response-Flags. Ohne
+        // Korrektur hätte das (alte) 200-KiB-Budget mit der billigeren
+        // Messung alle 200 Elemente durchgelassen – real 285426 Byte, über
+        // dem 256-KiB-Cap.
+        $count = 200;
+        $text = str_repeat("Do not forget: it's a bug & the fix works. ", 30);
+        for ($i = 0; $i < $count; ++$i) {
+            $formatId = sprintf('com.example.prose%03d', $i);
+            $entry = $this->createPublishedEntry($formatId, ['version' => '2.0.0']);
+            $entry->currentVersion->changelog = $text;
+        }
+        $this->em->flush();
+
+        $this->api('POST', '/api/v1/updates', ['entries' => array_map(
+            static fn (int $i): array => ['id' => sprintf('com.example.prose%03d', $i), 'version' => '1.0.0'],
+            range(0, $count - 1),
+        )]);
+
+        self::assertResponseIsSuccessful();
+        // Der ECHTE Response-Body zählt, nicht eine erneut berechnete
+        // Schätzung – der Sinn der Prüfung ist, was tatsächlich auf die
+        // Leitung geht.
+        $rawBody = (string) $this->client->getResponse()->getContent();
+        self::assertLessThan(262144, \strlen($rawBody), 'Antwort muss unter dem 256-KiB-Cap des Clients bleiben');
+
+        // Kein Element darf fehlen, auch wenn viele changelogs wegen des
+        // Budgets null werden.
+        self::assertCount($count, $this->json()['updates']);
     }
 
     public function testOldPathIsGone(): void

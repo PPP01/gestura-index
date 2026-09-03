@@ -40,17 +40,30 @@ final class UpdateCheckController
     // Der Client kürzt changelog ohnehin auf 1000 Zeichen (Vertrag) – alles
     // darüber ist reine Verschwendung im Wire-Format.
     private const CHANGELOG_CLIENT_MAX_CHARS = 1000;
-    // Byte-Budget für alle changelog-Felder zusammen: 200 KiB Puffer, deutlich
-    // unter dem 256-KiB-Cap, den der Client als Ganzes verwirft. Symfonys
-    // JsonResponse kodiert ohne JSON_UNESCAPED_UNICODE, jedes Nicht-ASCII-
-    // Zeichen (Umlaute, CJK) kostet dadurch bis zu 6 Byte (ä-Escape) statt
-    // 1–3 UTF-8-Byte – gemessen: 2000 deutsche wie auch 2000 CJK-Zeichen
-    // kodieren zu 12002 Byte. Nach der 1000-Zeichen-Kürzung bleiben im
-    // ungünstigsten Fall 1000 * 6 + 2 (Anführungszeichen) = 6002 Byte pro
-    // changelog. Die verbleibenden ~56 KiB bis 256 KiB decken Hülle plus bis
-    // zu 200 Elemente ganz ohne changelog (id, type, version, url,
-    // deprecated, successor) mit reichlich Reserve ab.
-    private const CHANGELOG_BUDGET_BYTES = 200 * 1024;
+    // Byte-Budget für alle changelog-Felder zusammen, deutlich unter dem
+    // 256-KiB-Cap (262144 Byte), den der Client als Ganzes verwirft. Die
+    // Kosten werden mit JsonResponse::DEFAULT_ENCODING_OPTIONS gemessen –
+    // NICHT mit den Standard-json_encode-Flags –, weil genau diese Flags
+    // (JSON_HEX_QUOT|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_TAG) auch die
+    // Antwort selbst kodieren. Sie eskalieren " ' & < > zu \u00XX-Escapes
+    // (6 Byte statt 1–3), zusätzlich zu Nicht-ASCII-Zeichen (Umlaute, CJK),
+    // die ohnehin so kodiert werden. Eine Messung mit den Standard-Flags
+    // unterschätzt normalen englischen Fließtext (Apostrophe, »&«) und lässt
+    // die echte Antwort über den Cap wachsen, ohne dass das Budget je
+    // anschlägt. Nach der 1000-Zeichen-Kürzung kostet ein changelog im
+    // ungünstigsten Fall (nur eskalierte Zeichen) 1000 * 6 + 2
+    // (Anführungszeichen) = 6002 Byte.
+    //
+    // Das Budget muss zusätzlich neben dem größtmöglichen Elemente-Skelett
+    // stehen: id (ID_MAX_LENGTH=128) und successor (gleiches Limit, siehe
+    // SubmissionService) erscheinen je einmal, id zusätzlich in url – bei
+    // 200 Elementen ganz ohne changelog kommen so gemessen 113626 Byte
+    // zusammen (Symfony escaped außerdem jeden »/« in url zu »\/«). Ein
+    // 100-KiB-Budget (102400 Byte) summiert sich im absoluten Worst Case
+    // (200 maximal lange Elemente, 17 davon mit maximal teurem changelog,
+    // Rest null) gemessen zu 215592 Byte – eine Marge von 46552 Byte
+    // (~17,8 %) unter dem 256-KiB-Cap.
+    private const CHANGELOG_BUDGET_BYTES = 100 * 1024;
 
     #[Route('/api/v1/updates', methods: ['POST'])]
     public function __invoke(
@@ -133,7 +146,10 @@ final class UpdateCheckController
                 if ($changelogBudgetExhausted) {
                     $changelog = null;
                 } else {
-                    $cost = \strlen(json_encode($changelog, JSON_THROW_ON_ERROR));
+                    // Dieselben Flags wie die Antwort selbst (siehe Kommentar
+                    // an CHANGELOG_BUDGET_BYTES) – sonst misst das Budget
+                    // etwas anderes, als tatsächlich auf die Leitung geht.
+                    $cost = \strlen(json_encode($changelog, JsonResponse::DEFAULT_ENCODING_OPTIONS | JSON_THROW_ON_ERROR));
                     if ($cost > $changelogBudget) {
                         $changelogBudgetExhausted = true;
                         $changelog = null;
