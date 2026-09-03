@@ -1,6 +1,6 @@
 # Design: `POST /api/v1/updates` (Vertrag R2) und versioniertes Deployment im gemeinsamen Docroot
 
-**Datum:** 2026-09-03 · **Status:** Entwurf zur Freigabe · **Vertrag:** `docs/gestura-eu-api.md` (Kopie aus dem Extension-Repo, Stand `main@8c944e9`, apiLevel 2)
+**Datum:** 2026-09-03 · **Status:** freigegeben · **Vertrag:** `docs/gestura-eu-api.md` (Kopie aus dem Extension-Repo; Stand `feature/eu-integration-r3@4c9f2bb`, apiLevel 3). Dieses Paket setzt den **Level-2-Teil** (`/api/v1/updates`) um; die Level sind additiv, der Abschnitt »Update check« ist zwischen R2 und R3 bis auf die Beispielzahl unverändert. Der Index meldet in Antworten den Level, den er tatsächlich bedient (`ApiLevel::IMPLEMENTED`, jetzt 2, mit dem R3-Paket 3); der Client liest den Wert nicht aus.
 
 ## 1. Ausgangslage
 
@@ -204,4 +204,4 @@ Kein Vertragsfehler gefunden. Ein Hinweis für die Vertragspflege: Die Beispiel-
 
 - GitHub-Actions-Automatik (Deploy bei Push eines annotierten `v*`-Tags): eigenes Folgepaket mit SSH-Deploy-Key als Secret, MariaDB-Service für PHPUnit, `fetch-tags` für die Annotationsprüfung.
 - Umstellung der Website auf Same-Origin-API und Abschaffung von `api.gestura.eu`.
-- R3-Sync-Endpunkte (`/sync/list`, `/sync/state`, `/sync/get`, `/sync/delete`, apiLevel 3): kommen additiv, sobald der R3-Vertrag herüberliegt.
+- R3-Sync-Endpunkte (`POST /api/v1/sync/list`, `PUT /api/v1/sync/state`, `POST /api/v1/sync/get`, `POST /api/v1/sync/delete`, apiLevel 3): der Vertrag liegt seit dem 2026-09-03 vor, die Umsetzung ist ein eigenes Paket. Aus diesem Layout zu übernehmen: Blob-Ablage in `shared/` oder MySQL (nie im Release), keine Protokollierung von Request-Bodies (Locator ist Bearer-Token), eigenes Fehlerformat `{ "error": "<code>" }` statt `ApiProblem`, Retention-Cron über `current/backend/bin/console`, `ApiLevel::IMPLEMENTED` erst mit den antwortenden Endpunkten auf 3. Vorab zu entscheiden: Verhältnis zum bestehenden kontogebundenen Sync unter `/api/account/sync/*` (Phase 3, Sub-Projekt F).

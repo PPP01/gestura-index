@@ -57,7 +57,7 @@
 
 ```bash
 {
-  printf '%s\n' '> **Kopie.** Original: `docs/gestura-eu-api.md` im Extension-Repo (`C:\Programme.alt\Gestura`, aus WSL `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md`). Änderungen werden dort gemacht und neu herüberkopiert – hier nie direkt ändern. Bei Abweichungen zwischen Vertrag und Index: im Extension-Repo melden. Stand der Kopie: 2026-09-03, `main@8c944e9`.' ''
+  printf '%s\n' '> **Kopie.** Original: `docs/gestura-eu-api.md` im Extension-Repo (`C:\Programme.alt\Gestura`, aus WSL `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md`). Änderungen werden dort gemacht und neu herüberkopiert – hier nie direkt ändern. Bei Abweichungen zwischen Vertrag und Index: im Extension-Repo melden. Stand der Kopie: 2026-09-03, Branch `feature/eu-integration-r3`, Commit `4c9f2bb`, apiLevel 3. Der Index setzt die Level additiv um: `/api/v1/updates` (Level 2) mit dem Paket vom 2026-09-03, die `/api/v1/sync/*`-Endpunkte (Level 3) folgen als eigenes Paket.' ''
   cat exchange/2026-09-03-gestura-eu-api.md
 } > docs/gestura-eu-api.md
 ```
@@ -72,11 +72,14 @@ Expected: `IDENTISCH` (kein Diff).
 ```bash
 git add docs/gestura-eu-api.md
 git commit -F - <<'EOF'
-Übernimm den Vertrag gestura.eu ↔ Extension (R2) als Kopie
+Übernimm den Vertrag gestura.eu ↔ Extension (Stand R3) als Kopie
 
 Der Vertrag wird im Extension-Repo gepflegt; die Kopie hier ist der
-Stand, gegen den der Index gebaut und getestet wird. Der Kopfhinweis
-verhindert, dass jemand die Kopie für das Original hält.
+Stand, gegen den der Index gebaut und getestet wird. Sie enthält bereits
+die Sync-Hälfte (apiLevel 3), obwohl dieses Paket nur den Level-2-Teil
+umsetzt – die Level sind additiv, und es soll genau eine Vertragsfassung
+im Repo liegen. Der Kopfhinweis verhindert, dass jemand die Kopie für
+das Original hält.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 EOF
@@ -198,6 +201,7 @@ EOF
 ### Task 3: Endpunkt `POST /api/v1/updates`
 
 **Files:**
+- Create: `backend/src/Api/ApiLevel.php`
 - Modify: `backend/src/Controller/Api/UpdateCheckController.php` (vollständig ersetzen)
 - Test: `backend/tests/Functional/UpdateCheckTest.php` (vollständig ersetzen)
 - Test: `backend/tests/Functional/CorsTest.php` (eine Methode ergänzen)
@@ -205,7 +209,7 @@ EOF
 **Interfaces:**
 - Consumes: `RateLimitGuard::consume(RateLimiterFactoryInterface, string)`, `EntryRepository::findPublishedByFormatIds(list<string>): list<Entry>` (fetch-joined `currentVersion`), `Entry::$type` (`EntryType` mit `->value` `menu`|`engine`), `Entry::$deprecated`, `Entry::$successorFormatId`, `EntryVersion::$semver`, `EntryVersion::$changelog`.
 - Consumes aus `ApiTestCase`: `createPublishedEntry(string $formatId, array $payloadOverrides)`, `createRejectedJunkEntry(string $formatId)`, `api(method, uri, body)`, `json()`, `$this->em`.
-- Produces: Antwortformat `{apiLevel: 2, updates: [{id, type, version, url, changelog, deprecated, successor}]}`; `smoke.sh` (Task 6) prüft die leere Antwort `{"apiLevel":2,"updates":[]}` byteweise.
+- Produces: `App\Api\ApiLevel::IMPLEMENTED` (int, jetzt 2; das R3-Paket hebt sie auf 3 und alle Endpunkte melden denselben Wert); Antwortformat `{apiLevel: <IMPLEMENTED>, updates: [{id, type, version, url, changelog, deprecated, successor}]}`. `smoke.sh` (Task 6) prüft die leere Antwort per Regex `{"apiLevel":<Zahl>,"updates":[]}`, damit der R3-Bump den Smoke-Check nicht bricht.
 
 - [ ] **Step 1: Funktionstest vollständig ersetzen**
 
@@ -217,6 +221,8 @@ EOF
 declare(strict_types=1);
 
 namespace App\Tests\Functional;
+
+use App\Api\ApiLevel;
 
 final class UpdateCheckTest extends ApiTestCase
 {
@@ -232,7 +238,7 @@ final class UpdateCheckTest extends ApiTestCase
 
         self::assertResponseIsSuccessful();
         $body = $this->json();
-        self::assertSame(2, $body['apiLevel']);
+        self::assertSame(ApiLevel::IMPLEMENTED, $body['apiLevel']);
         self::assertSame([[
             'id' => 'com.example.shop',
             'type' => 'menu',
@@ -352,8 +358,11 @@ final class UpdateCheckTest extends ApiTestCase
         $this->api('POST', '/api/v1/updates', ['apiLevel' => 2, 'entries' => []]);
 
         self::assertResponseIsSuccessful();
-        // smoke.sh vergleicht diesen Body byteweise – Reihenfolge und Form sind Vertrag.
-        self::assertSame('{"apiLevel":2,"updates":[]}', $this->client->getResponse()->getContent());
+        // Reihenfolge und Form sind Vertrag; smoke.sh prüft dieselbe Form per Regex.
+        self::assertSame(
+            sprintf('{"apiLevel":%d,"updates":[]}', ApiLevel::IMPLEMENTED),
+            $this->client->getResponse()->getContent(),
+        );
     }
 
     public function testRejectsMalformedEnvelope(): void
@@ -414,6 +423,33 @@ In `backend/tests/Functional/CorsTest.php` nach `testPreflightIsAnswered()` einf
 Run: `php backend/bin/phpunit backend/tests/Functional/UpdateCheckTest.php; echo $?`
 Expected: Mehrere FAIL/ERROR (404 auf `/api/v1/updates`), Exit-Code 1. `CorsTest` ist bereits grün (der Subscriber deckt alle `/api/`-Pfade), das ist erwartet.
 
+- [ ] **Step 4a: Gemeinsame API-Level-Konstante anlegen**
+
+`backend/src/Api/ApiLevel.php`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Api;
+
+/**
+ * Der apiLevel, den dieser Index gegenüber der Extension umsetzt (Vertrag
+ * docs/gestura-eu-api.md). Die Level sind additiv: 2 = Update-Check
+ * (/api/v1/updates), 3 = zusätzlich die /api/v1/sync/*-Endpunkte.
+ *
+ * Genau EINE Stelle für die Zahl: jede Antwort, die einen apiLevel trägt,
+ * liest sie hier. Das R3-Paket hebt den Wert auf 3, sobald die vier
+ * Sync-Endpunkte antworten – nicht früher, sonst verspräche der Index ein
+ * Level, das er nicht bedient.
+ */
+final class ApiLevel
+{
+    public const IMPLEMENTED = 2;
+}
+```
+
 - [ ] **Step 4: Controller vollständig ersetzen**
 
 `backend/src/Controller/Api/UpdateCheckController.php`:
@@ -425,6 +461,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Api\ApiLevel;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
 use App\Service\RateLimitGuard;
@@ -451,7 +488,6 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class UpdateCheckController
 {
-    public const API_LEVEL = 2;
     private const MAX_ENTRIES = 200;
     // Kennungsmuster aus dem Vertrag (Abschnitt »Bridge«, Limits) – identisch zu ID_RE der Extension.
     private const ID_RE = '/^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$/';
@@ -537,7 +573,7 @@ final class UpdateCheckController
             ];
         }
 
-        return new JsonResponse(['apiLevel' => self::API_LEVEL, 'updates' => $updates]);
+        return new JsonResponse(['apiLevel' => ApiLevel::IMPLEMENTED, 'updates' => $updates]);
     }
 }
 ```
@@ -557,7 +593,7 @@ Expected: `OK`, Exit-Code 0. Der Phase-2-Plan `docs/superpowers/plans/2026-07-20
 - [ ] **Step 7: Commit**
 
 ```bash
-git add backend/src/Controller/Api/UpdateCheckController.php backend/tests/Functional/UpdateCheckTest.php backend/tests/Functional/CorsTest.php
+git add backend/src/Api/ApiLevel.php backend/src/Controller/Api/UpdateCheckController.php backend/tests/Functional/UpdateCheckTest.php backend/tests/Functional/CorsTest.php
 git commit -F - <<'EOF'
 Stelle den Update-Check unter POST /api/v1/updates bereit
 
@@ -846,8 +882,9 @@ fi
 
 request updates -X POST -H 'Content-Type: application/json' \
     --data '{"apiLevel":2,"entries":[]}' "$ORIGIN/api/v1/updates"
-if [ "$STATUS" = 200 ] && [ "$(cat "$BODY")" = '{"apiLevel":2,"updates":[]}' ]; then
-    ok "POST /api/v1/updates: 200 mit leerer Vertragsantwort"
+# apiLevel als Zahl, nicht fest 2: das R3-Paket hebt den Wert auf 3, die Form bleibt.
+if [ "$STATUS" = 200 ] && grep -Eq '^\{"apiLevel":[0-9]+,"updates":\[\]\}$' "$BODY"; then
+    ok "POST /api/v1/updates: 200 mit leerer Vertragsantwort ($(cat "$BODY"))"
 elif [ "$STATUS" = 200 ] && header Content-Type | grep -qi text/html; then
     bad "POST /api/v1/updates liefert HTML – das KAS-Docroot von ${ORIGIN#https://} zeigt noch nicht auf current/backend/public"
 else
@@ -1555,4 +1592,18 @@ Kein Deploy im Rahmen des Plans. Zusammenfassung ausgeben: Was gebaut wurde, das
 - **4.5 `rollback.sh`:** Task 9. ✔ **4.6 `smoke.sh`:** Task 6. ✔ **4.7 `gc.sh` + Dry-Run + Test:** Task 7. ✔ **4.8 Runbook:** Task 10. ✔
 - **5 Tests:** Funktionstests, CORS, Limiter-Konfig, alter Pfad, gc-Test. ✔ **6 Doku, Vertragskopie:** Task 1, Task 10. ✔
 - **7 Rückmeldung an Extension-Repo:** steht im Spec; keine Code-Aufgabe. **8 Nicht-Ziele:** unberührt.
-- **Typkonsistenz:** `RELEASE`-Schlüssel `deployed_at_epoch` in Task 7 (gc), Task 8 (deploy) und Task 9 (rollback) identisch; `common.sh`-Namen (`DEPLOY_PATH`, `RELEASES_DIR`, `SHARED_DIR`, `CURRENT_LINK`, `SITE_ORIGIN`, `die`, `step`, `remote`) in Task 6, 8, 9 identisch; leere Vertragsantwort `{"apiLevel":2,"updates":[]}` in Task 3 (Test) und Task 6 (smoke) identisch.
+- **Typkonsistenz:** `RELEASE`-Schlüssel `deployed_at_epoch` in Task 7 (gc), Task 8 (deploy) und Task 9 (rollback) identisch; `common.sh`-Namen (`DEPLOY_PATH`, `RELEASES_DIR`, `SHARED_DIR`, `CURRENT_LINK`, `SITE_ORIGIN`, `die`, `step`, `remote`) in Task 6, 8, 9 identisch; `ApiLevel::IMPLEMENTED` in Task 3 (Konstante, Controller, Test) identisch, `smoke.sh` (Task 6) prüft die Form unabhängig vom Wert.
+
+## Abgleich mit dem R3-Vertrag (Sync, apiLevel 3)
+
+Der Vertragsabzug in `exchange/` wurde am 2026-09-03 auf Stand R3 überschrieben (`feature/eu-integration-r3@4c9f2bb`). Geprüft, ob etwas darin gegen die Umsetzung dieses R2-Plans spricht: **nein.** Die Level sind additiv, der Abschnitt »Update check« ist bis auf die Beispielzahl `apiLevel: 3` unverändert, und der Client liest `apiLevel` aus der Antwort gar nicht (`parseUpdateResponse` prüft nur `updates`). Folgen für diesen Plan sind oben eingearbeitet: Vertragskopie im R3-Stand (Task 1), gemeinsame Konstante `ApiLevel::IMPLEMENTED` (Task 3), wertunabhängiger Smoke-Check (Task 6).
+
+Was das R3-Paket von diesem Layout übernehmen muss, damit es hier nicht kollidiert:
+
+- **Blob-Ablage gehört in `shared/`, nie ins Release.** Speichert R3 die Sync-Blobs im Dateisystem, braucht es ein Verzeichnis unter `shared/` und eine Zeile im Symlink-Block von `deploy.sh`; sonst löscht `gc.sh` die Blobs mit dem Release. Alternativ MySQL (`MEDIUMBLOB`, Blobs bis 512 KiB, 4 MiB je Locator) – dann entfällt die Frage. Der Locator (`^[A-Za-z0-9_-]{43}$`) darf nie ungeprüft zum Pfad werden.
+- **Request-Bodies nicht protokollieren.** `shared/log/` ist persistent; nichts darin darf Bodies der `/api/v1/sync/*`-Requests enthalten (der Locator ist ein Bearer-Token). Symfony/Monolog loggt Bodies nicht von selbst; Exception-Handler und eigene Log-Aufrufe müssen es auch nicht tun. Apache-Access-Logs des Hosters enthalten keine Bodies.
+- **Fehlerformat abweichend:** R3 verlangt `{ "error": "<code>" }` mit den fünf Codes `bad-request`, `not-found`, `too-large`, `quota-states`, `rate-limited`, nicht das `application/problem+json` von `ApiProblem`. Die Sync-Controller brauchen eine eigene Fehlerklasse oder einen eigenen Response-Pfad; der bestehende `ProblemJsonSubscriber` darf sie nicht umformen.
+- **CORS** ist bereits ausreichend (`GET, POST, PUT, DELETE, OPTIONS`, `Content-Type`); `.htaccess`-Regel 1 leitet `/api/v1/sync/*` ohne Umleitung an Symfony. Keine Änderung nötig.
+- **Namenskollision im Bestand:** Unter `/api/account/sync/*` existiert bereits der kontogebundene Settings-Sync aus Phase 3 (Sub-Projekt F, `SyncBlob` mit FK auf `account`, Bearer `gacc_…`). R3 beschreibt einen davon unabhängigen, anonymen, locator-basierten Sync unter `/api/v1/sync/*`. Vor dem R3-Plan ist zu entscheiden, ob beide nebeneinander bestehen oder der Konto-Sync auf das R3-Modell umgestellt wird – das ist eine Entscheidung des Eigentümers, kein Detail der Umsetzung.
+- **Retention 12 Monate** braucht einen Cron (`php85 bin/console index:sync:prune` o. ä.) im Runbook; das Layout mit `current/backend/bin/console` macht den Cron-Pfad releaseunabhängig.
+- **`ApiLevel::IMPLEMENTED` auf 3 heben** erst, wenn alle vier Sync-Endpunkte antworten – zusammen mit dem Bump muss `smoke.sh` um Sync-Preflight und einen `list`-Aufruf mit unbekanntem Locator (erwartet `{"states":[]}`) erweitert werden.
