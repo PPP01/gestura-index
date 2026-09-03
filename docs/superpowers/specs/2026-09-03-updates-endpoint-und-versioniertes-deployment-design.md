@@ -98,7 +98,7 @@ Reihenfolge der Regeln in der zusammengeführten Datei:
 5. Trailing Slash kanonisieren (außer Wurzel, 301), Add-`.html` für prerenderte Seiten, vorhandene Verzeichnisse (`-d`).
 6. Alles Übrige auf `/200.html` (SPA-Hülle für Admin- und Client-Routen).
 
-Symfonys bisheriger Catch-all auf `index.php` entfällt zugunsten von Regel 6. Das ist sicher, weil außer `/api/…` nur die Marketing-Route (Regel 3) und die Dev-Fehlervorschau `/_error/…` existieren (per `debug:router` geprüft). `DirectoryIndex` wird `index.php index.html`, damit die Wurzel `/` die prerenderte `index.html` findet, sofern das Frontend eine liefert; sonst greift Regel 6.
+Symfonys bisheriger Catch-all auf `index.php` entfällt zugunsten von Regel 6. Das ist sicher, weil außer `/api/…` nur die Marketing-Route (Regel 3) und die Dev-Fehlervorschau `/_error/…` existieren (per `debug:router` geprüft). `DirectoryIndex` wird `index.html index.php` (in dieser Reihenfolge, weil beide Dateien im Docroot liegen und die Wurzel `/` die prerenderte Startseite liefern soll, nicht Symfonys 404). `DirectorySlash Off` aus der bisherigen Frontend-Datei bleibt erhalten, weil `de/` und `en/` als Verzeichnisse neben `de.html`/`en.html` existieren und Apache sonst `/de` auf `/de/` umleiten würde.
 
 ### 4.2 Build-Verzeichnis des Marketing-Controllers
 
@@ -117,7 +117,7 @@ Symfonys bisheriger Catch-all auf `index.php` entfällt zugunsten von Regel 6. D
   current -> releases/v1.0.3
 ```
 
-Docroot für `gestura.eu` und `api.gestura.eu`: `/www/htdocs/w00d7b19/gestura.eu/current/backend/public`. Jedes Release erhält Symlinks `backend/.env.local -> ../../../shared/.env.local`, `backend/public/media -> ../../../../shared/media`, `backend/var/log -> ../../../../shared/log`. Alles übrige unter `var/` (Cache, Sessions, Rate-Limiter-Pool) ist releasegebunden; Admin-Sessions gehen beim Deploy verloren, was bei 30 Minuten Idle-Timeout vertretbar ist.
+Docroot für `gestura.eu` und `api.gestura.eu`: `/www/htdocs/w00d7b19/gestura.eu/current/backend/public`. Jedes Release erhält absolute Symlinks `backend/.env.local -> <DEPLOY_PATH>/shared/.env.local`, `backend/public/media -> <DEPLOY_PATH>/shared/media`, `backend/var/log -> <DEPLOY_PATH>/shared/log` (absolut statt relativ, damit die Links unabhängig von der Tiefe des Release-Verzeichnisses korrekt sind und `readlink -f` sie eindeutig auflöst). Alles übrige unter `var/` (Cache, Sessions, Rate-Limiter-Pool) ist releasegebunden; Admin-Sessions gehen beim Deploy verloren, was bei 30 Minuten Idle-Timeout vertretbar ist.
 
 Die `RELEASE`-Datei ist der Vollständigkeitsnachweis: Ein Release-Verzeichnis ohne sie gilt als unvollständig (abgebrochener Deploy) und darf weder Rollback-Ziel sein noch die Garbage Collection überleben.
 
@@ -127,7 +127,7 @@ Die `RELEASE`-Datei ist der Vollständigkeitsnachweis: Ein Release-Verzeichnis o
 2. **Preflight aus dem Tag:** Tag in ein temporäres Git-Worktree im Scratchpad auschecken; dort `composer install` (für PHPUnit), `php bin/phpunit` mit Exit-Code-Prüfung, `npm ci` und `npm run build` im Frontend. Deployt wird der Tag, nie der Arbeitsstand.
 3. **Release füllen:** Frontend-Build (ohne eine eventuell vorhandene `.htaccess`, defensiv) nach `backend/public/` des Worktrees kopieren; dann `rsync -az --link-dest=../<current-release>/backend` für `backend/` (Excludes wie heute: `vendor/`, `var/`, `tests/`, `phpunit.dist.xml`, `.env.local`, `.env.*.local`, `public/media/`) und `schema/` nach `releases/<tag>/`. Existiert `releases/<tag>/` bereits: mit `RELEASE`-Datei Abbruch (Tags sind unveränderlich), ohne `RELEASE`-Datei vorher entfernen.
 4. **Shared verknüpfen:** Beim allerersten Lauf `shared/` anlegen und aus dem heutigen `backend/` befüllen (`.env.local`, `public/media/`, `var/log/`), danach nie mehr anfassen. Symlinks im Release setzen (Abschnitt 4.3).
-5. **Server-Schritte im Release:** Zuerst `vendor/` des aktuellen Releases per `cp -al` (Hardlinks) ins neue Release übernehmen, sofern vorhanden, damit Composer ein fast fertiges Verzeichnis vorfindet und nur Abweichungen nachzieht. Dann `php85 composer install --no-dev --optimize-autoloader --no-interaction`, `doctrine:migrations:migrate --no-interaction`, `cache:clear`.
+5. **Server-Schritte im Release:** Zuerst `vendor/` des aktuellen Releases per `cp -a` (echte Kopie, keine Hardlinks: Composer schreibt `vendor/composer/*` und `autoload.php` in place, Hardlinks würden das alte Release mitverändern und den Rollback verfälschen) ins neue Release übernehmen, sofern vorhanden, damit Composer ein fast fertiges Verzeichnis vorfindet und nur Abweichungen nachzieht. Dann `php85 composer install --no-dev --optimize-autoloader --no-interaction`, `doctrine:migrations:migrate --no-interaction`, `cache:clear`.
 6. **`RELEASE` schreiben, Symlink atomar tauschen:** `ln -s releases/<tag> current.tmp && mv -T current.tmp current`.
 7. **`smoke.sh`** (Abschnitt 4.6), danach **`gc.sh`** (Abschnitt 4.7).
 
