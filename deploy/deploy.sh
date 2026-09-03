@@ -12,6 +12,11 @@
 # Schlägt smoke.sh NACH dem Tausch fehl, bricht das Skript mit Hinweis auf
 # deploy/rollback.sh ab und tauscht nicht selbst zurück (die Ursache kann
 # außerhalb des Releases liegen, etwa ein noch nicht umgestelltes KAS-Docroot).
+# Der Tausch erzwingt »ln -sfn« statt »ln -s«: Ein früherer, mitten im
+# Tausch abgebrochener Lauf kann current.tmp als stehengebliebenen Symlink
+# hinterlassen – ein einfaches »ln -s« würde dann still IN das alte Release
+# hinein verlinken, statt current.tmp neu zu setzen, und current landete
+# unbemerkt auf einem veralteten Release.
 set -euo pipefail
 cd "$(dirname "$0")/.."   # Repo-Root
 # shellcheck source=deploy/common.sh
@@ -114,7 +119,7 @@ RELEASE_FILE="$WORK/RELEASE"
     echo "$MESSAGE"
 } > "$RELEASE_FILE"
 rsync -az "$RELEASE_FILE" "$DEPLOY_HOST:$RELEASES_DIR/$TAG/RELEASE"
-remote "ln -s 'releases/$TAG' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK'"
+remote "ln -sfn 'releases/$TAG' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK'"
 echo "current -> releases/$TAG"
 
 step "Smoke-Check"
