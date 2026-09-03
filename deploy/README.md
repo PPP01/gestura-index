@@ -1,22 +1,59 @@
 # deploy/
 
-Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Spec: `../docs/superpowers/specs/2026-07-21-deployment-design.md`.
+Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Aktuelle Spec: `../docs/superpowers/specs/2026-09-03-updates-endpoint-und-versioniertes-deployment-design.md` – das ursprüngliche Deployment-Design (Hosting-Umgebung, KAS-Einrichtung, die inzwischen ersetzten Entscheidungen) steht in `../docs/superpowers/specs/2026-07-21-deployment-design.md`.
 
 ## Skripte
 
 - `verify-hosting.sh` – prüft die Server-Umgebung (php85, Module inkl. WebP/Argon2id, Composer, DB-Verbindung). Jederzeit gefahrlos wiederholbar.
-- `deploy.sh` – deployt `backend/` + `schema/` per rsync, führt auf dem Server `php85 composer install --no-dev -o`, die Doctrine-Migrationen und `cache:clear` aus und prüft zum Schluss `https://api.gestura.eu/api/v1/entries`. Bricht bei jedem Fehler hart ab; `backend/.env.local` und `public/media/` auf dem Server werden nie angetastet.
+- `deploy.sh vX.Y.Z` – deployt einen **annotierten** Git-Tag als Release: Guards (Tag annotiert, Commit auf `origin/main`, Arbeitsbaum sauber), Preflight im Worktree des Tags (PHPUnit, `npm run build`), Upload nach `releases/<tag>/`, `shared/` verknüpfen, `php85 composer install --no-dev -o`, Migrationen, `cache:clear`, `RELEASE`-Datei, atomarer Tausch von `current`, `smoke.sh`, `gc.sh`. Leichtgewichtige Tags und Tags außerhalb von `main` werden mit Klartext abgelehnt. Braucht lokal `backend/.env.test.local` (Test-DB) für den Preflight.
+- `rollback.sh [vX.Y.Z]` – setzt `current` atomar auf ein früheres vollständiges Release (ohne Argument: das jüngste vor dem aktuellen), leert danach in einem eigenen Schritt den Cache – ein scheiterndes `cache:clear` meldet, dass `current` bereits auf dem Zielrelease steht, statt den Fehler zu verschlucken – und läuft abschließend `smoke.sh`. Migrationen bleiben vorwärtsgerichtet.
+- `smoke.sh [origin]` – prüft gegen `https://gestura.eu` (Default): Preflight und leere Antwort von `POST /api/v1/updates` ohne Umleitung, `GET /api/v1/entries` als JSON, `/de` als HTML, `/de/vergleich` erreicht Symfony. Nennt ein noch nicht umgestelltes KAS-Docroot ausdrücklich.
+- `gc.sh --root <pfad> [--dry-run]` – Garbage Collection der Releases (läuft auf dem Server per `ssh … 'bash -s' -- --root … < deploy/gc.sh`): `current` nie; die 5 jüngsten bleiben; zusätzlich immer das jüngste Release, das älter als heute ist, falls keines der 5 das schon ist; unvollständige Releases (ohne `RELEASE`) verschwinden. `--keep` und `--today-epoch` werden auf ganzzahlige Werte geprüft – ein fehlerhafter Wert bricht mit Exit-Code 2 ab, ohne etwas zu löschen. Regeln sind in `tests/gc-test.sh` fixiert.
 
-## Einmalige manuelle Einrichtung (KAS)
+## Server-Layout (versionierte Releases)
 
-1. Subdomain **api.gestura.eu** → Docroot `/www/htdocs/w00d7b19/gestura.eu/backend/public`.
-2. **gestura.eu** (+ www) → Docroot `/www/htdocs/w00d7b19/gestura.eu/frontend`.
-3. HTTPS/Let's Encrypt für alle drei; Weiterleitung www → gestura.eu.
-4. DB-Passwort in `/www/htdocs/w00d7b19/gestura.eu/backend/.env.local` eintragen (Platzhalter `__DB_PASSWORT_HIER_EINTRAGEN__` ersetzen).
+```text
+/www/htdocs/w00d7b19/gestura.eu/
+  releases/v1.0.3/backend/      public/ enthält den Frontend-Build
+  releases/v1.0.3/schema/
+  releases/v1.0.3/RELEASE       tag, commit, deployed_at, deployed_at_epoch, message – wird als LETZTER Schritt geschrieben
+  shared/.env.local  shared/media/  shared/log/
+  current -> releases/v1.0.3
+```
+
+Docroot **beider** Domains (`gestura.eu` und `api.gestura.eu`): `/www/htdocs/w00d7b19/gestura.eu/current/backend/public`. Die Extension schickt ihren Update-Check an `https://gestura.eu/api/v1/updates` und verwirft jede Umleitung – deshalb muss die Website-Domain selbst die API ausliefern. `api.gestura.eu` bleibt als Alias für `PUBLIC_API_BASE` der Website bestehen.
+
+Ein Release ohne `RELEASE`-Datei ist unvollständig (abgebrochener Deploy): nie Rollback-Ziel, wird von `gc.sh` entfernt, vom nächsten Deploy desselben Tags ersetzt. Der Symlink-Tausch ist atomar (`ln -sfn … current.tmp && mv -T current.tmp current`) – das `-f` erzwingt den Verweis, weil ein aus einem abgebrochenen Lauf liegen gebliebenes `current.tmp` sonst ein einfaches `ln -s` still ins alte Release hinein verlinken ließe, statt `current.tmp` neu zu setzen. PHPs Realpath-Cache kann danach bis zu `realpath_cache_ttl` (Default 120 s) alte Pfade auflösen – auf Shared-Hosting mit kurzlebigen CGI-Prozessen praktisch unsichtbar.
+
+### `.env.local`-Variablen (Server, nie im Repo)
+
+Zusätzlich zu den unten dokumentierten Admin-Variablen:
+
+- `FRONTEND_BUILD_DIR=%kernel.project_dir%/public` – der prerenderte Frontend-Build liegt im gemeinsamen Docroot; der `MarketingPageController` liest die schaltbaren Seiten von dort. Ohne diesen Wert greift der Dev-Default `../frontend/build`, der auf dem Server nicht existiert.
+
+## Umstellung vom alten Layout (einmalig)
+
+Ausgangslage: `backend/`, `frontend/`, `schema/` direkt unter dem Deploy-Pfad, zwei Docroots (`api.gestura.eu` → `backend/public`, `gestura.eu` → `frontend`).
+
+1. Annotierten Tag setzen (`git tag -a vX.Y.Z -m '…'`, pushen) und `deploy/deploy.sh vX.Y.Z` ausführen. Der erste Lauf legt `releases/`, `shared/` (befüllt aus dem alten `backend/`: `.env.local`, `public/media`, `var/log`) und `current` an. Die alten Docroots laufen weiter. `smoke.sh` schlägt an diesem Punkt **erwartungsgemäß** mit dem KAS-Hinweis fehl; `current` zeigt trotzdem auf das neue Release.
+2. `FRONTEND_BUILD_DIR=%kernel.project_dir%/public` in `shared/.env.local` ergänzen, danach im Release `php85 bin/console cache:clear`.
+3. Im KAS zuerst **`api.gestura.eu`** auf `…/gestura.eu/current/backend/public` umstellen und `deploy/smoke.sh https://api.gestura.eu` laufen lassen. Grün heißt: Apache liefert durch den Symlink aus (`FollowSymLinks`/`SymLinksIfOwnerMatch`; mod_rewrite funktioniert heute schon und setzt eine der beiden Optionen voraus) und die zusammengeführte `.htaccess` greift.
+4. **`gestura.eu`** (und `www`) auf dasselbe Docroot umstellen, `deploy/smoke.sh` ohne Argument.
+5. Zwischen Schritt 1 und hier lief die alte Seite unter dem alten Docroot weiter und hat neue Screenshots in das alte `backend/public/media` geschrieben – ohne diesen Schritt gehen sie beim Löschen in Schritt 6 verloren:
+
+   ```bash
+   rsync -a --ignore-existing /www/htdocs/w00d7b19/gestura.eu/backend/public/media/ /www/htdocs/w00d7b19/gestura.eu/shared/media/
+   ```
+
+6. Erst nach grünem Smoke-Check die alten Verzeichnisse `backend/`, `frontend/`, `schema/` unter dem Deploy-Pfad entfernen.
 
 ## Rollback
 
-Kein Releases-Mechanismus (bewusst, Phase 2): vorherigen Git-Stand auschecken und `deploy/deploy.sh` erneut ausführen. Migrationen sind vorwärtsgerichtet – bei Schema-Rollbacks `php85 bin/console doctrine:migrations:migrate <version>` auf dem Server.
+`deploy/rollback.sh` (jüngstes Release vor dem aktuellen) oder `deploy/rollback.sh vX.Y.Z`. Migrationen sind vorwärtsgerichtet – bei Schema-Rollbacks `php85 bin/console doctrine:migrations:migrate <version>` im Zielrelease.
+
+## Ausblick: Deploy bei Tag-Push (Folgepaket)
+
+Eine GitHub-Actions-Automatik, die bei Push eines annotierten `v*`-Tags `deploy.sh` ausführt, ist als eigenes Paket vorgesehen (SSH-Deploy-Key als Secret, MariaDB-Service für PHPUnit, `fetch-tags` für die Annotationsprüfung). Bis dahin läuft `deploy.sh` von Hand.
 
 ## Admin-Backend (SP4a)
 
@@ -62,7 +99,7 @@ Danach kann sich dieser Account per Passkey-Registrierung anmelden und weitere A
 
 Die Routen unter `/admin` sind **client-only** (kein Prerendering) und werden von `adapter-static` über den `200.html`-Fallback ausgeliefert – anders als die öffentlichen Seiten, die als statisches HTML prerendert sind (`build/en/…`, `build/de/…`). Der Webserver muss deshalb:
 
-- unbekannte Pfade unterhalb `/admin` (inkl. Deep-Links wie `/admin/entries/123` oder `/de/admin/queue`) auf `200.html` umleiten (Apache-Rewrite in der `.htaccess` des Frontend-Docroots), damit ein Reload/Direktaufruf nicht in einen 404 läuft,
+- unbekannte Pfade unterhalb `/admin` (inkl. Deep-Links wie `/admin/entries/123` oder `/de/admin/queue`) auf `200.html` umleiten (Regel 7 der zusammengeführten `backend/public/.htaccess`), damit ein Reload/Direktaufruf nicht in einen 404 läuft,
 - dabei die **prerenderten öffentlichen Seiten nicht übergehen** – die Rewrite-Regel darf nur greifen, wenn keine passende Datei/kein passendes Verzeichnis existiert (klassisches `RewriteCond %{REQUEST_FILENAME} !-f` / `!-d` vor dem Fallback auf `200.html`).
 
 Serverseitige Voraussetzungen für die Admin-Auth (bereits mit dem SP4a-Deploy erfüllt, hier nur zur Erinnerung): credentialed CORS für `https://gestura.eu`, `SESSION_COOKIE_DOMAIN=.gestura.eu`, `WEBAUTHN_RP_ID=gestura.eu`, `MAILER_DSN` gesetzt.
@@ -80,9 +117,7 @@ Anonyme, cookielose End-Nutzer-Konten (Bearer-Token `gacc_…`) unter `/api/acco
 
 ## Schaltbare Seiten (Admin-Seiten-Sichtbarkeit)
 
-Der Frontend-Build wird wie gehabt ins Web-Root der Index-Domain geladen (prerenderte HTML unter `build/<locale>/<slug>.html`). Der `MarketingPageController` liest genau diese Dateien aber zusätzlich über das Backend – er entscheidet je Aufruf von `/{locale}/{slug}` anhand des persistierten `PageSetting`-Flags, ob die HTML ausgeliefert (200) oder ein echtes 404 zurückgegeben wird (deaktiviert oder Datei fehlt).
+Der Frontend-Build liegt seit dem versionierten Deployment in `releases/<tag>/backend/public/` (gemeinsames Docroot). Der `MarketingPageController` liest die prerenderten Dateien von dort und entscheidet je Aufruf von `/{locale}/{slug}` anhand des persistierten `PageSetting`-Flags, ob die HTML ausgeliefert (200) oder ein echtes 404 zurückgegeben wird.
 
-- **`app.frontend_build_dir`** (Parameter in `backend/config/services.yaml`) muss auf den deployten Build-Pfad zeigen. Der Default `%kernel.project_dir%/../frontend/build` passt nur, wenn `backend/` und `frontend/build/` wie im Repo als Geschwisterverzeichnisse nebeneinanderliegen; weicht das Hosting-Layout davon ab, den Parameter per `.env.local`-Override bzw. Services-Override auf den tatsächlichen Pfad setzen.
-- **`.htaccess`-Interception-Regel muss vorhanden sein** (`backend/public/.htaccess`, innerhalb `<IfModule mod_rewrite.c>`): sie leitet `/{de|en}/{was-ist-gestura|maus-gesten|vergleich|beispiele}` IMMER an `index.php` weiter, statt eine vorhandene statische Datei direkt auszuliefern. Ohne sie würde eine deaktivierte Seite trotzdem als 200 aus der statischen HTML bedient – das Backend-Flag hätte keine Wirkung. Die Regel ist recipe-managed (siehe `.claude/lessons.md`) und muss nach einem `symfony/framework-bundle`-Recipe-Update erneut geprüft werden.
-- **Der reale Bypass-Vektor ist NICHT die `-f`-Regel, sondern die »Add-.html«-Rewrite-Regel des Frontend-Builds** (`RewriteCond %{REQUEST_FILENAME}.html -f` → `RewriteRule ^(.+?)/?$ /$1.html [L]`, kommt aus `frontend/build/.htaccess`): Diese liefert `/de/vergleich` statisch als `de/vergleich.html` mit **200** aus, ganz unabhängig von der `-f`-Regel des Backends. Beim Zusammenführen der `.htaccess`-Dateien für den produktiven Docroot **muss** die Marketing-Interceptor-Regel deshalb VOR der Add-.html-Regel des Frontend-Builds UND vor dem SPA-Fallback (`/admin`, siehe unten) stehen – jede andere Reihenfolge umgeht das Disable-404 wieder, weil der Webserver die statische HTML ausliefert, bevor Symfony überhaupt gefragt wird.
-- **Die Static-Serving-Regeln des Frontend-Builds (Add-.html + SPA-Fallback) müssen überhaupt in die zusammengeführte `backend/public/.htaccess` übernommen werden** – nicht nur die Marketing-Interceptor-Regel. Die committete Backend-`.htaccess` kennt diese Regeln nicht; ohne sie würden die übrigen, nicht schaltbaren statischen Seiten (alles außer den vier Marketing-Slugs) auf Symfonys Standard-404 laufen, statt korrekt als statisches HTML ausgeliefert zu werden. Die Merge-Reihenfolge in der finalen Datei: Marketing-Interceptor zuerst, danach Add-.html, danach SPA-Fallback.
+- **`FRONTEND_BUILD_DIR`** muss in `shared/.env.local` auf `%kernel.project_dir%/public` zeigen (siehe oben), weil der Build im gemeinsamen Docroot liegt.
+- **Die zusammengeführte `backend/public/.htaccess` ist die einzige Regelquelle** (Marketing-Interceptor vor Datei-, Add-.html- und SPA-Fallback-Regel; `/api/…` davor immer an Symfony). `frontend/static/.htaccess` existiert bewusst nicht mehr. Die Datei ist recipe-managed (`symfony/framework-bundle`); nach Recipe-Updates prüfen, dass Regeln 1–7 erhalten sind (siehe `.claude/lessons.md`).

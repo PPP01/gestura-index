@@ -1,4 +1,14 @@
-DirectoryIndex index.php
+# Gemeinsames Docroot: Symfony-API (/api/…), Marketing-Interceptor und
+# statischer SvelteKit-Build (adapter-static, Prerender + 200.html-Fallback).
+# EINZIGE Regelquelle – frontend/static/.htaccess existiert bewusst nicht.
+# Recipe-managed (symfony/framework-bundle): nach Recipe-Updates die Regeln
+# 1–7 prüfen (siehe .claude/lessons.md).
+
+# index.html VOR index.php: die Wurzel / liefert die prerenderte Startseite,
+# nicht Symfonys 404. de/ und en/ existieren als Verzeichnisse NEBEN de.html
+# und en.html; ohne DirectorySlash Off würde Apache /de auf /de/ umleiten.
+DirectoryIndex index.html index.php
+DirectorySlash Off
 
 <IfModule mod_negotiation.c>
     Options -MultiViews
@@ -17,16 +27,35 @@ DirectoryIndex index.php
     RewriteCond %{ENV:REDIRECT_STATUS} =""
     RewriteRule ^index\.php(?:/(.*)|$) %{ENV:BASE}/$1 [R=301,L]
 
-    # Schaltbare Marketing-Seiten (Sub: Admin-Seiten-Sichtbarkeit) IMMER an
-    # Symfony leiten – der MarketingPageController liefert 200 (aktiv) oder
-    # echtes 404 (deaktiviert). Ohne diese Regel könnte ein Clean-URL-Rewrite
-    # die statische HTML direkt ausliefern und das 404 umgehen.
-    RewriteRule ^(de|en)/(was-ist-gestura|maus-gesten|vergleich|beispiele)/?$ index.php [L]
+    # 1. API immer an Symfony – vor jeder Datei-, Slash- oder Fallback-Regel.
+    #    Der Vertrag mit der Extension verbietet jedes 3xx auf /api/v1/updates.
+    RewriteRule ^api(/.*)?$ %{ENV:BASE}/index.php [L]
 
+    # 2. Schaltbare Marketing-Seiten IMMER an Symfony: der
+    #    MarketingPageController liefert 200 (aktiv) oder echtes 404
+    #    (deaktiviert). Muss VOR Regel 3 und 5 stehen, sonst liefert Apache
+    #    die statische de/vergleich.html mit 200 aus, bevor Symfony gefragt wird.
+    RewriteRule ^(de|en)/(was-ist-gestura|maus-gesten|vergleich|beispiele)/?$ %{ENV:BASE}/index.php [L]
+
+    # 3. Vorhandene Dateien direkt ausliefern (Assets, favicon, robots.txt).
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 
-    RewriteRule ^ %{ENV:BASE}/index.php [L]
+    # 4. Trailing Slash kanonisieren (außer Wurzel): /de/ → /de.
+    RewriteCond %{REQUEST_URI} !^/$
+    RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+    # 5. Prerenderte Seiten ohne .html-Endung (/en → /en.html, /en/docs → /en/docs.html).
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.+?)/?$ /$1.html [L]
+
+    # 6. Vorhandene Verzeichnisse (v. a. die Wurzel → index.html).
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 7. Alles andere (client-gerenderte Routen, Admin-SPA inkl. Deep-Links)
+    #    auf die SPA-Hülle. Symfony hat außer /api/… und Regel 2 keine Routen.
+    RewriteRule ^ /200.html [L]
 </IfModule>
 
 <IfModule !mod_rewrite.c>

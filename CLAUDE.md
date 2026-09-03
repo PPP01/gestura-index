@@ -48,7 +48,7 @@ npm --prefix frontend run check                   # svelte-check (TypeScript)
 
 ## Deployment (Zielumgebung, bestätigt)
 
-Shared-Linux-Hosting mit SSH, MySQL, Composer 2.9.8. **PHP-CLI heißt dort `php85`**, nicht `php` – Deploy-Skripte müssen `php85` verwenden. Docroot der Index-Domain muss auf `backend/public/` zeigen; Frontend-Build wird ins Web-Root der Index-Domain geladen. Secrets ausschließlich in `.env.local` außerhalb des Repos.
+Shared-Linux-Hosting mit SSH, MySQL, Composer 2.9.8. **PHP-CLI heißt dort `php85`**, nicht `php` – Deploy-Skripte müssen `php85` verwenden. **Versionierte Releases:** `deploy/deploy.sh vX.Y.Z` deployt einen **annotierten** Git-Tag nach `releases/<tag>/`, geteilter Zustand liegt in `shared/`, `current` zeigt auf das aktive Release. Docroot **beider** Domains (`gestura.eu`, `api.gestura.eu`) ist `current/backend/public/` – der Frontend-Build liegt im Release in `backend/public/`, damit die Extension `https://gestura.eu/api/v1/updates` ohne Umleitung erreicht. `deploy/rollback.sh` schaltet zurück, `deploy/smoke.sh` prüft, `deploy/gc.sh` räumt auf. Secrets ausschließlich in `shared/.env.local`. Details: `deploy/README.md`.
 
 ## Arbeitsweise
 

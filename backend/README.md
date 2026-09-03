@@ -19,7 +19,7 @@ Lokale DB-Zugangsdaten liegen in `.env.local` / `.env.test.local` (nicht im Repo
 | GET | /entries | – | Stöbern (q, site, category, tag, type, sort, page, perPage) |
 | GET | /entries/{formatId} | – | Detail + freigegebene Versionen |
 | GET | /entries/{formatId}/versions/{semver} | – | Format-JSON herunterladen |
-| POST | /entries/updates | – | Update-Check (Liste id+version) |
+| POST | /updates | – | Update-Check (Liste id+version, Antwort nur für Einträge mit Neuigkeit) |
 | POST | /entries/{formatId}/install | – | Install-Ping nach bestätigtem Import |
 | POST | /entries | optional Token | Einreichen (erzeugt ggf. Edit-Token) |
 | PUT | /entries/{formatId} | Token | Neue Version / Metadaten |

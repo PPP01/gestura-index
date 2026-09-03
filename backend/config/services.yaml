@@ -12,9 +12,11 @@ parameters:
     # Fallback-Absenderadresse für InviteMailer, falls MAILER_FROM nicht gesetzt ist.
     default_from: 'admin@gestura.eu'
     # Pfad zum prerenderten Frontend-Build, aus dem der MarketingPageController
-    # die statische HTML der schaltbaren Marketing-Seiten liest (Prod: auf den
-    # deployten Build-Pfad überschreiben, siehe deploy/README.md).
-    app.frontend_build_dir: '%kernel.project_dir%/../frontend/build'
+    # die statische HTML der schaltbaren Marketing-Seiten liest. Default (.env)
+    # ist das Geschwisterverzeichnis frontend/build; in Produktion liegt der
+    # Build im gemeinsamen Docroot backend/public (shared/.env.local:
+    # FRONTEND_BUILD_DIR=%kernel.project_dir%/public, siehe deploy/README.md).
+    app.frontend_build_dir: '%env(resolve:FRONTEND_BUILD_DIR)%'
 
 services:
     # default configuration for services in *this* file

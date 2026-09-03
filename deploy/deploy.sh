@@ -1,51 +1,168 @@
 #!/usr/bin/env bash
-# Deployt das Backend auf das Shared-Hosting (Spec: 2026-07-21-deployment-design.md).
-# Aufruf aus beliebigem Verzeichnis: deploy/deploy.sh
+# Deployt einen annotierten Git-Tag als Release auf das Shared-Hosting
+# (Spec: docs/superpowers/specs/2026-09-03-updates-endpoint-und-versioniertes-deployment-design.md, Abschnitt 4.4).
+#
+# Aufruf aus beliebigem Verzeichnis: deploy/deploy.sh vX.Y.Z
+#
+# Ablauf: Guards → Preflight im Worktree des Tags (PHPUnit, Frontend-Build)
+# → Release hochladen → shared/ verknüpfen → Composer, Migrationen, Cache
+# → RELEASE schreiben → current atomar tauschen → smoke.sh → gc.sh.
+# Schlägt ein Schritt VOR dem Tausch fehl, bleibt current unberührt und das
+# unvollständige Release (ohne RELEASE-Datei) wird beim nächsten Lauf ersetzt.
+# Schlägt smoke.sh NACH dem Tausch fehl, bricht das Skript mit Hinweis auf
+# deploy/rollback.sh ab und tauscht nicht selbst zurück (die Ursache kann
+# außerhalb des Releases liegen, etwa ein noch nicht umgestelltes KAS-Docroot).
+# Der Tausch erzwingt »ln -sfn« statt »ln -s«: Ein früherer, mitten im
+# Tausch abgebrochener Lauf kann current.tmp als stehengebliebenen Symlink
+# hinterlassen – ein einfaches »ln -s« würde dann still IN das alte Release
+# hinein verlinken, statt current.tmp neu zu setzen, und current landete
+# unbemerkt auf einem veralteten Release.
 set -euo pipefail
-
-DEPLOY_HOST="ssh-w00d7b19@85.13.135.147"
-DEPLOY_PATH="/www/htdocs/w00d7b19/gestura.eu"
-API_URL="https://api.gestura.eu"
-
 cd "$(dirname "$0")/.."   # Repo-Root
+# shellcheck source=deploy/common.sh
+source deploy/common.sh
 
-echo "== Preflight: Tests müssen grün sein =="
-php backend/bin/phpunit
+TAG="${1:-}"
+[ -n "$TAG" ] || die "Aufruf: deploy/deploy.sh vX.Y.Z"
+[[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Tag »$TAG« entspricht nicht dem Muster vX.Y.Z"
 
-if [ -n "$(git status --porcelain)" ]; then
-    echo "WARNUNG – es gibt uncommittete Änderungen; deployt wird der Arbeitsstand."
+step "Guards: Tag $TAG"
+git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || die "Tag $TAG existiert nicht"
+[ "$(git cat-file -t "$TAG")" = "tag" ] || die "Tag $TAG ist nicht annotiert – kein Deploy (git tag -a $TAG -m '…')"
+COMMIT=$(git rev-list -n 1 "$TAG")
+git fetch -q origin main
+git merge-base --is-ancestor "$COMMIT" origin/main || die "Commit $COMMIT von $TAG ist nicht von origin/main erreichbar"
+[ -z "$(git status --porcelain)" ] || die "Arbeitsbaum nicht sauber – deployt wird zwar der Tag, aber uncommittete Deploy-Skripte wären trügerisch"
+MESSAGE=$(git tag -l --format='%(contents)' "$TAG")
+echo "Commit: $COMMIT"; echo "Tag-Nachricht: ${MESSAGE%%$'\n'*}"
+
+step "Guard: Server-Konfiguration"
+if remote "test -f '$SHARED_DIR/.env.local' && grep -q __DB_PASSWORT_HIER_EINTRAGEN__ '$SHARED_DIR/.env.local'"; then
+    die "in $SHARED_DIR/.env.local fehlt noch das DB-Passwort"
+fi
+if remote "test -f '$RELEASES_DIR/$TAG/RELEASE'"; then
+    die "Release $TAG liegt bereits vollständig auf dem Server – Tags sind unveränderlich; für einen erneuten Deploy neuen Tag setzen. Steht current noch nicht auf $TAG (Abbruch zwischen RELEASE-Schreiben und Tausch), fertigstellen statt neu deployen: deploy/rollback.sh $TAG"
 fi
 
-echo "== Guard: Server-Konfiguration =="
-if ssh -o BatchMode=yes "$DEPLOY_HOST" "grep -q __DB_PASSWORT_HIER_EINTRAGEN__ '$DEPLOY_PATH/backend/.env.local'"; then
-    echo "FEHLER – in $DEPLOY_PATH/backend/.env.local fehlt noch das DB-Passwort."
-    exit 1
+step "Preflight: Worktree des Tags, Tests, Frontend-Build"
+WORK=$(mktemp -d)
+cleanup() { git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"; }
+trap cleanup EXIT
+git worktree add --detach -q "$WORK" "$TAG"
+# Die Test-DB-Konfiguration ist gitignored und muss dem Worktree mitgegeben werden.
+[ -f backend/.env.test.local ] && cp backend/.env.test.local "$WORK/backend/.env.test.local"
+composer --working-dir="$WORK/backend" install --no-interaction --quiet
+php "$WORK/backend/bin/phpunit"
+npm --prefix "$WORK/frontend" ci --no-audit --no-fund --silent
+npm --prefix "$WORK/frontend" run build
+# Der Build hat keine eigene .htaccess mehr (frontend/static/.htaccess wurde
+# entfernt); defensiv trotzdem entfernen, damit die zusammengeführte
+# backend/public/.htaccess nie überschrieben wird.
+rm -f "$WORK/frontend/build/.htaccess"
+cp -R "$WORK/frontend/build/." "$WORK/backend/public/"
+test -f "$WORK/backend/public/200.html" || die "Frontend-Build nicht in backend/public gelandet"
+# Reine Anwesenheitsprüfung reicht nicht: ein Recipe-Update kann Regel 2
+# (Marketing-Interceptor) verwerfen oder die Reihenfolge vertauschen, ohne
+# dass die api-Regel selbst verschwindet (siehe .claude/lessons.md). Geprüft
+# wird deshalb die REIHENFOLGE api → Marketing-Interceptor → Add-.html →
+# 200.html-Fallback, über Zeilennummern aus grep -n. grep -F (Fixed Strings):
+# alle vier Muster enthalten Regex-Sonderzeichen (^, (), {}, .), als Fixed
+# String ist der Vergleich robust gegen deren Interpretation.
+HTACCESS="$WORK/backend/public/.htaccess"
+API_LINE=$(grep -nF 'RewriteRule ^api' "$HTACCESS" | head -1 | cut -d: -f1)
+MARKETING_LINE=$(grep -nF 'RewriteRule ^(de|en)' "$HTACCESS" | head -1 | cut -d: -f1)
+ADD_HTML_LINE=$(grep -nF 'RewriteCond %{REQUEST_FILENAME}.html -f' "$HTACCESS" | head -1 | cut -d: -f1)
+FALLBACK_LINE=$(grep -nF '/200.html' "$HTACCESS" | head -1 | cut -d: -f1)
+[ -n "$API_LINE" ] && [ -n "$MARKETING_LINE" ] && [ -n "$ADD_HTML_LINE" ] && [ -n "$FALLBACK_LINE" ] \
+    || die "backend/public/.htaccess ist nicht die zusammengeführte Fassung (eine der vier Kernregeln fehlt)"
+[ "$API_LINE" -lt "$MARKETING_LINE" ] \
+    || die "backend/public/.htaccess: api-Regel (Zeile $API_LINE) muss VOR der Marketing-Interceptor-Regel (Zeile $MARKETING_LINE) stehen"
+[ "$MARKETING_LINE" -lt "$ADD_HTML_LINE" ] \
+    || die "backend/public/.htaccess: Marketing-Interceptor-Regel (Zeile $MARKETING_LINE) muss VOR der Add-.html-Regel (Zeile $ADD_HTML_LINE) stehen"
+[ "$ADD_HTML_LINE" -lt "$FALLBACK_LINE" ] \
+    || die "backend/public/.htaccess: Add-.html-Regel (Zeile $ADD_HTML_LINE) muss VOR dem 200.html-Fallback (Zeile $FALLBACK_LINE) stehen"
+
+step "Release $TAG hochladen (rsync, --link-dest auf das aktuelle Release)"
+# readlink -e statt -f: -f gibt auch dann einen Pfad zurück, wenn die
+# Zielkomponente gar nicht existiert (z. B. current fehlt komplett beim
+# allerersten Deploy) – CURRENT_TARGET wäre dann ein Phantom-Pfad, der
+# »Aktuelles Release: …« vortäuscht und rsync eine --link-dest-Warnung auf
+# ein nicht existentes Verzeichnis liefert. -e verlangt, dass jede
+# Pfadkomponente existiert, und liefert in dem Fall korrekt nichts.
+CURRENT_TARGET=$(remote "readlink -e '$CURRENT_LINK' 2>/dev/null || true")
+remote "rm -rf '$RELEASES_DIR/$TAG' && mkdir -p '$RELEASES_DIR/$TAG'"
+LINK_BACKEND=(); LINK_SCHEMA=()
+if [ -n "$CURRENT_TARGET" ]; then
+    LINK_BACKEND=(--link-dest="$CURRENT_TARGET/backend"); LINK_SCHEMA=(--link-dest="$CURRENT_TARGET/schema")
+    echo "Aktuelles Release: $CURRENT_TARGET"
+fi
+rsync -az "${LINK_BACKEND[@]}" \
+    --exclude=/vendor/ --exclude=/var/ --exclude=/tests/ --exclude=/phpunit.dist.xml \
+    --exclude=/.phpunit.cache/ --exclude=/.env.local --exclude='/.env.*.local' --exclude=/public/media/ \
+    "$WORK/backend/" "$DEPLOY_HOST:$RELEASES_DIR/$TAG/backend/"
+rsync -az "${LINK_SCHEMA[@]}" "$WORK/schema/" "$DEPLOY_HOST:$RELEASES_DIR/$TAG/schema/"
+
+step "Server: shared/ verknüpfen, Composer, Migrationen, Cache"
+remote DEPLOY_PATH="$DEPLOY_PATH" RELEASE="$RELEASES_DIR/$TAG" SHARED="$SHARED_DIR" CURRENT_TARGET="$CURRENT_TARGET" 'bash -s' <<'REMOTE'
+set -euo pipefail
+# Erster Lauf: shared/ aus dem Legacy-Layout (backend/ direkt unter DEPLOY_PATH) befüllen, danach nie mehr anfassen.
+if [ ! -d "$SHARED" ]; then
+    mkdir -p "$SHARED"
+    legacy="$DEPLOY_PATH/backend"
+    [ -f "$legacy/.env.local" ] && cp -a "$legacy/.env.local" "$SHARED/.env.local"
+    [ -d "$legacy/public/media" ] && cp -a "$legacy/public/media" "$SHARED/media"
+    [ -d "$legacy/var/log" ] && cp -a "$legacy/var/log" "$SHARED/log"
+    echo "shared/ neu angelegt und aus $legacy befüllt"
+fi
+mkdir -p "$SHARED/media" "$SHARED/log"
+[ -f "$SHARED/.env.local" ] || { echo "FEHLER – $SHARED/.env.local fehlt (Secrets liegen nie im Repo)" >&2; exit 1; }
+# Warnung statt Abbruch: beim allerersten Deploy wurde die Datei Sekunden
+# zuvor erst angelegt und das Runbook ergänzt FRONTEND_BUILD_DIR erst im
+# nächsten Schritt – ein Abbruch hier würde genau die im Runbook
+# vorgeschriebene Umstellung blockieren.
+if ! grep -q '^FRONTEND_BUILD_DIR=' "$SHARED/.env.local"; then
+    echo "WARNUNG – $SHARED/.env.local enthält keine Zeile FRONTEND_BUILD_DIR=."
+    echo "          Ohne sie löst backend/.env den Dev-Pfad auf, der im Release nicht existiert –"
+    echo "          alle vier schaltbaren Marketing-Seiten liefern dann 404, ununterscheidbar von"
+    echo "          einer bewusst deaktivierten Seite. Ergänzen: FRONTEND_BUILD_DIR=%kernel.project_dir%/public"
 fi
 
-echo "== rsync: backend/ und schema/ =="
-# Excludes sind bei --delete automatisch vor Löschung geschützt (kein --delete-excluded).
-rsync -az --delete \
-    --exclude=/vendor/ \
-    --exclude=/var/ \
-    --exclude=/tests/ \
-    --exclude=/phpunit.dist.xml \
-    --exclude=/.env.local \
-    --exclude='/.env.*.local' \
-    --exclude=/public/media/ \
-    backend/ "$DEPLOY_HOST:$DEPLOY_PATH/backend/"
-rsync -az --delete schema/ "$DEPLOY_HOST:$DEPLOY_PATH/schema/"
+ln -sfn "$SHARED/.env.local" "$RELEASE/backend/.env.local"
+rm -rf "$RELEASE/backend/public/media"; ln -sfn "$SHARED/media" "$RELEASE/backend/public/media"
+mkdir -p "$RELEASE/backend/var"; rm -rf "$RELEASE/backend/var/log"; ln -sfn "$SHARED/log" "$RELEASE/backend/var/log"
 
-echo "== Server: Composer, Migrationen, Cache =="
-ssh -o BatchMode=yes "$DEPLOY_HOST" "cd '$DEPLOY_PATH/backend' \
-    && php85 /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction \
-    && php85 bin/console doctrine:migrations:migrate --no-interaction \
-    && php85 bin/console cache:clear"
-
-echo "== Smoke-Check: $API_URL/api/v1/entries =="
-body=$(curl -fsS "$API_URL/api/v1/entries")
-if ! grep -q '"items"' <<<"$body"; then
-    echo "FEHLER – unerwartete Antwort: $body"
-    exit 1
+# vendor/ als echte Kopie übernehmen (keine Hardlinks: Composer schreibt
+# vendor/composer/* in place und würde das alte Release mitverändern).
+if [ -n "$CURRENT_TARGET" ] && [ -d "$CURRENT_TARGET/backend/vendor" ]; then
+    cp -a "$CURRENT_TARGET/backend/vendor" "$RELEASE/backend/vendor"
 fi
-echo "Antwort: $body"
-echo "== Deploy erfolgreich =="
+cd "$RELEASE/backend"
+php85 /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
+php85 bin/console doctrine:migrations:migrate --no-interaction
+php85 bin/console cache:clear
+REMOTE
+
+step "RELEASE schreiben und current atomar tauschen"
+RELEASE_FILE="$WORK/RELEASE"
+{
+    echo "tag=$TAG"
+    echo "commit=$COMMIT"
+    echo "deployed_at=$(date -Iseconds)"
+    echo "deployed_at_epoch=$(date +%s)"
+    echo "message=${MESSAGE%%$'\n'*}"
+    echo
+    echo "$MESSAGE"
+} > "$RELEASE_FILE"
+rsync -az "$RELEASE_FILE" "$DEPLOY_HOST:$RELEASES_DIR/$TAG/RELEASE"
+remote "ln -sfn 'releases/$TAG' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK'"
+echo "current -> releases/$TAG"
+
+step "Smoke-Check"
+if ! deploy/smoke.sh "$SITE_ORIGIN"; then
+    die "Smoke-Check fehlgeschlagen. current zeigt auf $TAG. Zurück mit: deploy/rollback.sh"
+fi
+
+step "Garbage Collection"
+remote 'bash -s' -- --root "$DEPLOY_PATH" < deploy/gc.sh
+
+echo; echo "== Deploy $TAG erfolgreich =="
