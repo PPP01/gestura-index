@@ -39,7 +39,13 @@ Ausgangslage: `backend/`, `frontend/`, `schema/` direkt unter dem Deploy-Pfad, z
 2. `FRONTEND_BUILD_DIR=%kernel.project_dir%/public` in `shared/.env.local` ergänzen, danach im Release `php85 bin/console cache:clear`.
 3. Im KAS zuerst **`api.gestura.eu`** auf `…/gestura.eu/current/backend/public` umstellen und `deploy/smoke.sh https://api.gestura.eu` laufen lassen. Grün heißt: Apache liefert durch den Symlink aus (`FollowSymLinks`/`SymLinksIfOwnerMatch`; mod_rewrite funktioniert heute schon und setzt eine der beiden Optionen voraus) und die zusammengeführte `.htaccess` greift.
 4. **`gestura.eu`** (und `www`) auf dasselbe Docroot umstellen, `deploy/smoke.sh` ohne Argument.
-5. Erst nach grünem Smoke-Check die alten Verzeichnisse `backend/`, `frontend/`, `schema/` unter dem Deploy-Pfad entfernen.
+5. Zwischen Schritt 1 und hier lief die alte Seite unter dem alten Docroot weiter und hat neue Screenshots in das alte `backend/public/media` geschrieben – ohne diesen Schritt gehen sie beim Löschen in Schritt 6 verloren:
+
+   ```bash
+   rsync -a --ignore-existing /www/htdocs/w00d7b19/gestura.eu/backend/public/media/ /www/htdocs/w00d7b19/gestura.eu/shared/media/
+   ```
+
+6. Erst nach grünem Smoke-Check die alten Verzeichnisse `backend/`, `frontend/`, `schema/` unter dem Deploy-Pfad entfernen.
 
 ## Rollback
 
