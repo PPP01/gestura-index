@@ -1,6 +1,6 @@
 # deploy/
 
-Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Spec: `../docs/superpowers/specs/2026-07-21-deployment-design.md`.
+Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Aktuelle Spec: `../docs/superpowers/specs/2026-09-03-updates-endpoint-und-versioniertes-deployment-design.md` – das ursprüngliche Deployment-Design (Hosting-Umgebung, KAS-Einrichtung, die inzwischen ersetzten Entscheidungen) steht in `../docs/superpowers/specs/2026-07-21-deployment-design.md`.
 
 ## Skripte
 
