@@ -37,6 +37,20 @@ final class UpdateCheckController
     private const ID_MAX_LENGTH = 128;
     // Dieselbe SEMVER_RE wie im Austauschformat: nur numerische Tripel sind vergleichbar.
     private const SEMVER_RE = '/^\d{1,5}\.\d{1,5}\.\d{1,5}$/';
+    // Der Client kürzt changelog ohnehin auf 1000 Zeichen (Vertrag) – alles
+    // darüber ist reine Verschwendung im Wire-Format.
+    private const CHANGELOG_CLIENT_MAX_CHARS = 1000;
+    // Byte-Budget für alle changelog-Felder zusammen: 200 KiB Puffer, deutlich
+    // unter dem 256-KiB-Cap, den der Client als Ganzes verwirft. Symfonys
+    // JsonResponse kodiert ohne JSON_UNESCAPED_UNICODE, jedes Nicht-ASCII-
+    // Zeichen (Umlaute, CJK) kostet dadurch bis zu 6 Byte (ä-Escape) statt
+    // 1–3 UTF-8-Byte – gemessen: 2000 deutsche wie auch 2000 CJK-Zeichen
+    // kodieren zu 12002 Byte. Nach der 1000-Zeichen-Kürzung bleiben im
+    // ungünstigsten Fall 1000 * 6 + 2 (Anführungszeichen) = 6002 Byte pro
+    // changelog. Die verbleibenden ~56 KiB bis 256 KiB decken Hülle plus bis
+    // zu 200 Elemente ganz ohne changelog (id, type, version, url,
+    // deprecated, successor) mit reichlich Reserve ab.
+    private const CHANGELOG_BUDGET_BYTES = 200 * 1024;
 
     #[Route('/api/v1/updates', methods: ['POST'])]
     public function __invoke(
@@ -95,6 +109,8 @@ final class UpdateCheckController
         // Schritt 3: Antwort in Eingabereihenfolge aufbauen.
         $base = $request->getSchemeAndHttpHost();
         $updates = [];
+        $changelogBudget = self::CHANGELOG_BUDGET_BYTES;
+        $changelogBudgetExhausted = false;
         foreach ($wanted as $id => $clientVersion) {
             $entry = $byFormatId[(string) $id] ?? null;
             $current = $entry?->currentVersion;
@@ -105,12 +121,34 @@ final class UpdateCheckController
             if (!$newer && !$entry->deprecated) {
                 continue; // aktuell oder Handimport einer neueren Fassung – nichts zu sagen
             }
+
+            $changelog = $current->changelog === null
+                ? null
+                : mb_substr($current->changelog, 0, self::CHANGELOG_CLIENT_MAX_CHARS);
+            // Ein Element ist tragend (nur so erfährt der Nutzer vom Update),
+            // ein changelog ist Kür und laut Vertrag optional – daher wird nie
+            // ein Element verworfen, sondern höchstens sein changelog auf null
+            // gesetzt, sobald das Byte-Budget aufgebraucht ist.
+            if ($changelog !== null) {
+                if ($changelogBudgetExhausted) {
+                    $changelog = null;
+                } else {
+                    $cost = \strlen(json_encode($changelog, JSON_THROW_ON_ERROR));
+                    if ($cost > $changelogBudget) {
+                        $changelogBudgetExhausted = true;
+                        $changelog = null;
+                    } else {
+                        $changelogBudget -= $cost;
+                    }
+                }
+            }
+
             $updates[] = [
                 'id' => $entry->formatId,
                 'type' => $entry->type->value,
                 'version' => $current->semver,
                 'url' => sprintf('%s/api/v1/entries/%s/versions/%s', $base, rawurlencode($entry->formatId), $current->semver),
-                'changelog' => $current->changelog,
+                'changelog' => $changelog,
                 'deprecated' => $entry->deprecated,
                 'successor' => $entry->successorFormatId,
             ];

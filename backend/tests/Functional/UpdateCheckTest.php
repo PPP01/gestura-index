@@ -32,6 +32,30 @@ final class UpdateCheckTest extends ApiTestCase
         ]], $body['updates']);
     }
 
+    public function testUrlFollowsTheRequestsOwnSchemeAndHost(): void
+    {
+        // Der Vertrag verlangt, dass »url« auf der antwortenden Origin liegt –
+        // ein hart kodierter Basis-URL würde diesen Test trotzdem bestehen,
+        // wenn er zufällig mit dem Standard-Testhost übereinstimmt. Ein
+        // abweichender Host + HTTPS pinnt die tatsächlich fragilste Regel
+        // des Vertrags: dass die URL aus dem Request selbst gebildet wird.
+        $this->createPublishedEntry('com.example.shop', ['version' => '2.1.0']);
+
+        $this->client->request('POST', '/api/v1/updates', server: [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_HOST' => 'anderer-host.example',
+            'HTTPS' => 'on',
+        ], content: json_encode(['entries' => [
+            ['id' => 'com.example.shop', 'version' => '1.0.0'],
+        ]], JSON_THROW_ON_ERROR));
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            'https://anderer-host.example/api/v1/entries/com.example.shop/versions/2.1.0',
+            $this->json()['updates'][0]['url'],
+        );
+    }
+
     public function testReportsEngineTypeFromEntry(): void
     {
         $this->createPublishedEntry('com.example.search', ['gesturaEngine' => 1, 'version' => '3.0.0']);
@@ -164,6 +188,66 @@ final class UpdateCheckTest extends ApiTestCase
             content: '{kaputtes json',
         );
         self::assertResponseStatusCodeSame(400);
+    }
+
+    public function testChangelogIsTruncatedToTheOneThousandCharsTheClientKeeps(): void
+    {
+        $entry = $this->createPublishedEntry('com.example.shop', ['version' => '2.1.0']);
+        $entry->currentVersion->changelog = str_repeat('x', 1500);
+        $this->em->flush();
+
+        $this->api('POST', '/api/v1/updates', ['entries' => [
+            ['id' => 'com.example.shop', 'version' => '1.0.0'],
+        ]]);
+
+        $changelog = $this->json()['updates'][0]['changelog'];
+        self::assertSame(1000, mb_strlen($changelog));
+        self::assertSame(str_repeat('x', 1000), $changelog);
+    }
+
+    public function testChangelogByteBudgetKeepsEveryElementButNullsLaterChangelogs(): void
+    {
+        // Nicht-ASCII-Zeichen kosten beim Kodieren ohne JSON_UNESCAPED_UNICODE
+        // bis zu 6 Byte pro Zeichen (\uXXXX) – nach der 1000-Zeichen-Kürzung
+        // also bis zu 6002 Byte je changelog inkl. Anführungszeichen. 40
+        // solche Elemente (240 KiB an changelog-Rohdaten) reißen sicher durch
+        // das 200-KiB-Budget des Controllers, ohne die Vertragsgrenze von 200
+        // Elementen zu berühren.
+        $count = 40;
+        for ($i = 0; $i < $count; ++$i) {
+            $formatId = sprintf('com.example.budget%02d', $i);
+            $entry = $this->createPublishedEntry($formatId, ['version' => '2.0.0']);
+            $entry->currentVersion->changelog = str_repeat('日', 1500);
+        }
+        $this->em->flush();
+
+        $this->api('POST', '/api/v1/updates', ['entries' => array_map(
+            static fn (int $i): array => ['id' => sprintf('com.example.budget%02d', $i), 'version' => '1.0.0'],
+            range(0, $count - 1),
+        )]);
+
+        self::assertResponseIsSuccessful();
+        $rawBody = (string) $this->client->getResponse()->getContent();
+        self::assertLessThan(256 * 1024, \strlen($rawBody), 'Antwort muss unter dem 256-KiB-Cap des Clients bleiben');
+
+        $updates = $this->json()['updates'];
+        // Kein Element darf fehlen – nur changelog darf leer werden.
+        self::assertCount($count, $updates);
+
+        $sawNull = false;
+        foreach ($updates as $update) {
+            if ($update['changelog'] === null) {
+                $sawNull = true;
+                continue;
+            }
+            // Sobald ein Element wegen des Budgets auf null gesetzt wurde,
+            // bleibt es für den Rest der Antwort dabei (monotones Budget).
+            self::assertFalse($sawNull, 'Nach dem ersten null-changelog dürfen keine weiteren changelogs mehr folgen');
+            self::assertSame(1000, mb_strlen($update['changelog']));
+        }
+        // Bei 40 Elementen à maximal 6002 Byte (240 KiB) muss das 200-KiB-
+        // Budget mindestens ein Element zum Verstummen bringen.
+        self::assertTrue($sawNull, 'Testaufbau muss das Budget tatsächlich überschreiten');
     }
 
     public function testOldPathIsGone(): void
