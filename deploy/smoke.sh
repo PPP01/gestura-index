@@ -45,7 +45,10 @@ fi
 request updates -X POST -H 'Content-Type: application/json' \
     --data '{"apiLevel":3,"entries":[]}' "$ORIGIN/api/v1/updates"
 # apiLevel als Zahl, nicht fest 2: das R3-Paket hebt den Wert auf 3, die Form bleibt.
-if [ "$STATUS" = 200 ] && grep -Eq '^\{"apiLevel":[0-9]+,"updates":\[\]\}$' "$BODY"; then
+# [[ =~ ]] statt grep -E: bash ankert ^/$ an den GESAMTEN String, nicht an
+# Zeilen – so fallen vor-/nachgestellte Ausgaben (z. B. PHP-Deprecations vor
+# oder nach dem JSON) durch, die eine zeilenweise Prüfung übersehen würde.
+if [ "$STATUS" = 200 ] && [[ "$(cat "$BODY")" =~ ^\{\"apiLevel\":[0-9]+,\"updates\":\[\]\}$ ]]; then
     ok "POST /api/v1/updates: 200 mit leerer Vertragsantwort ($(cat "$BODY"))"
 elif [ "$STATUS" = 200 ] && header Content-Type | grep -qi text/html; then
     bad "POST /api/v1/updates liefert HTML – das KAS-Docroot von ${ORIGIN#https://} zeigt noch nicht auf current/backend/public"
