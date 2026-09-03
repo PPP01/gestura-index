@@ -11,6 +11,11 @@ cd "$(dirname "$0")/.."
 source deploy/common.sh
 
 TARGET="${1:-}"
+# Dieselbe Prüfung wie deploy.sh für sein Tag-Argument: TARGET landet unten
+# unquotiert in der ssh-Kommandozeile (remote() reicht die Argumente an ssh
+# durch, das sie zu einem Remote-Kommando zusammenfügt) – ohne Muster-Guard
+# könnte ein TARGET mit Sonderzeichen dort Befehle einschleusen.
+[ -z "$TARGET" ] || [[ "$TARGET" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Ziel »$TARGET« entspricht nicht dem Muster vX.Y.Z"
 
 step "Zielrelease bestimmen"
 TARGET=$(remote RELEASES="$RELEASES_DIR" CURRENT="$CURRENT_LINK" TARGET="$TARGET" 'bash -s' <<'REMOTE'

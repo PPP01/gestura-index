@@ -13,6 +13,32 @@ release() { mkdir -p "$1/releases/$2"; printf 'tag=%s\ndeployed_at_epoch=%s\n' "
 # incomplete <root> <name>       – Verzeichnis ohne RELEASE-Datei
 incomplete() { mkdir -p "$1/releases/$2"; }
 current() { ln -sfn "releases/$2" "$1/current"; }
+# setup_shared <root>            – shared/ mit Inhalt anlegen (wie deploy.sh es beim ersten Lauf befüllt)
+setup_shared() {
+    mkdir -p "$1/shared/media" "$1/shared/log"
+    echo "geheim" > "$1/shared/.env.local"
+    echo "screenshot-bytes" > "$1/shared/media/beispiel.webp"
+    echo "log-zeile" > "$1/shared/log/prod.log"
+}
+# release_with_shared <root> <name> <epoch> – vollständiges Release, dessen
+# .env.local/public/media/var/log Symlinks in shared/ zeigen (echtes Layout).
+release_with_shared() {
+    mkdir -p "$1/releases/$2/backend/public" "$1/releases/$2/backend/var"
+    printf 'tag=%s\ndeployed_at_epoch=%s\n' "$2" "$3" > "$1/releases/$2/RELEASE"
+    ln -sfn "$1/shared/.env.local" "$1/releases/$2/backend/.env.local"
+    ln -sfn "$1/shared/media" "$1/releases/$2/backend/public/media"
+    ln -sfn "$1/shared/log" "$1/releases/$2/backend/var/log"
+}
+# expect_shared_intact <root>    – shared/ und sein Inhalt müssen unversehrt sein,
+# auch wenn Releases, die per Symlink hineinzeigten, gerade gelöscht wurden.
+expect_shared_intact() {
+    local root="$1"
+    if [ -f "$root/shared/.env.local" ] && [ -f "$root/shared/media/beispiel.webp" ] && [ -f "$root/shared/log/prod.log" ]; then
+        echo "OK    $CASE (shared/ intakt)"
+    else
+        echo "FEHLT $CASE (shared/ wurde durch rm -rf eines Releases beschädigt)"; fail=1
+    fi
+}
 # expect <root> <name…>          – genau diese Releases dürfen übrig sein
 expect() {
     local root="$1"; shift
@@ -67,5 +93,14 @@ release "$r" v1 $((TODAY-40*H))
 for i in 2 3 4 5 6 7 8; do release "$r" v$i $((TODAY+i*H)); done
 "$GC" --root "$r" --today-epoch "$TODAY" >/dev/null
 expect "$r" v1 v8 v7 v6 v5 v4
+
+CASE="7: shared/-Symlinks überleben die Garbage Collection auch für gelöschte Releases"
+r=$(newroot); setup_shared "$r"
+current "$r" v8
+release_with_shared "$r" v8 $((TODAY+8*H))
+for i in 1 2 3 4 5 6 7; do release_with_shared "$r" v$i $((TODAY+i*H)); done
+"$GC" --root "$r" --today-epoch "$TODAY" >/dev/null
+expect "$r" v8 v7 v6 v5 v4 v3
+expect_shared_intact "$r"
 
 [ "$fail" -eq 0 ] && echo "== gc-test: alle Fälle grün ==" || { echo "== gc-test FEHLGESCHLAGEN =="; exit 1; }

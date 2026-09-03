@@ -63,6 +63,27 @@ else
     bad "GET /api/v1/entries: Status $STATUS, Content-Type »$(header Content-Type)«"
 fi
 
+# »url« ist die verletzlichste Vertragsregel: sie wird aus Schema+Host des
+# Requests gebildet, und eine SSL-terminierende Vorstufe, ein www-Redirect
+# oder ein Host-umschreibender Proxy erzeugen still eine falsche URL – der
+# Client verwirft sie kommentarlos. grep -o/cut statt python3: formatId folgt
+# ID_RE (nur [a-zA-Z0-9._-], keine Anführungszeichen/Escapes möglich), damit
+# ist ein simpler Textschnitt genauso robust wie ein JSON-Parser und braucht
+# keine zusätzliche Laufzeitabhängigkeit.
+FORMAT_ID=$(grep -o '"formatId":"[^"]*"' "$BODY" | head -1 | cut -d'"' -f4 || true)
+if [ -n "$FORMAT_ID" ]; then
+    request url_check -X POST -H 'Content-Type: application/json' \
+        --data "{\"entries\":[{\"id\":\"$FORMAT_ID\",\"version\":\"0.0.1\"}]}" \
+        "$ORIGIN/api/v1/updates"
+    if [ "$STATUS" = 200 ] && grep -qF "\"url\":\"$ORIGIN/" "$BODY"; then
+        ok "POST /api/v1/updates: url zeigt auf $ORIGIN (Eintrag $FORMAT_ID, Version 0.0.1)"
+    else
+        bad "POST /api/v1/updates: url zeigt nicht auf $ORIGIN – Status $STATUS, Body: $(head -c 300 "$BODY")"
+    fi
+else
+    echo "SKIP  POST /api/v1/updates: url-Prüfung übersprungen – Index hat aktuell keine veröffentlichten Einträge"
+fi
+
 request de "$ORIGIN/de"
 if [ "$STATUS" = 200 ] && header Content-Type | grep -qi text/html; then
     ok "GET /de: 200 text/html (Frontend aus dem gemeinsamen Docroot)"

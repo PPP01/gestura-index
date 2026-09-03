@@ -41,7 +41,7 @@ if remote "test -f '$SHARED_DIR/.env.local' && grep -q __DB_PASSWORT_HIER_EINTRA
     die "in $SHARED_DIR/.env.local fehlt noch das DB-Passwort"
 fi
 if remote "test -f '$RELEASES_DIR/$TAG/RELEASE'"; then
-    die "Release $TAG liegt bereits vollständig auf dem Server – Tags sind unveränderlich; für einen erneuten Deploy neuen Tag setzen"
+    die "Release $TAG liegt bereits vollständig auf dem Server – Tags sind unveränderlich; für einen erneuten Deploy neuen Tag setzen. Steht current noch nicht auf $TAG (Abbruch zwischen RELEASE-Schreiben und Tausch), fertigstellen statt neu deployen: deploy/rollback.sh $TAG"
 fi
 
 step "Preflight: Worktree des Tags, Tests, Frontend-Build"
@@ -61,10 +61,35 @@ npm --prefix "$WORK/frontend" run build
 rm -f "$WORK/frontend/build/.htaccess"
 cp -R "$WORK/frontend/build/." "$WORK/backend/public/"
 test -f "$WORK/backend/public/200.html" || die "Frontend-Build nicht in backend/public gelandet"
-grep -q 'RewriteRule \^api' "$WORK/backend/public/.htaccess" || die "backend/public/.htaccess ist nicht die zusammengeführte Fassung"
+# Reine Anwesenheitsprüfung reicht nicht: ein Recipe-Update kann Regel 2
+# (Marketing-Interceptor) verwerfen oder die Reihenfolge vertauschen, ohne
+# dass die api-Regel selbst verschwindet (siehe .claude/lessons.md). Geprüft
+# wird deshalb die REIHENFOLGE api → Marketing-Interceptor → Add-.html →
+# 200.html-Fallback, über Zeilennummern aus grep -n. grep -F (Fixed Strings):
+# alle vier Muster enthalten Regex-Sonderzeichen (^, (), {}, .), als Fixed
+# String ist der Vergleich robust gegen deren Interpretation.
+HTACCESS="$WORK/backend/public/.htaccess"
+API_LINE=$(grep -nF 'RewriteRule ^api' "$HTACCESS" | head -1 | cut -d: -f1)
+MARKETING_LINE=$(grep -nF 'RewriteRule ^(de|en)' "$HTACCESS" | head -1 | cut -d: -f1)
+ADD_HTML_LINE=$(grep -nF 'RewriteCond %{REQUEST_FILENAME}.html -f' "$HTACCESS" | head -1 | cut -d: -f1)
+FALLBACK_LINE=$(grep -nF '/200.html' "$HTACCESS" | head -1 | cut -d: -f1)
+[ -n "$API_LINE" ] && [ -n "$MARKETING_LINE" ] && [ -n "$ADD_HTML_LINE" ] && [ -n "$FALLBACK_LINE" ] \
+    || die "backend/public/.htaccess ist nicht die zusammengeführte Fassung (eine der vier Kernregeln fehlt)"
+[ "$API_LINE" -lt "$MARKETING_LINE" ] \
+    || die "backend/public/.htaccess: api-Regel (Zeile $API_LINE) muss VOR der Marketing-Interceptor-Regel (Zeile $MARKETING_LINE) stehen"
+[ "$MARKETING_LINE" -lt "$ADD_HTML_LINE" ] \
+    || die "backend/public/.htaccess: Marketing-Interceptor-Regel (Zeile $MARKETING_LINE) muss VOR der Add-.html-Regel (Zeile $ADD_HTML_LINE) stehen"
+[ "$ADD_HTML_LINE" -lt "$FALLBACK_LINE" ] \
+    || die "backend/public/.htaccess: Add-.html-Regel (Zeile $ADD_HTML_LINE) muss VOR dem 200.html-Fallback (Zeile $FALLBACK_LINE) stehen"
 
 step "Release $TAG hochladen (rsync, --link-dest auf das aktuelle Release)"
-CURRENT_TARGET=$(remote "readlink -f '$CURRENT_LINK' 2>/dev/null || true")
+# readlink -e statt -f: -f gibt auch dann einen Pfad zurück, wenn die
+# Zielkomponente gar nicht existiert (z. B. current fehlt komplett beim
+# allerersten Deploy) – CURRENT_TARGET wäre dann ein Phantom-Pfad, der
+# »Aktuelles Release: …« vortäuscht und rsync eine --link-dest-Warnung auf
+# ein nicht existentes Verzeichnis liefert. -e verlangt, dass jede
+# Pfadkomponente existiert, und liefert in dem Fall korrekt nichts.
+CURRENT_TARGET=$(remote "readlink -e '$CURRENT_LINK' 2>/dev/null || true")
 remote "rm -rf '$RELEASES_DIR/$TAG' && mkdir -p '$RELEASES_DIR/$TAG'"
 LINK_BACKEND=(); LINK_SCHEMA=()
 if [ -n "$CURRENT_TARGET" ]; then
@@ -91,6 +116,16 @@ if [ ! -d "$SHARED" ]; then
 fi
 mkdir -p "$SHARED/media" "$SHARED/log"
 [ -f "$SHARED/.env.local" ] || { echo "FEHLER – $SHARED/.env.local fehlt (Secrets liegen nie im Repo)" >&2; exit 1; }
+# Warnung statt Abbruch: beim allerersten Deploy wurde die Datei Sekunden
+# zuvor erst angelegt und das Runbook ergänzt FRONTEND_BUILD_DIR erst im
+# nächsten Schritt – ein Abbruch hier würde genau die im Runbook
+# vorgeschriebene Umstellung blockieren.
+if ! grep -q '^FRONTEND_BUILD_DIR=' "$SHARED/.env.local"; then
+    echo "WARNUNG – $SHARED/.env.local enthält keine Zeile FRONTEND_BUILD_DIR=."
+    echo "          Ohne sie löst backend/.env den Dev-Pfad auf, der im Release nicht existiert –"
+    echo "          alle vier schaltbaren Marketing-Seiten liefern dann 404, ununterscheidbar von"
+    echo "          einer bewusst deaktivierten Seite. Ergänzen: FRONTEND_BUILD_DIR=%kernel.project_dir%/public"
+fi
 
 ln -sfn "$SHARED/.env.local" "$RELEASE/backend/.env.local"
 rm -rf "$RELEASE/backend/public/media"; ln -sfn "$SHARED/media" "$RELEASE/backend/public/media"
