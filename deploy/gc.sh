@@ -25,7 +25,9 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$ROOT" ] || { echo "--root fehlt" >&2; exit 2; }
 [ -d "$ROOT/releases" ] || { echo "Kein releases/-Verzeichnis unter $ROOT" >&2; exit 2; }
+[[ "$KEEP" =~ ^[0-9]+$ ]] || { echo "--keep muss eine positive ganze Zahl sein" >&2; exit 2; }
 [ -n "$TODAY" ] || TODAY=$(date -d "$(date +%F) 00:00:00" +%s)
+[[ "$TODAY" =~ ^[0-9]+$ ]] || { echo "--today-epoch muss eine positive ganze Zahl sein" >&2; exit 2; }
 
 current=$(readlink -f "$ROOT/current" 2>/dev/null || true)
 
