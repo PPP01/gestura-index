@@ -17,7 +17,7 @@ TARGET=$(remote RELEASES="$RELEASES_DIR" CURRENT="$CURRENT_LINK" TARGET="$TARGET
 set -euo pipefail
 current=$(readlink -f "$CURRENT" 2>/dev/null || true)
 [ -n "$current" ] || { echo "FEHLER – current existiert nicht" >&2; exit 1; }
-epoch_of() { sed -n 's/^deployed_at_epoch=//p' "$1/RELEASE" 2>/dev/null | head -1; }
+epoch_of() { [ -f "$1/RELEASE" ] || return 0; sed -n 's/^deployed_at_epoch=//p' "$1/RELEASE" | head -1; }
 if [ -n "$TARGET" ]; then
     dir="$RELEASES/$TARGET"
     [ -d "$dir" ] || { echo "FEHLER – Release $TARGET existiert nicht" >&2; exit 1; }
