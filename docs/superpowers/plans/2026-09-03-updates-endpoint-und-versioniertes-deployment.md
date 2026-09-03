@@ -881,7 +881,7 @@ else
 fi
 
 request updates -X POST -H 'Content-Type: application/json' \
-    --data '{"apiLevel":2,"entries":[]}' "$ORIGIN/api/v1/updates"
+    --data '{"apiLevel":3,"entries":[]}' "$ORIGIN/api/v1/updates"
 # apiLevel als Zahl, nicht fest 2: das R3-Paket hebt den Wert auf 3, die Form bleibt.
 if [ "$STATUS" = 200 ] && grep -Eq '^\{"apiLevel":[0-9]+,"updates":\[\]\}$' "$BODY"; then
     ok "POST /api/v1/updates: 200 mit leerer Vertragsantwort ($(cat "$BODY"))"

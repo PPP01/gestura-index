@@ -142,7 +142,7 @@ Ohne Argument: das nach `deployed-at` jüngste vollständige Release vor dem akt
 Prüft gegen `https://gestura.eu` (Default) mit `curl --max-redirs 0`, sodass jeder `3xx` als Fehler zählt:
 
 - `OPTIONS /api/v1/updates` mit `Origin: moz-extension://smoke` und `Access-Control-Request-Method: POST`: Status 204, `Access-Control-Allow-Origin: *`, Allow-Methods enthält `POST`, Allow-Headers enthält `Content-Type`.
-- `POST /api/v1/updates` mit `{"apiLevel":2,"entries":[]}`: Status 200, `Content-Type: application/json`, Body ist genau `{"apiLevel":2,"updates":[]}`.
+- `POST /api/v1/updates` mit `{"apiLevel":3,"entries":[]}` (der Level, den der heutige Client sendet): Status 200, `Content-Type: application/json`, Body hat genau die Form `{"apiLevel":<Zahl>,"updates":[]}`. Die Zahl ist `ApiLevel::IMPLEMENTED` und wird bewusst nicht fest geprüft, damit der R3-Bump den Smoke-Check nicht bricht.
 - `GET /api/v1/entries`: Status 200, JSON mit `"items"` (bisheriger Check).
 - `GET /de`: Status 200, `Content-Type: text/html` (Frontend wird aus dem gemeinsamen Docroot bedient).
 - `GET /de/vergleich`: Status 200 oder 404 mit `text/html` (Marketing-Interceptor erreicht Symfony; beide Werte sind gültig, ein Symfony-Problem-JSON wäre ein Fehler).
