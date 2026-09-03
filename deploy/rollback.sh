@@ -25,6 +25,9 @@ if [ -n "$TARGET" ]; then
     [ "$(readlink -f "$dir")" != "$current" ] || { echo "FEHLER – $TARGET ist bereits current" >&2; exit 1; }
     echo "$TARGET"; exit 0
 fi
+# Sentinel bei fehlendem/kaputtem Epoch von current: statt abzulehnen,
+# weitet sich die Auswahl bewusst auf »das global jüngste vollständige
+# Release« – current selbst ist dann ohnehin in einem defekten Zustand.
 cur_epoch=$(epoch_of "$current"); [[ "$cur_epoch" =~ ^[0-9]+$ ]] || cur_epoch=9999999999
 best=""; best_epoch=0
 for dir in "$RELEASES"/*/; do
@@ -45,7 +48,14 @@ step "current atomar auf $TARGET setzen"
 # hinterlassen – ein einfaches »ln -s« würde dann still IN das alte Release
 # hinein verlinken, statt current.tmp neu zu setzen, und current landete
 # unbemerkt auf einem veralteten Release.
-remote "ln -sfn 'releases/$TARGET' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK' && php85 '$RELEASES_DIR/$TARGET/backend/bin/console' cache:clear"
+remote "ln -sfn 'releases/$TARGET' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK'"
+
+step "Cache leeren"
+# Eigener remote()-Aufruf: Der Tausch ist die atomare Operation und bereits
+# vollzogen, sobald diese Zeile läuft – ein scheiterndes cache:clear ist
+# Folgearbeit mit eigenem Fehlerbild und darf den Tausch nicht verschlucken.
+remote "php85 '$RELEASES_DIR/$TARGET/backend/bin/console' cache:clear" \
+    || die "current zeigt bereits auf $TARGET, aber cache:clear ist fehlgeschlagen – Cache manuell auf dem Server leeren"
 
 step "Smoke-Check"
 deploy/smoke.sh "$SITE_ORIGIN" || die "Smoke-Check nach Rollback fehlgeschlagen – current zeigt auf $TARGET"
