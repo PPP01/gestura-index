@@ -25,6 +25,15 @@ framework:
         # Update-Check der Extension (POST /api/v1/updates): der Client fragt
         # höchstens einmal täglich pro Origin; das Limit fängt nur Missbrauch ab.
         update_check: { policy: sliding_window, limit: 60, interval: '1 hour' }
+        # Locator-Sync (apiLevel 3, Extension-Vertrag): das Per-IP-Limit ist
+        # laut Vertrag das, was die Kosten wirklich bindet - die
+        # Per-Locator-Grenzen sind KEIN Missbrauchsschutz, weil Locators frei
+        # und unbegrenzt ableitbar sind (32 Zufallsbytes, keine Registrierung).
+        sync_v1: { policy: sliding_window, limit: 300, interval: '1 hour' }
+        # Geschriebene Bytes, gezaehlt in angefangenen KiB: 64 MiB pro IP und
+        # Stunde. Das ist der erste Hebel, wenn Missbrauch auftritt (Vertrag,
+        # "What protects the quota").
+        sync_v1_bytes: { policy: sliding_window, limit: 65536, interval: '1 hour' }
 
 # Funktionstests feuern viele Requests von 127.0.0.1 — dort großzügige
 # Limits; die Drosselung selbst testet RateLimitGuardTest isoliert.
@@ -50,6 +59,8 @@ when@test:
             rating_write: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             bundle: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             update_check: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            sync_v1: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            sync_v1_bytes: { policy: sliding_window, limit: 1048576, interval: '1 hour' }
 
 # Lokale Entwicklung: dieselben großzügigen Limits wie im Test, damit
 # manuelles Durchklicken (z. B. Passkey-Registrierung/Login mit mehreren
@@ -74,3 +85,5 @@ when@dev:
             rating_write: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             bundle: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             update_check: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            sync_v1: { policy: sliding_window, limit: 1000, interval: '1 hour' }
+            sync_v1_bytes: { policy: sliding_window, limit: 1048576, interval: '1 hour' }
