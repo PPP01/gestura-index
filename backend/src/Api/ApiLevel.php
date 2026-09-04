@@ -10,11 +10,12 @@ namespace App\Api;
  * (/api/v1/updates), 3 = zusätzlich die /api/v1/sync/*-Endpunkte.
  *
  * Genau EINE Stelle für die Zahl: jede Antwort, die einen apiLevel trägt,
- * liest sie hier. Das R3-Paket hebt den Wert auf 3, sobald die vier
- * Sync-Endpunkte antworten – nicht früher, sonst verspräche der Index ein
- * Level, das er nicht bedient.
+ * liest sie hier. Der Wert stand bis zum 2026-09-05 auf 2 und wurde erst
+ * gehoben, nachdem die vier Sync-Endpunkte tatsächlich antworten – ein Level
+ * ohne Deckung wäre schlimmer als ein zu niedriges, weil der Client sein
+ * Verhalten daran ausrichtet. ApiLevelTest hält Zahl und Deckung zusammen.
  */
 final class ApiLevel
 {
-    public const IMPLEMENTED = 2;
+    public const IMPLEMENTED = 3;
 }
