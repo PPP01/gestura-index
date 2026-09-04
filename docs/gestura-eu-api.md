@@ -1,4 +1,4 @@
-> **Kopie.** Original: `docs/gestura-eu-api.md` im Extension-Repo (`C:\Programme.alt\Gestura`, aus WSL `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md`). Änderungen werden dort gemacht und neu herüberkopiert – hier nie direkt ändern. Bei Abweichungen zwischen Vertrag und Index: im Extension-Repo melden. Stand der Kopie: 2026-09-03, Branch `feature/eu-integration-r3`, Commit `4c9f2bb`, apiLevel 3. Der Index setzt die Level additiv um: `/api/v1/updates` (Level 2) mit dem Paket vom 2026-09-03, die `/api/v1/sync/*`-Endpunkte (Level 3) folgen als eigenes Paket.
+> **Kopie.** Original: `docs/gestura-eu-api.md` im Extension-Repo (`C:\Programme.alt\Gestura`, aus WSL `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md`). Änderungen werden dort gemacht und neu herüberkopiert – hier nie direkt ändern. Bei Abweichungen zwischen Vertrag und Index: im Extension-Repo melden. Stand der Kopie: 2026-09-05, Branch `main`, Commit `289a3e7`, apiLevel 3 – vollständig umgesetzt.
 
 # gestura.eu ↔ Gestura API contract
 
@@ -12,6 +12,11 @@ is indistinguishable from "not installed" and must be handled as such, an
 extension at level 1 never calls `/api/v1/updates`, and one below level 3 never
 calls any `/api/v1/sync/*` endpoint. Levels are additive — nothing that
 answered at level 2 changes shape at level 3.
+
+Within a level, a **request** field may be added when its absence keeps the old
+behaviour exactly. `basePayloadHash` (below) is such a field: an extension that
+never sends it is served as it was before the field existed, so the addition
+needs no new level.
 
 ## Bridge (page → extension, DOM events)
 
@@ -286,7 +291,11 @@ The **locator** is those 32 bytes as **base64url without padding**. It
 identifies the blob store and is the only thing the server sees. It is a bearer
 capability: whoever derives it can list, replace and delete the states. It
 travels in the request **body**, never in the URL, so it stays out of ordinary
-access logs — *the deployment must not log request bodies.*
+access logs — *the deployment must not log request bodies.* For the same reason
+the server **stores only a hash of it** (SHA-256 is enough — the locator is 256
+uniform bits, so no salt is needed) and looks states up by that hash: access to
+the database must not amount to the right to list or delete anyone's states.
+The ciphertext would still be unreadable, but it could be taken away.
 
 The **key** is an AES-256-GCM key and never leaves the client. The server cannot
 reach it from the locator.
@@ -322,6 +331,14 @@ ciphertext and its 16-byte tag.
   unambiguous. This is what stops the server from moving a valid blob to a
   different state or a different role: authentication fails before anything
   decrypts.
+- **Plaintext of `payload`:** either the settings JSON or its **gzip**,
+  recognised by the gzip magic `1f 8b` at the start of the decrypted bytes. A
+  JSON object begins with `{` (`0x7b`), so the test is unambiguous and there is
+  no format field. `meta` is never compressed. The test vectors below are
+  unaffected — they use `role = meta`. Implementations **must bound
+  decompression** (the extension stops at 1 MiB and reports the blob as
+  undecryptable); the server cannot plant a gzip bomb, because GCM
+  authenticates the ciphertext, but a code handed over by a third party can.
 
 ### Envelope test vector
 
@@ -363,6 +380,22 @@ few, and the preview before writing shows what actually arrived. What the
 `payloadHash` in the meta blob does prevent is a *mismatched pair* — this
 meta with a different state's or an older upload's payload.
 
+That paragraph is about the **server**. Two **clients** writing the same state
+are a different matter, and one the client cannot solve alone: the
+`payloadHash` binds the two blobs of *one* upload to each other, never an
+upload to the state it replaces. Without help from the server, the second
+browser to press *Overwrite* silently discards the first one's work, and nobody
+learns of it. The endpoint therefore takes a **write token**, below.
+
+**The write token is the `payloadHash` of the state being replaced.** It needs
+no field of its own on the server: the server recomputes it over the payload
+bytes it stores, and the client already holds it — it is in the meta blob it
+decrypted when it listed or opened the state. It works as a token because
+**every encryption uses a fresh IV**, so two uploads of byte-identical settings
+still produce different payloads and different hashes. That is a property of
+the envelope, not a coincidence, and it is what makes a hash usable where a
+version counter would otherwise be needed.
+
 ## Sync — endpoints
 
 All under `/api/v1`, all anonymous, all with the locator in the body. Request
@@ -371,12 +404,48 @@ bodies always carry `apiLevel`.
 | Endpoint | Body | Answer |
 |---|---|---|
 | `POST /api/v1/sync/list` | `{ apiLevel, locator }` | `{ states: [{ stateId, size, updatedAt, meta }] }` |
-| `PUT /api/v1/sync/state` | `{ apiLevel, locator, stateId, meta, payload }` | `{ stateId, updatedAt, size }` |
+| `PUT /api/v1/sync/state` | `{ apiLevel, locator, stateId, meta, payload, basePayloadHash? }` | `{ stateId, updatedAt, size }` |
 | `POST /api/v1/sync/get` | `{ apiLevel, locator, stateId }` | `{ stateId, updatedAt, payload }` |
 | `POST /api/v1/sync/delete` | `{ apiLevel, locator, stateId }` — `stateId` omitted deletes every state under the locator | `{ deleted: <count> }` |
 
 `size` is the payload envelope's length in bytes as transmitted; `updatedAt` is
 an ISO-8601 UTC timestamp. `meta` and `payload` are the base64 envelope strings.
+
+**`basePayloadHash` — what the upload is built on.** Base64url `SHA-256` over
+the raw bytes of the payload envelope currently stored, i.e. the same value the
+replaced state's meta blob carries. Three cases, and the first is what keeps
+older extensions working:
+
+| `basePayloadHash` | Server does |
+|---|---|
+| absent | Writes unconditionally, exactly as before. This is how a **new** state is created, and how a client that has seen the conflict says *overwrite anyway*. |
+| present, matches the stored payload | Writes. |
+| present, does not match | Refuses with **412** and `{ "error": "conflict", "updatedAt": "<ISO-8601>" }`. Nothing is written. |
+
+The `updatedAt` in the refusal is there so the client can say *when* the state
+changed under it without a second request; it then re-reads the state and lets
+the user decide.
+
+**The server does not merge anything, and does not need to.** The token makes a
+lost write visible instead of silent, and that turned out to be the whole of
+what a merge needs from the service. The extension reconciles two browsers
+against a **base** it keeps locally — the payload it last agreed on with a
+state, under that payload's `payloadHash` — takes over one-sided changes
+without a question, and asks only where both sides changed the same entry. A
+deletion is "in the base, absent from mine", so there are **no deletion
+markers**, and the base makes per-entry versions unnecessary; the payload
+format is unchanged. The merge then stakes its upload on `basePayloadHash` and
+redoes itself on a `412`.
+
+So merging costs this contract nothing: no new field, no new endpoint, no
+`apiLevel` bump. What it does do is make the three rows above **load-bearing**
+— a `412` that wrote anyway, or a comparison against something other than the
+stored payload envelope, would silently overwrite settings on the other
+browser. The extension side shipped on 2026-09-05.
+
+**`POST /api/v1/sync/delete` stays unconditional** and takes no token. Deleting
+is a deliberate act behind a confirmation, and unlike a silent overwrite it is
+one the user is looking at while it happens.
 
 **Errors** answer with an HTTP status and `{ "error": "<code>" }`:
 
@@ -384,9 +453,44 @@ an ISO-8601 UTC timestamp. `meta` and `payload` are the base64 envelope strings.
 |---|---|---|
 | `bad-request` | 400 | Malformed body, unknown `apiLevel`, bad `stateId` or locator shape. |
 | `not-found` | 404 | No such state under this locator. |
+| `conflict` | 412 | `basePayloadHash` does not describe the stored state — someone else wrote it first. The answer carries the current `updatedAt`. |
 | `too-large` | 413 | A single blob exceeds its limit. |
 | `quota-states` | 409 | The locator already holds the maximum number of states. |
-| `rate-limited` | 429 | Per-IP rate limit (the July design's RateLimiter). |
+| `rate-limited` | 429 | Per-IP rate limit on requests and on bytes written (the July design's RateLimiter). |
+
+**How the client reads an answer.** The same rules the update check states for
+itself, written down here too because the sync endpoints are a second service
+surface and nothing about them is implied by the first:
+
+- **The HTTP status decides**, not the body. The client maps `400`, `404`,
+  `409`, `412`, `413` and `429` to the codes above by status alone and never
+  reads the `error` string — it reads a body for exactly one code, `conflict`,
+  and only for its `updatedAt`. So an error announced with `200`, or the right
+  `error` string under the wrong status, is misread. Any other status is a
+  generic failure the user sees as "the service answered with an error".
+- **No redirects.** The client sends `redirect: "error"`; a `3xx` is a failed
+  request, not a hop. A `307`/`308` preserves method *and* body, and the body
+  carries the locator.
+- **A response over 1 MiB is refused**, by an early exit on a declared
+  `Content-Length` and again on the received bytes. No legitimate answer comes
+  close: the largest is a `get` at one 512 KiB payload envelope, and a `list`
+  of five states carries five `meta` blobs of at most 8 KiB.
+- **15 seconds, for the whole answer.** The abort timer covers the body, not
+  just the headers — `fetch` resolves on the headers, so a slow body would
+  otherwise hang forever. A service that needs longer than that to wake up
+  reads to the user as a network error.
+- **No cookies, no session.** The client sends `credentials: "omit"` and
+  `cache: "no-store"`, and CORS allows it only `Content-Type`. Authentication
+  is the locator in the body and nothing else.
+
+**What protects the quota.** Locators are free and unlimited — 32 random bytes,
+no registration, no account — so anyone treating the service as free blob
+storage simply derives more of them. The per-locator limits below are
+therefore *not* an abuse bound and should not be read as one. What bounds the
+cost is the **per-IP rate limit** on bytes written and the **12-month
+retention**. If abuse ever appears, the levers in order are: tighten the
+per-IP write limit, shorten retention, lower the per-locator total, and only
+then proof of work on a registration call.
 
 **Limits**, enforced server-side and mirrored client-side so the user sees the
 number before the request rather than after it:
@@ -395,8 +499,16 @@ number before the request rather than after it:
 |---|---|
 | `meta` envelope | 8 KiB as transmitted |
 | `payload` envelope | 512 KiB as transmitted |
-| states per locator | 10 |
+| states per locator | 5 |
 | total per locator | 4 MiB |
+
+`5 × 512 KiB + 5 × 8 KiB` fits inside the 4 MiB total; the table cannot
+contradict itself. **The state limit is checked on create only, never
+retroactively:** a locator holding more states than the limit — after the
+limit was lowered — keeps all of them; reading, writing and deleting stay
+possible, only a further create is refused with `quota-states`. There is no
+`locator-full` code: with per-state limits the total is unreachable by
+construction.
 
 **Retention:** a state that is neither read nor written for **12 months** is
 deleted. This is the only way blobs under a lost secret can ever go away — the
@@ -439,7 +551,9 @@ and both directions of sync. One validator implements it
 - **`euIntegration`, `euSync` and the secret are never exported and never
   imported.** They live in `chrome.storage.local`; a crafted file must not be
   able to flip a switch or plant a secret.
-- **Maximum size:** 512 KiB of JSON text.
+- **Maximum size:** 1 MiB of JSON text — the extension's local settings
+  ceiling. The 512 KiB `payload` limit above is a limit on the *envelope* as
+  transmitted; compression sits between the two numbers.
 - The import is **atomic and replacing**: one validated write of the whole
   settings object, never a partial application, never a merge.
 

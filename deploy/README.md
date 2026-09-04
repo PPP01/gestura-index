@@ -113,6 +113,21 @@ Anonyme, cookielose End-Nutzer-Konten (Bearer-Token `gacc_…`) unter `/api/acco
 
 ✅ **Aufgelöst mit Sub-Projekt F (Settings-Sync):** Der `sync_blob`-FK trägt DB-seitiges `ON DELETE CASCADE` – sowohl Konto-Löschen als auch das DQL-Bulk-DELETE von `index:account:prune` entfernen Sync-Blobs zuverlässig mit (Regressionstest `SyncCascadeTest`). Neue Tabellen mit FK auf `account` müssen diesem Muster folgen.
 
+### Locator-Sync der Extension (`/api/v1/sync/*`, apiLevel 3)
+
+Anonym, cookielos, ohne Konto: adressiert wird über einen aus dem Nutzergeheimnis abgeleiteten **Locator**, der nur als SHA-256 in der Spalte `sync_state.locator_hash` liegt. Nicht zu verwechseln mit dem kontogebundenen `/api/account/sync/{collection}` – die beiden haben nur das Wort gemeinsam.
+
+- **Migration:** legt die Tabelle `sync_state` an; läuft im normalen `deploy.sh`-Migrationsschritt mit. Die Spalte `payload` ist `MEDIUMTEXT` – der Vertrag erlaubt 512 KiB je Envelope, `TEXT` fasst nur 64 KiB.
+- **Wartung (Cron, NICHT optional):** Der Vertrag sagt dem Nutzer eine Aufbewahrung von 12 Monaten zu und zeigt sie ihm an. Ohne diesen Job wird die Zusage nicht eingehalten:
+
+  ```
+  # täglich, Aufbewahrung der Sync-Stände (12 Monate, Vertrag »Retention«)
+  17 3 * * * cd ~/current/backend && php85 bin/console index:sync:prune >/dev/null
+  ```
+
+- **Kein Body-Logging.** Der Locator ist ein Bearer-Token und reist ausschließlich im Request-Body – nie in der URL, nie in einem Header. Ein Zugriffslog mit Bodies wäre ein Log voller Zugangsschlüssel. Beim Einrichten von Logging oder eines Reverse-Proxys ist das die eine Zeile, die nicht übersehen werden darf.
+- **Keine Weiterleitung auf `/api/v1/sync/*`.** Der Client schickt `redirect: "error"`; ein `307`/`308` erhielte Methode **und** Body und reichte den Locator an die Zielorigin weiter. Die `.htaccess`-Regel »`/api/…` immer an `index.php`« deckt das ab – siehe den Abschnitt zu den `.htaccess`-Regeln.
+
 **Edit-Token-Migration (Sub-Projekt C):** `submitter.account_id` trägt `ON DELETE SET NULL` – Konto-Löschung/-Prune lässt Einreichungen als anonyme Edit-Token-Submitter zurück (Regressionstest `AccountSubmitterCascadeTest`). Der Trust-Pfad (Sofort-Publish ab `TRUST_THRESHOLD = 3` aggregierten Freigaben) ist damit erstmals aktiv – ausschließlich für Konto-Einreichungen.
 
 ## Schaltbare Seiten (Admin-Seiten-Sichtbarkeit)

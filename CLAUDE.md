@@ -17,6 +17,8 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 
 ## Wichtige Referenzen (Extension-Repo, aus WSL)
 
+- **Vertrag Extension ↔ Index (autoritativ, direkt lesen, nie kopieren):** `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md`
+- **Austausch-Logbuch: `exchange/AUSTAUSCH.md`** – vor Arbeit an der Extension-Schnittstelle zuerst hineinsehen, danach dort eine Zeile hinterlassen. Bei Mehrdeutigkeiten im Vertrag dort nachfragen, statt sie zu entscheiden.
 - Design-Spec (freigegeben): `/mnt/c/Programme.alt/Gestura/docs/superpowers/specs/2026-07-19-menu-index-design.md`
 - Referenz-Validator (autoritativ für Regeln jenseits des JSON-Schemas): `/mnt/c/Programme.alt/Gestura/js/menu-exchange.js`
 - Phase-1-Plan (Muster für Planformat): `/mnt/c/Programme.alt/Gestura/docs/superpowers/plans/2026-07-19-menu-index-phase1.md`
