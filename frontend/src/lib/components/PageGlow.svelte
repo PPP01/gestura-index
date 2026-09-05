@@ -25,9 +25,15 @@
 	.page-glow,
 	.page-stars {
 		position: absolute;
-		/* Greift ins Shell-Padding (24px seitlich, 28px oben), damit die Ebene
-		   bündig an der Rahmenkante endet statt an der Inhaltskante. */
-		inset: -28px -24px 0;
+		/*
+		 * Greift seitlich ins Shell-Padding (24px) und nach oben über das
+		 * Inhalts-Padding (28px) HINAUS bis unter die Kopfleiste (--topbar-h).
+		 * Andernfalls begänne der Verlauf an deren Unterkante und stünde dort als
+		 * sichtbare waagerechte Kante; so liegt er darunter und scheint durch ihre
+		 * ~5 % Deckkraft hindurch. Die Leiste trägt dafür einen höheren z-index,
+		 * sonst verdeckte diese Ebene Logo und Navigation.
+		 */
+		inset: calc(-28px - var(--topbar-h, 65px)) -24px 0;
 		pointer-events: none;
 		z-index: 0;
 
@@ -49,8 +55,16 @@
 
 	.page-glow {
 		background:
+			/*
+			 * Das Zentrum sitzt auf Höhe der Kopfleiste, nicht darüber: die Ebene
+			 * reicht seit --topbar-h weiter nach oben, und ein Zentrum oberhalb
+			 * ihrer Kante läge dann so weit außerhalb, dass im Kopfbereich kaum
+			 * noch Farbe ankommt. So strahlt der Verlauf von der Leiste aus nach
+			 * unten – wie im Handoff, wo er ebenfalls hinter der Navigation
+			 * beginnt.
+			 */
 			radial-gradient(
-				760px 380px at 50% -80px,
+				760px 420px at 50% 40px,
 				var(--page-glow-a),
 				var(--page-glow-b) 50%,
 				transparent 72%

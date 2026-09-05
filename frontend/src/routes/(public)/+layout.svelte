@@ -55,11 +55,45 @@
 	 */
 	.pub {
 		margin: -20px -20px 0;
+
+		/*
+		 * Höhe der Kopfleiste. PageGlow zieht seine Ebene um diesen Betrag nach
+		 * oben, damit der Verlauf unter der Leiste liegt statt an ihrer Unterkante
+		 * zu beginnen. Ein Näherungswert genügt: der Verlauf ist weich, und ein
+		 * paar Pixel Abweichung sind unsichtbar – anders als die harte Kante, die
+		 * entsteht, wenn er erst unterhalb der Leiste ansetzt.
+		 */
+		--topbar-h: 65px;
+	}
+	@media (max-width: 720px) {
+		.pub {
+			--topbar-h: 56px;
+		}
 	}
 
-	/* Abgesetzte Kopfleiste: eigener Hintergrund + Trennlinie. */
+	/*
+	 * Abgesetzte Kopfleiste: eigener Hintergrund + Trennlinie.
+	 *
+	 * Sie liegt bewusst ÜBER der Verlaufs-Ebene der Seiten (PageGlow zieht sich
+	 * um --topbar-h nach oben unter die Leiste). Ohne z-index läge der Glow
+	 * darüber – er steht im DOM nach der Leiste – und würde Logo und Navigation
+	 * überdecken.
+	 *
+	 * Der Hintergrund ist bewusst nur zu 55 % deckend, damit der Verlauf
+	 * darunter deutlich erkennbar bleibt – die Navigation schwimmt fast auf ihm,
+	 * wie im Ursprungsdesign. Nötig ist das vor allem im HELLEN Thema: dort ist
+	 * --bg-secondary reines Weiß und würde alles verdecken, während es im
+	 * dunklen ohnehin nur rund 5 % Deckkraft hat. Die Absetzung bleibt – sie
+	 * trägt die Trennlinie und die verbleibende Aufhellung –, wird aber
+	 * durchlässig statt undurchsichtig. Das Weichzeichnen dahinter hält die
+	 * Navigation über dem Verlauf ruhig lesbar; ohne es würde der Text bei
+	 * dieser Durchlässigkeit auf der Struktur darunter flimmern.
+	 */
 	.topbar {
-		background: var(--bg-secondary);
+		position: relative;
+		z-index: 2;
+		background: color-mix(in srgb, var(--bg-secondary) 55%, transparent);
+		backdrop-filter: blur(10px);
 		border-bottom: 1px solid var(--border-color);
 	}
 

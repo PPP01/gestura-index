@@ -279,8 +279,16 @@
 	.c1 {
 		position: relative;
 		margin-inline: -24px;
-		margin-block: -28px -28px;
-		padding-block: 28px;
+		/*
+		 * Nach oben bis unter die Kopfleiste (--topbar-h), damit die Glow-Ebene
+		 * dort hineinreicht und durch deren teildeckenden Hintergrund scheint –
+		 * sonst begänne der Verlauf an ihrer Unterkante und stünde als harte
+		 * waagerechte Kante. Das Padding gleicht den Betrag wieder aus, sodass
+		 * der Inhalt unverändert unterhalb der Leiste beginnt; `overflow: hidden`
+		 * bleibt und begrenzt die Verläufe weiterhin auf die Sektion.
+		 */
+		margin-block: calc(-28px - var(--topbar-h, 65px)) -28px;
+		padding-block: calc(28px + var(--topbar-h, 65px)) 28px;
 		overflow: hidden;
 
 		/* Glow-Töne: Violett/Pink sind laut Handoff reine Verlaufsfarben. */
@@ -332,11 +340,30 @@
 		inset: 0;
 		pointer-events: none;
 	}
+	/*
+	 * Die y-Werte tragen --topbar-h mit: die Ebene beginnt seit dem Hochziehen
+	 * um genau diesen Betrag weiter oben, und ohne Ausgleich wanderte jeder
+	 * Verlauf mit nach oben. So bleiben sie an derselben Stelle der Seite
+	 * stehen wie zuvor – nur reicht ihr oberer Rand jetzt hinter die Leiste.
+	 */
 	.c1-glow {
 		background:
-			radial-gradient(900px 520px at 50% 470px, var(--c1-glow-1), var(--c1-glow-2) 45%, transparent 70%),
-			radial-gradient(700px 300px at 85% -60px, var(--c1-glow-3), transparent 70%),
-			radial-gradient(600px 300px at 8% 120px, var(--c1-glow-4), transparent 70%);
+			radial-gradient(
+				900px 520px at 50% calc(470px + var(--topbar-h, 65px)),
+				var(--c1-glow-1),
+				var(--c1-glow-2) 45%,
+				transparent 70%
+			),
+			radial-gradient(
+				700px 300px at 85% calc(-60px + var(--topbar-h, 65px)),
+				var(--c1-glow-3),
+				transparent 70%
+			),
+			radial-gradient(
+				600px 300px at 8% calc(120px + var(--topbar-h, 65px)),
+				var(--c1-glow-4),
+				transparent 70%
+			);
 	}
 	/* Sternenrauschen nur im dunklen Thema – im hellen wäre es Schmutz. */
 	.c1-stars {
