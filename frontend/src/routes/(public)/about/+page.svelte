@@ -2,6 +2,8 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { Share2, RefreshCw, Lock, Puzzle, ShieldCheck, Code } from '@lucide/svelte';
 	import GithubMark from '$lib/components/GithubMark.svelte';
+	import PageGlow from '$lib/components/PageGlow.svelte';
+	import PageHeading from '$lib/components/PageHeading.svelte';
 
 	/*
 	 * Was der Index kann. Die beiden hinteren Fähigkeiten stammen aus dem
@@ -20,7 +22,7 @@
 		},
 		{
 			Icon: RefreshCw,
-			color: 'var(--about-violet)',
+			color: 'var(--page-violet)',
 			title: () => m.about_can_updates_title(),
 			body: () => m.about_can_updates_body(),
 			prepared: true
@@ -41,11 +43,15 @@
 </svelte:head>
 
 <div class="about">
-	<div class="about-glow" aria-hidden="true"></div>
+	<PageGlow variant="narrow" />
 
 	<div class="intro">
-		<span class="status-pill"><span class="dot"></span>{m.about_status_pill()}</span>
-		<h1>{m.about_h1_lead()} <span class="grad">{m.about_h1_accent()}</span></h1>
+		<PageHeading
+			pill={m.about_status_pill()}
+			lead={m.about_h1_lead()}
+			accent={m.about_h1_accent()}
+			size={38}
+		/>
 		<p>{m.about_intro()}</p>
 	</div>
 
@@ -106,45 +112,18 @@
 
 <style>
 	/*
-	 * Über-Seite im ruhigen v2-Ton der Marketing-Seiten. Sie bleibt eine
-	 * TEXTSEITE und damit in der 900px-Lesespalte des Layouts – die Radien der
-	 * Verläufe sind entsprechend kleiner als auf den breiten Seiten: ein Verlauf,
-	 * der erst jenseits der Spaltenkante ausläuft, wird dort abgeschnitten und
-	 * steht als sichtbares helles Rechteck hinter der Überschrift.
+	 * Über-Seite im ruhigen v2-Ton der Marketing-Seiten. Sie ist eine TEXTSEITE
+	 * und läuft in der 900px-Lesespalte – daher PageGlow in der Variante
+	 * »narrow«: der breite Verlauf würde an der Spaltenkante abgeschnitten und
+	 * stünde als sichtbares helles Rechteck hinter der Überschrift.
 	 */
 	.about {
 		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 34px;
-
-		--about-violet: #8b5cf6;
-		--about-hairline: rgba(255, 255, 255, 0.1);
-		--about-card-end: rgba(255, 255, 255, 0.03);
-		--about-glow-a: oklch(from var(--accent-color) l c h / 14%);
-		--about-glow-b: rgba(139, 92, 246, 0.05);
-	}
-	:global([data-theme='light']) .about {
-		--about-violet: #7c4fe0;
-		--about-hairline: rgba(0, 0, 0, 0.09);
-		--about-card-end: rgba(255, 255, 255, 0.7);
-		--about-glow-a: oklch(from var(--accent-color) l c h / 13%);
-		--about-glow-b: rgba(124, 79, 224, 0.07);
 	}
 
-	.about-glow {
-		position: absolute;
-		inset: -28px -24px auto;
-		height: 460px;
-		pointer-events: none;
-		z-index: 0;
-		background: radial-gradient(
-			540px 300px at 50% 0,
-			var(--about-glow-a),
-			var(--about-glow-b) 50%,
-			transparent 72%
-		);
-	}
 	.intro,
 	.abilities,
 	.panel,
@@ -159,39 +138,6 @@
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 15px;
-	}
-	.status-pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 12px;
-		font-weight: 600;
-		padding: 5px 14px;
-		border-radius: 20px;
-		border: 1px solid var(--border-color);
-		background: var(--bg-secondary);
-		color: var(--text-secondary);
-	}
-	.status-pill .dot {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--success-color);
-		box-shadow: 0 0 8px oklch(from var(--success-color) l c h / 80%);
-	}
-	.intro h1 {
-		margin: 0;
-		font-size: 38px;
-		line-height: 1.15;
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		text-wrap: balance;
-	}
-	.intro h1 .grad {
-		background: linear-gradient(100deg, var(--accent-color), var(--about-violet) 70%);
-		background-clip: text;
-		-webkit-background-clip: text;
-		color: transparent;
 	}
 	.intro p {
 		margin: 0;
@@ -222,11 +168,11 @@
 		flex-direction: column;
 		gap: 9px;
 		border-radius: 20px;
-		border: 1px solid var(--about-hairline);
+		border: 1px solid var(--page-hairline);
 		background: linear-gradient(
 			160deg,
 			oklch(from var(--tint) l c h / 9%),
-			var(--about-card-end) 70%
+			var(--page-card-end) 70%
 		);
 	}
 	.ability-head {
@@ -306,7 +252,7 @@
 				oklch(from var(--accent-color) l c h / 12%),
 				transparent 70%
 			),
-			linear-gradient(150deg, oklch(from var(--accent-color) l c h / 8%), var(--about-card-end) 75%);
+			linear-gradient(150deg, oklch(from var(--accent-color) l c h / 8%), var(--page-card-end) 75%);
 	}
 	.panel-success {
 		border: 1px solid oklch(from var(--success-color) l c h / 28%);
@@ -316,7 +262,7 @@
 				oklch(from var(--success-color) l c h / 14%),
 				transparent 70%
 			),
-			linear-gradient(150deg, oklch(from var(--success-color) l c h / 10%), var(--about-card-end) 75%);
+			linear-gradient(150deg, oklch(from var(--success-color) l c h / 10%), var(--page-card-end) 75%);
 	}
 
 	/* ---- Quellcode & Lizenz ---- */
@@ -350,9 +296,4 @@
 		color: var(--accent-color);
 	}
 
-	@media (max-width: 640px) {
-		.intro h1 {
-			font-size: 30px;
-		}
-	}
 </style>
