@@ -139,6 +139,16 @@
 			border: 1px solid var(--border-color);
 			border-radius: 20px;
 			box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+			/*
+			 * CLIP, nicht HIDDEN: Die Verlaufs-Ebenen der Seiten reichen bis unter
+			 * die Kopfleiste und damit bis an die Rahmenkante – ohne Beschnitt
+			 * stehen sie an den gerundeten Ecken sichtbar über den Rahmen hinaus.
+			 * »hidden« würde hier einen Scroll-Container erzeugen und die sticky
+			 * Filter-Sidebar des Onepagers brechen; »clip« beschneidet nur und
+			 * lässt position: sticky intakt. Der eigene Schatten des Rahmens
+			 * bleibt unbeschnitten, er liegt außerhalb.
+			 */
+			overflow: clip;
 		}
 		/* Ecken einzeln runden (kein overflow:hidden am Rahmen – das würde die
 		   sticky-Filter-Sidebar des Onepagers brechen). */

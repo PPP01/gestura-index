@@ -47,10 +47,19 @@
 	 * Abgestimmt ist auf gleiche wahrgenommene Intensität, nicht auf gleiche
 	 * Zahlen.
 	 */
+	/*
+	 * Deutlich höhere Werte als im dunklen Thema – und höher, als es für den
+	 * Inhaltsbereich allein nötig wäre. Der Verlauf muss hier durch die
+	 * Kopfleiste hindurch wirken, und die liegt mit 65 % Weiß darüber: von einem
+	 * 20%-Verlauf (rund rgb(205,220,244) auf dem Seitengrund) bleiben danach
+	 * rgb(237,243,251) – knapp 18 Punkte von reinem Weiß entfernt und für das
+	 * Auge nicht mehr zu unterscheiden. Erst ab etwa einem Drittel Deckkraft
+	 * trägt die Farbe durch die Leiste.
+	 */
 	:global([data-theme='light']) .page-glow {
-		--page-glow-a: oklch(from var(--accent-color) l c h / 20%);
-		--page-glow-b: rgba(124, 79, 224, 0.09);
-		--page-glow-side: oklch(from var(--accent-color) l c h / 8%);
+		--page-glow-a: oklch(from var(--accent-color) l c h / 34%);
+		--page-glow-b: rgba(124, 79, 224, 0.2);
+		--page-glow-side: oklch(from var(--accent-color) l c h / 12%);
 	}
 
 	.page-glow {

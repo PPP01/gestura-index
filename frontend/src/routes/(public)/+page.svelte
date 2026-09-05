@@ -323,7 +323,12 @@
 		 */
 		--c1-glow-1: oklch(from var(--accent-color) l c h / 32%);
 		--c1-glow-2: rgba(139, 92, 246, 0.18);
-		--c1-glow-3: rgba(139, 92, 246, 0.17);
+		/*
+		 * Der obere Glow trägt kräftiger als die anderen: er ist der einzige, der
+		 * bis in die Kopfleiste reicht, und die liegt mit 65 % Weiß darüber. Von
+		 * den vorherigen 17 % blieb darunter nichts Sichtbares mehr übrig.
+		 */
+		--c1-glow-3: rgba(139, 92, 246, 0.32);
 		--c1-glow-4: oklch(from var(--accent-color) l c h / 14%);
 		--c1-surface: #ffffff;
 		--c1-surface-strong: rgba(255, 255, 255, 0.7);
