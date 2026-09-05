@@ -39,4 +39,22 @@ describe('C2 »Was ist Gestura«', () => {
 		// der reine Text-Container-Vergleich (kein separates DOM-Element).
 		expect(container.querySelector('.banner')?.textContent).toContain(m.c2_privacy_banner_body());
 	});
+
+	it('zeigt die Status-Pill über der Überschrift', () => {
+		render(Page);
+		expect(screen.getByText(m.c2_status_pill())).toBeInTheDocument();
+	});
+
+	it('zeigt die Gesten-Pill in der Gesten-Sektion', () => {
+		render(Page);
+		expect(screen.getByText(m.c2_sec_gestures_pill())).toBeInTheDocument();
+	});
+
+	it('verlinkt aus den beiden letzten Sektionen in den Index', () => {
+		render(Page);
+		for (const label of [m.c2_sec_engines_link(), m.c2_sec_menus_link()]) {
+			const link = screen.getByRole('link', { name: new RegExp(label) });
+			expect(link.getAttribute('href')).toMatch(/\/index$/);
+		}
+	});
 });
