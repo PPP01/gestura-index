@@ -47,11 +47,15 @@ expect() {
     if [ "$want" = "$have" ]; then echo "OK    $CASE"; else echo "FEHLT $CASE"; echo "  erwartet: $(tr '\n' ' ' <<<"$want")"; echo "  vorhanden: $(tr '\n' ' ' <<<"$have")"; fail=1; fi
 }
 newroot() { local r; r=$(mktemp -d); mkdir -p "$r/releases"; echo "$r"; }
+# seed_hourly <root> <writer>    – current=v8 und v1…v8 stündlich ab TODAY (alle »heute«);
+#                                  <writer> ist release oder release_with_shared
+seed_hourly() {
+    current "$1" v8
+    for i in 1 2 3 4 5 6 7 8; do "$2" "$1" v$i $((TODAY+i*H)); done
+}
 
 CASE="1: sieben heutige Releases – fünf jüngste bleiben, kein älteres vorhanden"
-r=$(newroot); current "$r" v8
-release "$r" v8 $((TODAY+8*H))
-for i in 1 2 3 4 5 6 7; do release "$r" v$i $((TODAY+i*H)); done
+r=$(newroot); seed_hourly "$r" release
 "$GC" --root "$r" --today-epoch "$TODAY" >/dev/null
 expect "$r" v8 v7 v6 v5 v4 v3
 
@@ -79,10 +83,7 @@ incomplete "$r" cur; incomplete "$r" halb; release "$r" v1 $((TODAY+H))
 expect "$r" cur v1
 
 CASE="5: --dry-run löscht nichts"
-r=$(newroot); current "$r" v8
-release "$r" v8 $((TODAY+8*H))
-for i in 1 2 3 4 5 6 7; do release "$r" v$i $((TODAY+i*H)); done
-incomplete "$r" halb
+r=$(newroot); seed_hourly "$r" release; incomplete "$r" halb
 out=$("$GC" --root "$r" --today-epoch "$TODAY" --dry-run)
 echo "$out" | grep -q 'lösche' || { echo "FEHLT $CASE: dry-run meldet keine Löschkandidaten"; fail=1; }
 expect "$r" v8 v7 v6 v5 v4 v3 v2 v1 halb
@@ -95,10 +96,7 @@ for i in 2 3 4 5 6 7 8; do release "$r" v$i $((TODAY+i*H)); done
 expect "$r" v1 v8 v7 v6 v5 v4
 
 CASE="7: shared/-Symlinks überleben die Garbage Collection auch für gelöschte Releases"
-r=$(newroot); setup_shared "$r"
-current "$r" v8
-release_with_shared "$r" v8 $((TODAY+8*H))
-for i in 1 2 3 4 5 6 7; do release_with_shared "$r" v$i $((TODAY+i*H)); done
+r=$(newroot); setup_shared "$r"; seed_hourly "$r" release_with_shared
 "$GC" --root "$r" --today-epoch "$TODAY" >/dev/null
 expect "$r" v8 v7 v6 v5 v4 v3
 expect_shared_intact "$r"

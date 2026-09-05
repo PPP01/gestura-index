@@ -12,11 +12,8 @@
 # Schlägt smoke.sh NACH dem Tausch fehl, bricht das Skript mit Hinweis auf
 # deploy/rollback.sh ab und tauscht nicht selbst zurück (die Ursache kann
 # außerhalb des Releases liegen, etwa ein noch nicht umgestelltes KAS-Docroot).
-# Der Tausch erzwingt »ln -sfn« statt »ln -s«: Ein früherer, mitten im
-# Tausch abgebrochener Lauf kann current.tmp als stehengebliebenen Symlink
-# hinterlassen – ein einfaches »ln -s« würde dann still IN das alte Release
-# hinein verlinken, statt current.tmp neu zu setzen, und current landete
-# unbemerkt auf einem veralteten Release.
+# Der Tausch selbst (und warum er »ln -sfn« erzwingt) steht einmal in
+# swap_current() in deploy/common.sh – deploy.sh und rollback.sh teilen ihn.
 set -euo pipefail
 cd "$(dirname "$0")/.."   # Repo-Root
 # shellcheck source=deploy/common.sh
@@ -24,7 +21,7 @@ source deploy/common.sh
 
 TAG="${1:-}"
 [ -n "$TAG" ] || die "Aufruf: deploy/deploy.sh vX.Y.Z"
-[[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Tag »$TAG« entspricht nicht dem Muster vX.Y.Z"
+[[ "$TAG" =~ $TAG_PATTERN ]] || die "Tag »$TAG« entspricht nicht dem Muster vX.Y.Z"
 
 step "Guards: Tag $TAG"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || die "Tag $TAG existiert nicht"
@@ -69,10 +66,11 @@ test -f "$WORK/backend/public/200.html" || die "Frontend-Build nicht in backend/
 # alle vier Muster enthalten Regex-Sonderzeichen (^, (), {}, .), als Fixed
 # String ist der Vergleich robust gegen deren Interpretation.
 HTACCESS="$WORK/backend/public/.htaccess"
-API_LINE=$(grep -nF 'RewriteRule ^api' "$HTACCESS" | head -1 | cut -d: -f1)
-MARKETING_LINE=$(grep -nF 'RewriteRule ^(de|en)' "$HTACCESS" | head -1 | cut -d: -f1)
-ADD_HTML_LINE=$(grep -nF 'RewriteCond %{REQUEST_FILENAME}.html -f' "$HTACCESS" | head -1 | cut -d: -f1)
-FALLBACK_LINE=$(grep -nF '/200.html' "$HTACCESS" | head -1 | cut -d: -f1)
+line_of() { grep -nF "$1" "$HTACCESS" | head -1 | cut -d: -f1; }
+API_LINE=$(line_of 'RewriteRule ^api')
+MARKETING_LINE=$(line_of 'RewriteRule ^(de|en)')
+ADD_HTML_LINE=$(line_of 'RewriteCond %{REQUEST_FILENAME}.html -f')
+FALLBACK_LINE=$(line_of '/200.html')
 [ -n "$API_LINE" ] && [ -n "$MARKETING_LINE" ] && [ -n "$ADD_HTML_LINE" ] && [ -n "$FALLBACK_LINE" ] \
     || die "backend/public/.htaccess ist nicht die zusammengeführte Fassung (eine der vier Kernregeln fehlt)"
 [ "$API_LINE" -lt "$MARKETING_LINE" ] \
@@ -154,7 +152,7 @@ RELEASE_FILE="$WORK/RELEASE"
     echo "$MESSAGE"
 } > "$RELEASE_FILE"
 rsync -az "$RELEASE_FILE" "$DEPLOY_HOST:$RELEASES_DIR/$TAG/RELEASE"
-remote "ln -sfn 'releases/$TAG' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK'"
+swap_current "$TAG"
 echo "current -> releases/$TAG"
 
 step "Smoke-Check"

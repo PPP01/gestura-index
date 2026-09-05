@@ -15,7 +15,7 @@ TARGET="${1:-}"
 # unquotiert in der ssh-Kommandozeile (remote() reicht die Argumente an ssh
 # durch, das sie zu einem Remote-Kommando zusammenfügt) – ohne Muster-Guard
 # könnte ein TARGET mit Sonderzeichen dort Befehle einschleusen.
-[ -z "$TARGET" ] || [[ "$TARGET" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "Ziel »$TARGET« entspricht nicht dem Muster vX.Y.Z"
+[ -z "$TARGET" ] || [[ "$TARGET" =~ $TAG_PATTERN ]] || die "Ziel »$TARGET« entspricht nicht dem Muster vX.Y.Z"
 
 step "Zielrelease bestimmen"
 TARGET=$(remote RELEASES="$RELEASES_DIR" CURRENT="$CURRENT_LINK" TARGET="$TARGET" 'bash -s' <<'REMOTE'
@@ -48,12 +48,7 @@ REMOTE
 echo "Zurück auf: $TARGET"
 
 step "current atomar auf $TARGET setzen"
-# Erzwingt »ln -sfn« statt »ln -s«: Ein früherer, mitten im Tausch
-# abgebrochener Lauf kann current.tmp als stehengebliebenen Symlink
-# hinterlassen – ein einfaches »ln -s« würde dann still IN das alte Release
-# hinein verlinken, statt current.tmp neu zu setzen, und current landete
-# unbemerkt auf einem veralteten Release.
-remote "ln -sfn 'releases/$TARGET' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK'"
+swap_current "$TARGET"
 
 step "Cache leeren"
 # Eigener remote()-Aufruf: Der Tausch ist die atomare Operation und bereits

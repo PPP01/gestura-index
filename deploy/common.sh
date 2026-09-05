@@ -18,3 +18,16 @@ step() { echo; echo "== $* =="; }
 # Führt einen Befehl auf dem Server aus. Bei mehrzeiligen Skripten:
 #   remote 'bash -s' <<'REMOTE' … REMOTE   (Variablen vorher als VAR=… voranstellen)
 remote() { ssh -o BatchMode=yes "$DEPLOY_HOST" "$@"; }
+
+# Erlaubte Release-Tags: vX.Y.Z. In deploy.sh und rollback.sh zugleich der
+# Injection-Guard, weil der Tag unquotiert in der ssh-Kommandozeile landet.
+# In [[ … =~ $TAG_PATTERN ]] UNQUOTIERT verwenden, sonst ist es ein Literal.
+TAG_PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+# Setzt current atomar auf releases/<tag>: Link unter Tempnamen anlegen, dann
+# per mv -T über den alten schieben. »ln -sfn« statt »ln -s«: Ein früherer,
+# mitten im Tausch abgebrochener Lauf kann current.tmp als Symlink hinterlassen;
+# ein einfaches »ln -s« würde dann still IN das alte Release hinein verlinken,
+# statt current.tmp neu zu setzen, und current landete unbemerkt auf einem
+# veralteten Release.
+swap_current() { remote "ln -sfn 'releases/$1' '$CURRENT_LINK.tmp' && mv -T '$CURRENT_LINK.tmp' '$CURRENT_LINK'"; }

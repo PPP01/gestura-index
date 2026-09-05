@@ -2,13 +2,12 @@
 # Prüft die Hosting-Umgebung für den gestura-index (Spec: 2026-07-21-deployment-design.md).
 # Exit 0 = alles bereit. Wiederholbar; verändert nichts auf dem Server.
 set -euo pipefail
-
-DEPLOY_HOST="ssh-w00d7b19@85.13.135.147"
-DEPLOY_PATH="/www/htdocs/w00d7b19/gestura.eu"
+# shellcheck source=deploy/common.sh
+source "$(dirname "$0")/common.sh"
 
 echo "== Hosting-Verifikation auf $DEPLOY_HOST =="
 
-ssh -o BatchMode=yes "$DEPLOY_HOST" DEPLOY_PATH="$DEPLOY_PATH" 'bash -s' <<'REMOTE'
+remote DEPLOY_PATH="$DEPLOY_PATH" 'bash -s' <<'REMOTE'
 set -euo pipefail
 fail=0
 check() { # check <Name> <Befehl…>
