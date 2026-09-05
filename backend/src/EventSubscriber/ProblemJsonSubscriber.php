@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\EventSubscriber;
 
 use App\Exception\ApiProblem;
-use App\Exception\SyncProblem;
+use App\Exception\RendersOwnApiResponse;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,10 +18,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
  * RFC 7807 »application/problem+json«-Antwort um und unterdrückt damit
  * HTML-Fehlerseiten gegenüber API-Clients.
  *
- * EINE Ausnahme: SyncProblem. Die Locator-Sync-Endpunkte antworten in der
- * Form, die der Extension-Vertrag wörtlich vorschreibt – { "error": "<code>" }
- * als application/json. Ein zweiter Antwortstil ist hier kein Wildwuchs,
- * sondern Vertragserfüllung.
+ * Ausgenommen sind Exceptions, die ihre Antwort selbst kennen
+ * (RendersOwnApiResponse) – etwa die Locator-Sync-Endpunkte, denen der
+ * Extension-Vertrag eine eigene Form vorschreibt. Der Subscriber fragt nach
+ * der Form, statt einzelne Feature-Exceptions namentlich zu kennen.
  */
 final class ProblemJsonSubscriber implements EventSubscriberInterface
 {
@@ -47,15 +47,9 @@ final class ProblemJsonSubscriber implements EventSubscriberInterface
 
         $throwable = $event->getThrowable();
 
-        // Die Locator-Sync-Endpunkte antworten in der Vertragsform. Der
-        // Client bildet die Fehlercodes allein über den HTTP-Status ab und
-        // liest genau einen Body – den des 412, und daraus nur updatedAt.
-        if ($throwable instanceof SyncProblem) {
-            $event->setResponse(new JsonResponse(
-                ['error' => $throwable->errorCode] + $throwable->extra,
-                $throwable->getStatusCode(),
-                $throwable->getHeaders(),
-            ));
+        // Wer seine Antwort selbst kennt, bekommt sie unverändert.
+        if ($throwable instanceof RendersOwnApiResponse) {
+            $event->setResponse($throwable->toApiResponse());
 
             return;
         }

@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Exception\ApiProblem;
-use App\Exception\SyncProblem;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
 /**
  * Zentrale Hilfsmethode zur Rate-Limit-Durchsetzung: kapselt den
- * Symfony-RateLimiter und wirft bei Erschöpfung einen einheitlichen
- * 429er mit Retry-After-Angabe.
+ * Symfony-RateLimiter und wirft bei Erschöpfung einen 429er mit
+ * Retry-After-Angabe.
  */
 final class RateLimitGuard
 {
@@ -19,20 +18,23 @@ final class RateLimitGuard
      * Verbraucht $tokens des Rate-Limiters für den angegebenen Schlüssel und
      * wirft bei Erschöpfung 429 mit dem Header »Retry-After« in Sekunden.
      *
-     * $tokens > 1 dient dem mengenbasierten Limit (geschriebene KiB), nicht
-     * der Anfragenzahl – der Vertrag der Extension verlangt für den
-     * Locator-Sync ausdrücklich beides.
+     * $tokens > 1 dient dem mengenbasierten Limit (etwa geschriebene KiB),
+     * nicht der Anzahl der Anfragen – der Vertrag der Extension verlangt für
+     * den Locator-Sync ausdrücklich beides.
      *
-     * $problem wählt die Fehlerform: die Locator-Sync-Endpunkte antworten in
-     * der Vertragsform { "error": "rate-limited" }, alle übrigen in RFC 7807.
+     * $onExhausted erlaubt einem Endpunkt, eine eigene Fehlerform zu liefern
+     * (die Sync-Endpunkte schulden dem Client { "error": "rate-limited" }).
+     * Ohne das Argument bleibt es beim RFC-7807-Standard dieser API – der
+     * Guard selbst kennt damit nur eine Fehlerform und muss beim Hinzukommen
+     * einer weiteren nicht angefasst werden.
      *
-     * @param class-string<ApiProblem|SyncProblem> $problem
+     * @param ?\Closure(int): \Throwable $onExhausted erhält retryAfter in Sekunden
      */
     public function consume(
         RateLimiterFactoryInterface $factory,
         string $key,
         int $tokens = 1,
-        string $problem = ApiProblem::class,
+        ?\Closure $onExhausted = null,
     ): void {
         $limit = $factory->create($key)->consume($tokens);
         if ($limit->isAccepted()) {
@@ -41,8 +43,8 @@ final class RateLimitGuard
 
         $retryAfter = max(1, $limit->getRetryAfter()->getTimestamp() - time());
 
-        throw $problem === SyncProblem::class
-            ? SyncProblem::rateLimited($retryAfter)
+        throw $onExhausted !== null
+            ? $onExhausted($retryAfter)
             : new ApiProblem(429, 'Rate limit exceeded', ['retryAfter' => $retryAfter], ['Retry-After' => (string) $retryAfter]);
     }
 }

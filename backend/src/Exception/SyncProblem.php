@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Exception;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -16,8 +18,14 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * nie. Er liest genau einen Body – den des 412 – und daraus nur updatedAt.
  * Der Status ist also die tragende Angabe; der Body ist Dokumentation, mit
  * der einen Ausnahme.
+ *
+ * Konstruktor und Felder ähneln ApiProblem absichtlich, ohne davon zu erben:
+ * die beiden Antwortformen sollen sich nicht gegenseitig einschränken, und
+ * ein gemeinsamer Vorfahr würde die instanceof-Prüfungen mehrdeutig machen.
+ * Die Form selbst liefert diese Klasse über RendersOwnApiResponse – der
+ * ProblemJsonSubscriber muss sie dafür nicht kennen.
  */
-final class SyncProblem extends HttpException
+final class SyncProblem extends HttpException implements RendersOwnApiResponse
 {
     /**
      * @param array<string, mixed>  $extra   zusätzliche Felder neben »error«
@@ -30,6 +38,15 @@ final class SyncProblem extends HttpException
         array $headers = [],
     ) {
         parent::__construct($statusCode, $errorCode, null, $headers);
+    }
+
+    /**
+     * Die vertragsexakte Antwort: { "error": "<code>" } als application/json,
+     * beim Konflikt zusätzlich updatedAt.
+     */
+    public function toApiResponse(): Response
+    {
+        return new JsonResponse(['error' => $this->errorCode] + $this->extra, $this->getStatusCode(), $this->getHeaders());
     }
 
     /** Kaputter Body, unbekanntes apiLevel, falsche stateId- oder Locator-Form. */

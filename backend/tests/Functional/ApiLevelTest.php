@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
-use App\Api\ApiLevel;
-
 /**
  * Der apiLevel, den der Index gegenüber der Extension meldet, ist ein
  * Versprechen: Level 3 heißt »die vier /api/v1/sync/*-Endpunkte antworten«.
@@ -13,18 +11,12 @@ use App\Api\ApiLevel;
  */
 final class ApiLevelTest extends ApiTestCase
 {
-    public function testTheIndexReportsLevelThree(): void
-    {
-        self::assertSame(3, ApiLevel::IMPLEMENTED);
-    }
-
-    /** Die Zahl steht so auch in der Antwort des Update-Checks. */
+    /** Die gemeldete Zahl – geprüft an der echten Antwort, nicht an der Konstanten. */
     public function testTheUpdateCheckAnswerCarriesTheLevel(): void
     {
-        $this->client->request('POST', '/api/v1/updates', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode(['apiLevel' => 3, 'entries' => []], JSON_THROW_ON_ERROR));
+        $this->api('POST', '/api/v1/updates', ['apiLevel' => 3, 'entries' => []]);
 
-        $body = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame(3, $body['apiLevel']);
+        self::assertSame(3, $this->json()['apiLevel']);
     }
 
     /**
@@ -34,16 +26,13 @@ final class ApiLevelTest extends ApiTestCase
      */
     public function testAllFourSyncEndpointsAnswer(): void
     {
-        $locator = 'zoogXw2lwmt_ZqFnRu-lFOWYxyJaU2kpxfunpy3Umsk';
-        $stateId = '0123456789abcdef0123456789abcdef';
-
         foreach ([
-            ['PUT', '/api/v1/sync/state', ['apiLevel' => 3, 'locator' => $locator, 'stateId' => $stateId, 'meta' => 'bQ==', 'payload' => 'cA==']],
-            ['POST', '/api/v1/sync/list', ['apiLevel' => 3, 'locator' => $locator]],
-            ['POST', '/api/v1/sync/get', ['apiLevel' => 3, 'locator' => $locator, 'stateId' => $stateId]],
-            ['POST', '/api/v1/sync/delete', ['apiLevel' => 3, 'locator' => $locator, 'stateId' => $stateId]],
+            ['PUT', '/api/v1/sync/state', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR, 'stateId' => self::SYNC_STATE_ID, 'meta' => 'bQ==', 'payload' => 'cA==']],
+            ['POST', '/api/v1/sync/list', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR]],
+            ['POST', '/api/v1/sync/get', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR, 'stateId' => self::SYNC_STATE_ID]],
+            ['POST', '/api/v1/sync/delete', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR, 'stateId' => self::SYNC_STATE_ID]],
         ] as [$method, $path, $body]) {
-            $this->client->request($method, $path, server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($body, JSON_THROW_ON_ERROR));
+            $this->api($method, $path, $body);
             self::assertSame(200, $this->client->getResponse()->getStatusCode(), $method . ' ' . $path);
         }
     }

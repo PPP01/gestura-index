@@ -28,7 +28,9 @@ DirectorySlash Off
     RewriteRule ^index\.php(?:/(.*)|$) %{ENV:BASE}/$1 [R=301,L]
 
     # 1. API immer an Symfony – vor jeder Datei-, Slash- oder Fallback-Regel.
-    #    Der Vertrag mit der Extension verbietet jedes 3xx auf /api/v1/updates.
+    #    Der Vertrag mit der Extension verbietet jedes 3xx auf /api/v1/updates
+    #    UND auf /api/v1/sync/* – der Client schickt redirect: "error", und ein
+    #    307/308 erhielte Methode und Body und reichte den Locator weiter.
     RewriteRule ^api(/.*)?$ %{ENV:BASE}/index.php [L]
 
     # 2. Schaltbare Marketing-Seiten IMMER an Symfony: der

@@ -61,7 +61,17 @@ class SyncState
     #[ORM\Column(length: 43)]
     public string $payloadHash;
 
-    /** Länge des Payload-Envelopes wie übertragen (Base64-Zeichen). */
+    /**
+     * Länge des Payload-Envelopes wie übertragen (Base64-Zeichen).
+     *
+     * payloadHash und sizeBytes sind aus payload ableitbar und werden
+     * trotzdem gespeichert – nicht aus Bequemlichkeit: erst dadurch kann
+     * SyncStateRepository::listByLocator() spaltenweise selektieren und die
+     * bis zu 512 KiB Nutzlast je Stand ungelesen liegen lassen. Berechnete
+     * Methoden würden die Zeile jedes Mal vollständig laden. Konsistent
+     * gehalten werden beide durch das private setBlobs(), das der einzige
+     * Weg ist, die Blobs zu setzen.
+     */
     #[ORM\Column]
     public int $sizeBytes;
 
@@ -76,6 +86,10 @@ class SyncState
      * Nur für die Aufbewahrung: jeder Lese- UND Schreibzugriff frischt ihn
      * auf. Bewusst getrennt von updatedAt – ein Herunterladen darf den
      * Änderungszeitpunkt nicht verfälschen, den der Client anzeigt.
+     *
+     * Auf dem Lesepfad wird er nicht hier, sondern per Mengen-UPDATE in
+     * SyncStateRepository::touchLocator() fortgeschrieben – ohne die Zeile
+     * samt Nutzlast zu laden.
      */
     #[ORM\Column]
     public \DateTimeImmutable $lastAccessAt;
@@ -97,12 +111,6 @@ class SyncState
         $this->setBlobs($meta, $payload);
         $this->updatedAt = new \DateTimeImmutable();
         $this->lastAccessAt = $this->updatedAt;
-    }
-
-    /** Frischt die Aufbewahrungsfrist auf, ohne updatedAt anzufassen. */
-    public function touchAccess(): void
-    {
-        $this->lastAccessAt = new \DateTimeImmutable();
     }
 
     /**

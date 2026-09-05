@@ -15,18 +15,22 @@ namespace App\Api;
 final class SyncContract
 {
     /**
-     * Der Locator: 32 abgeleitete Bytes als Base64url ohne Padding, also
-     * exakt 43 Zeichen. Diese Form wird geprüft, BEVOR der Wert etwas
-     * adressiert – ungeprüft wäre sie ein Pfad-Traversal.
+     * 32 Bytes als Base64url ohne Padding – exakt 43 Zeichen. Der Vertrag
+     * kennt zwei Werte dieser Form, und sie tragen unten eigene Namen, weil
+     * sie unabhängig voneinander geändert werden könnten. Das Literal steht
+     * trotzdem nur einmal: eine Korrektur am Zeichenvorrat soll nicht an der
+     * zweiten Stelle stillschweigend liegen bleiben.
      */
-    public const LOCATOR_REGEX = '/^[A-Za-z0-9_-]{43}$/';
+    private const BASE64URL_32_BYTES = '/^[A-Za-z0-9_-]{43}$/';
 
     /**
-     * Der basePayloadHash hat dieselbe Form wie der payloadHash: SHA-256 als
-     * Base64url ohne Padding, also ebenfalls 43 Zeichen aus demselben
-     * Zeichenvorrat.
+     * Der Locator. Diese Form wird geprüft, BEVOR der Wert etwas adressiert –
+     * ungeprüft wäre sie ein Pfad-Traversal.
      */
-    public const PAYLOAD_HASH_REGEX = '/^[A-Za-z0-9_-]{43}$/';
+    public const LOCATOR_REGEX = self::BASE64URL_32_BYTES;
+
+    /** Der payloadHash bzw. der basePayloadHash: SHA-256 als Base64url. */
+    public const PAYLOAD_HASH_REGEX = self::BASE64URL_32_BYTES;
 
     /** stateId: clientseitig erzeugte 16 Zufallsbytes als Kleinbuchstaben-Hex. */
     public const STATE_ID_REGEX = '/^[0-9a-f]{32}$/';
@@ -52,6 +56,21 @@ final class SyncContract
     public const RETENTION_DAYS = 365;
 
     /**
+     * Granularität des mengenbasierten Per-IP-Limits: ein Token je
+     * angefangenem KiB. Die Gegenstelle ist die Größenordnung der Limiter
+     * »sync_v1_bytes« in config/packages/rate_limiter.yaml – wer hier
+     * umstellt, muss dort mitziehen, deshalb steht die Zahl neben ihrer
+     * Umrechnung und nicht in einem Controller-Ausdruck.
+     */
+    public const BYTES_PER_TOKEN = 1024;
+
+    /** Tokens für eine geschriebene Menge – angefangene Einheiten zählen voll. */
+    public static function tokensFor(int $bytes): int
+    {
+        return (int) ceil($bytes / self::BYTES_PER_TOKEN);
+    }
+
+    /**
      * Der Locator wird gehasht abgelegt und über den Hash nachgeschlagen:
      * Zugriff auf die Datenbank darf nicht das Recht bedeuten, fremde Stände
      * zu listen oder zu löschen. Kein Salz – der Locator sind 256
@@ -67,12 +86,26 @@ final class SyncContract
      * SHA-256 über die ROHEN Bytes des Envelopes (das, was das Base64
      * dekodiert), als Base64url ohne Padding – derselbe Wert, den der
      * Meta-Blob des Standes trägt und den »basePayloadHash« vergleicht.
+     *
+     * Vorbedingung: gültiges Base64. Auf dem Anfragepfad stellt das
+     * LocatorSyncRequest::envelope() sicher (400 sonst); ein ungültiger Wert
+     * hier ist ein Programmierfehler und wird laut, nicht still zum Hash des
+     * leeren Strings.
      */
     public static function payloadHash(string $envelopeBase64): string
     {
-        $raw = self::decodeEnvelope($envelopeBase64) ?? '';
+        $raw = self::decodeEnvelope($envelopeBase64);
+        if ($raw === null) {
+            throw new \InvalidArgumentException('payloadHash erwartet gültiges Base64');
+        }
 
-        return rtrim(strtr(base64_encode(hash('sha256', $raw, true)), '+/', '-_'), '=');
+        return self::base64Url(hash('sha256', $raw, true));
+    }
+
+    /** Base64url ohne Padding – die Kodierung, in der der Vertrag Hashes nennt. */
+    public static function base64Url(string $raw): string
+    {
+        return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
     }
 
     /**

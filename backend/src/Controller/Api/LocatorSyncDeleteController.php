@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Exception\SyncProblem;
-use App\Repository\SyncStateRepository;
+use App\Api\LocatorSyncRequest;
+use App\Service\LocatorSyncService;
 use App\Service\RateLimitGuard;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -30,28 +29,17 @@ final class LocatorSyncDeleteController
     #[Route('/api/v1/sync/delete', methods: ['POST'])]
     public function __invoke(
         Request $request,
-        SyncStateRepository $states,
-        EntityManagerInterface $em,
+        LocatorSyncService $sync,
         RateLimitGuard $guard,
         RateLimiterFactoryInterface $syncV1Limiter,
     ): JsonResponse {
-        $guard->consume($syncV1Limiter, $request->getClientIp() ?? 'unknown', problem: SyncProblem::class);
+        [$body, $locatorHash] = LocatorSyncRequest::open($request, $guard, $syncV1Limiter);
+        $stateId = LocatorSyncRequest::optionalStateId($body);
 
-        $body = SyncRequest::parse($request);
-        $locatorHash = SyncRequest::locatorHash($body);
-        $stateId = SyncRequest::stateId($body, required: false);
+        $deleted = $stateId === null
+            ? $sync->deleteAll($locatorHash)
+            : $sync->delete($locatorHash, $stateId);
 
-        if ($stateId === null) {
-            return new JsonResponse(['deleted' => $states->deleteByLocator($locatorHash)]);
-        }
-
-        $state = $states->findOneByLocatorAndState($locatorHash, $stateId);
-        if ($state === null) {
-            throw SyncProblem::notFound();
-        }
-        $em->remove($state);
-        $em->flush();
-
-        return new JsonResponse(['deleted' => 1]);
+        return new JsonResponse(['deleted' => $deleted]);
     }
 }

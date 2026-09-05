@@ -8,6 +8,7 @@ use App\Api\SyncContract;
 use App\Entity\SyncState;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -23,26 +24,30 @@ final class SyncPruneCommandTest extends KernelTestCase
         return new CommandTester((new Application(self::bootKernel()))->find('index:sync:prune'));
     }
 
+    /** Legt einen Stand mit dem angegebenen Alter an; liefert seine id. */
+    private function seedAged(string $locator, string $age): int
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $state = new SyncState(SyncContract::locatorHash($locator), '0123456789abcdef0123456789abcdef', 'bQ==', 'cA==');
+        $state->lastAccessAt = new \DateTimeImmutable($age);
+        $em->persist($state);
+        $em->flush();
+
+        return (int) $state->id;
+    }
+
     /** 12 Monate ohne Lesen oder Schreiben – dann fällt der Stand. */
     public function testItDeletesStatesUntouchedForTwelveMonths(): void
     {
         $tester = $this->tester();
-        $em = static::getContainer()->get(EntityManagerInterface::class);
-
-        $alt = new SyncState(SyncContract::locatorHash(str_repeat('a', 43)), '0123456789abcdef0123456789abcdef', 'bQ==', 'cA==');
-        $alt->lastAccessAt = new \DateTimeImmutable('-400 days');
-        $jung = new SyncState(SyncContract::locatorHash(str_repeat('b', 43)), '0123456789abcdef0123456789abcdef', 'bQ==', 'cA==');
-        $jung->lastAccessAt = new \DateTimeImmutable('-10 days');
-        $em->persist($alt);
-        $em->persist($jung);
-        $em->flush();
-        $altId = $alt->id;
-        $jungId = $jung->id;
+        $altId = $this->seedAged(str_repeat('a', 43), '-400 days');
+        $jungId = $this->seedAged(str_repeat('b', 43), '-10 days');
 
         $tester->execute([]);
 
-        self::assertSame(0, $tester->getStatusCode());
+        self::assertSame(Command::SUCCESS, $tester->getStatusCode());
         self::assertStringContainsString('1', $tester->getDisplay());
+        $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
         self::assertNull($em->find(SyncState::class, $altId));
         self::assertNotNull($em->find(SyncState::class, $jungId));
@@ -52,16 +57,11 @@ final class SyncPruneCommandTest extends KernelTestCase
     public function testAStateJustInsideTheWindowSurvives(): void
     {
         $tester = $this->tester();
-        $em = static::getContainer()->get(EntityManagerInterface::class);
-
-        $state = new SyncState(SyncContract::locatorHash(str_repeat('c', 43)), '0123456789abcdef0123456789abcdef', 'bQ==', 'cA==');
-        $state->lastAccessAt = new \DateTimeImmutable('-364 days');
-        $em->persist($state);
-        $em->flush();
-        $id = $state->id;
+        $id = $this->seedAged(str_repeat('c', 43), '-364 days');
 
         $tester->execute([]);
 
+        $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
         self::assertNotNull($em->find(SyncState::class, $id));
     }
@@ -71,6 +71,6 @@ final class SyncPruneCommandTest extends KernelTestCase
         $tester = $this->tester();
         $tester->execute(['days' => '0']);
 
-        self::assertSame(2, $tester->getStatusCode()); // Command::INVALID
+        self::assertSame(Command::INVALID, $tester->getStatusCode());
     }
 }

@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Controller\Api;
+namespace App\Api;
 
-use App\Api\SyncContract;
 use App\Exception\SyncProblem;
+use App\Service\RateLimitGuard;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
 /**
  * Das gemeinsame Prüfwerk der vier Locator-Sync-Endpunkte: JSON auspacken,
@@ -17,8 +18,24 @@ use Symfony\Component\HttpFoundation\Request;
  * Nichts in dieser Klasse loggt. Der Body trägt den Locator, und der ist ein
  * Bearer-Token: ein Log mit Bodies wäre ein Log voller Zugangsschlüssel.
  */
-final class SyncRequest
+final class LocatorSyncRequest
 {
+    /**
+     * Der Eintritt, den alle vier Endpunkte teilen: Per-IP-Limit ziehen,
+     * Umschlag auspacken, Locator prüfen. Eine Zeile je Controller – so kann
+     * ein fünfter Endpunkt das Limit nicht vergessen und ungedrosselt laufen.
+     *
+     * @return array{0: array<string, mixed>, 1: string} Body und Locator-Hash
+     */
+    public static function open(Request $request, RateLimitGuard $guard, RateLimiterFactoryInterface $limiter): array
+    {
+        $guard->consume($limiter, $request->getClientIp() ?? 'unknown', onExhausted: SyncProblem::rateLimited(...));
+
+        $body = self::parse($request);
+
+        return [$body, self::locatorHash($body)];
+    }
+
     /**
      * @return array<string, mixed>
      *
@@ -63,14 +80,31 @@ final class SyncRequest
     }
 
     /**
-     * @param array<string, mixed> $body
+     * Der Pflicht-stateId von get, put und dem Einzel-delete.
      *
-     * @return ($required is true ? string : ?string)
+     * @param array<string, mixed> $body
      */
-    public static function stateId(array $body, bool $required): ?string
+    public static function stateId(array $body): string
+    {
+        $stateId = self::optionalStateId($body);
+        if ($stateId === null) {
+            throw SyncProblem::badRequest();
+        }
+
+        return $stateId;
+    }
+
+    /**
+     * Der optionale stateId von delete: fehlt er, fällt alles unter dem
+     * Locator (Vertrag). Ein VORHANDENER Wert wird auch hier voll geprüft –
+     * »fehlt« und »falsch« sind zwei verschiedene Dinge.
+     *
+     * @param array<string, mixed> $body
+     */
+    public static function optionalStateId(array $body): ?string
     {
         $stateId = $body['stateId'] ?? null;
-        if ($stateId === null && !$required) {
+        if ($stateId === null) {
             return null;
         }
         if (!\is_string($stateId) || !preg_match(SyncContract::STATE_ID_REGEX, $stateId)) {

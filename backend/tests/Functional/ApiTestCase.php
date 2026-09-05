@@ -7,11 +7,14 @@ namespace App\Tests\Functional;
 use App\Entity\Entry;
 use App\Entity\EntryVersion;
 use App\Entity\Submitter;
+use App\Entity\SyncState;
 use App\Enum\Category;
 use App\Enum\EntryStatus;
 use App\Enum\EntryType;
 use App\Enum\VersionStatus;
 use App\Service\EditTokenService;
+use App\Api\SyncContract;
+use App\Repository\SyncStateRepository;
 use App\Service\PayloadAnalyzer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -146,6 +149,32 @@ abstract class ApiTestCase extends WebTestCase
         $this->em->flush();
 
         return $entry;
+    }
+
+    // --- Locator-Sync (Extension-Vertrag apiLevel 3) -------------------
+
+    /**
+     * Der Locator aus »Derivation test vectors« des Vertrags (Geheimnis
+     * 0001…1f) und ein zweiter daneben. Aus dem Vertrag übernommen, damit
+     * die Tests dieselben Werte benutzen wie die Gegenseite.
+     */
+    protected const SYNC_LOCATOR = 'zoogXw2lwmt_ZqFnRu-lFOWYxyJaU2kpxfunpy3Umsk';
+    protected const SYNC_OTHER_LOCATOR = '3qzyS44KqXaBNzKvFSontDE8CfLPp8lwOUVHroaeg7M';
+    protected const SYNC_STATE_ID = '0123456789abcdef0123456789abcdef';
+
+    /** Legt einen Sync-Stand an; der Locator wird dabei gehasht wie im Betrieb. */
+    protected function seedSyncState(string $locator, string $stateId, string $payload = 'cGF5bG9hZA=='): SyncState
+    {
+        $state = new SyncState(SyncContract::locatorHash($locator), $stateId, 'bWV0YQ==', $payload);
+        $this->em->persist($state);
+        $this->em->flush();
+
+        return $state;
+    }
+
+    protected function syncStates(): SyncStateRepository
+    {
+        return static::getContainer()->get(SyncStateRepository::class);
     }
 
     /** @param array<string, mixed>|null $body */

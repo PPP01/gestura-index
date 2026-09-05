@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Exception\SyncProblem;
-use App\Repository\SyncStateRepository;
+use App\Api\LocatorSyncRequest;
+use App\Service\LocatorSyncService;
 use App\Service\RateLimitGuard;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -30,30 +29,12 @@ final class LocatorSyncListController
     #[Route('/api/v1/sync/list', methods: ['POST'])]
     public function __invoke(
         Request $request,
-        SyncStateRepository $states,
-        EntityManagerInterface $em,
+        LocatorSyncService $sync,
         RateLimitGuard $guard,
         RateLimiterFactoryInterface $syncV1Limiter,
     ): JsonResponse {
-        $guard->consume($syncV1Limiter, $request->getClientIp() ?? 'unknown', problem: SyncProblem::class);
+        [, $locatorHash] = LocatorSyncRequest::open($request, $guard, $syncV1Limiter);
 
-        $body = SyncRequest::parse($request);
-        $locatorHash = SyncRequest::locatorHash($body);
-
-        $out = [];
-        foreach ($states->findByLocator($locatorHash) as $state) {
-            // Listen ist ein Lesezugriff: es frischt die Aufbewahrungsfrist
-            // auf, rührt updatedAt aber nicht an – das zeigt der Client.
-            $state->touchAccess();
-            $out[] = [
-                'stateId' => $state->stateId,
-                'size' => $state->sizeBytes,
-                'updatedAt' => $state->updatedAt->format(\DateTimeInterface::ATOM),
-                'meta' => $state->meta,
-            ];
-        }
-        $em->flush();
-
-        return new JsonResponse(['states' => $out]);
+        return new JsonResponse(['states' => $sync->list($locatorHash)]);
     }
 }

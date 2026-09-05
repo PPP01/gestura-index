@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Api\LocatorSyncRequest;
 use App\Api\SyncContract;
 use App\Exception\SyncProblem;
 use App\Service\LocatorSyncService;
@@ -36,21 +37,21 @@ final class LocatorSyncPutController
         RateLimiterFactoryInterface $syncV1Limiter,
         RateLimiterFactoryInterface $syncV1BytesLimiter,
     ): JsonResponse {
-        $ip = $request->getClientIp() ?? 'unknown';
-        $guard->consume($syncV1Limiter, $ip, problem: SyncProblem::class);
-
-        $body = SyncRequest::parse($request);
-        $locatorHash = SyncRequest::locatorHash($body);
-        $stateId = SyncRequest::stateId($body, required: true);
-        $meta = SyncRequest::envelope($body, 'meta', SyncContract::MAX_META_BYTES);
-        $payload = SyncRequest::envelope($body, 'payload', SyncContract::MAX_PAYLOAD_BYTES);
-        $baseHash = SyncRequest::basePayloadHash($body);
+        [$body, $locatorHash] = LocatorSyncRequest::open($request, $guard, $syncV1Limiter);
+        $stateId = LocatorSyncRequest::stateId($body);
+        $meta = LocatorSyncRequest::envelope($body, 'meta', SyncContract::MAX_META_BYTES);
+        $payload = LocatorSyncRequest::envelope($body, 'payload', SyncContract::MAX_PAYLOAD_BYTES);
+        $baseHash = LocatorSyncRequest::basePayloadHash($body);
 
         // Das mengenbasierte Limit erst NACH der Formprüfung: ein kaputter
-        // Request soll kein Schreibbudget verbrauchen. Gezählt wird in
-        // angefangenen KiB – das ist der Hebel, den der Vertrag als ersten
-        // gegen Missbrauch nennt.
-        $guard->consume($syncV1BytesLimiter, $ip, (int) ceil((\strlen($meta) + \strlen($payload)) / 1024), SyncProblem::class);
+        // Request soll kein Schreibbudget verbrauchen. Es ist der Hebel, den
+        // der Vertrag als ersten gegen Missbrauch nennt.
+        $guard->consume(
+            $syncV1BytesLimiter,
+            $request->getClientIp() ?? 'unknown',
+            SyncContract::tokensFor(\strlen($meta) + \strlen($payload)),
+            SyncProblem::rateLimited(...),
+        );
 
         $state = $sync->write($locatorHash, $stateId, $meta, $payload, $baseHash);
 
