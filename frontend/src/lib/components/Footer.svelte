@@ -20,8 +20,10 @@
 		align-items: center;
 		gap: 8px;
 		padding: 24px 0;
-		margin-top: 32px;
-		border-top: 1px solid var(--border-color);
+		/* Kein eigener border-top/margin-top mehr: die Trennlinie zieht das Band
+		   im öffentlichen Layout (.footbar), und zwar über die volle Rahmenbreite
+		   wie bei Kopfleiste und Install-Streifen. Vorher zeichneten beide eine
+		   Linie – eine volle und 32px darunter eine eingerückte. */
 		color: var(--text-secondary);
 		font-size: 0.9em;
 	}

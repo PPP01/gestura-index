@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import InstallBar from '$lib/components/InstallBar.svelte';
 
 	let { children } = $props();
 
@@ -32,6 +33,9 @@
 				{@render children()}
 			</div>
 		</main>
+		<div class="installbar">
+			<div class="bar-inner"><InstallBar /></div>
+		</div>
 		<div class="footbar">
 			<div class="bar-inner"><Footer /></div>
 		</div>
@@ -75,9 +79,14 @@
 		max-width: var(--content-max-width); /* 900px */
 	}
 
-	.footbar {
+	/* Install-Streifen zwischen Inhalt und Fuß: er übernimmt die Trennlinie nach
+	   oben, der Footer behält seine eigene – zwei Bänder, zwei Kanten. */
+	.installbar {
 		border-top: 1px solid var(--border-color);
 		margin-top: 24px;
+	}
+	.footbar {
+		border-top: 1px solid var(--border-color);
 	}
 
 	/* ---- Ab 1280px: gerahmter, schwebender Kasten ---- */
@@ -105,7 +114,6 @@
 		}
 		.footbar {
 			border-radius: 0 0 20px 20px;
-			margin-top: 24px;
 		}
 		/* Im Rahmen übernimmt der Rahmen die Zentrierung; Leisten/Inhalt laufen
 		   bis an die Rahmenkante (Textseiten bleiben schmal, im Rahmen zentriert). */

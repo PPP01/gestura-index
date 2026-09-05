@@ -51,10 +51,11 @@ beforeEach(() => {
 });
 
 describe('C1 Marketing-Startseite', () => {
-	it('rendert die H1-Teilsätze', () => {
+	it('rendert die H1-Teilsätze und die Status-Pill', () => {
 		render(Page);
 		expect(screen.getByText(m.c1_hero_h1_a())).toBeInTheDocument();
 		expect(screen.getByText(m.c1_hero_h1_b())).toBeInTheDocument();
+		expect(screen.getByText(m.c1_status_pill())).toBeInTheDocument();
 	});
 
 	it('#install enthält drei Store-Links', () => {
@@ -75,25 +76,46 @@ describe('C1 Marketing-Startseite', () => {
 		expect(link.getAttribute('href')).toContain('/index');
 	});
 
-	it('Feature-Grid zeigt 6 Karten', () => {
+	it('Bento-Grid zeigt 6 Karten, davon eine breite Hero-Karte', () => {
 		const { container } = render(Page);
 		expect(container.querySelectorAll('.feature-tile')).toHaveLength(6);
+		expect(container.querySelectorAll('.bento-hero')).toHaveLength(1);
+	});
+
+	it('Browser-Mock zeigt die vier Gesten-Pills und ist für Screenreader stumm', () => {
+		const { container } = render(Page);
+		expect(container.querySelectorAll('.mock-canvas .pill')).toHaveLength(4);
+		expect(container.querySelector('.mock-wrap')).toHaveAttribute('aria-hidden', 'true');
 	});
 
 	it('lädt den Teaser (3 Einträge) und zeigt die echte Gesamtzahl', async () => {
-		render(Page);
+		const { container } = render(Page);
 		await waitFor(() => expect(listEntries).toHaveBeenCalled());
 		expect(listEntries.mock.calls[0][0]).toEqual({ page: 1, perPage: 3, sort: 'newest' });
 		await waitFor(() => expect(screen.getByText('teaser-a')).toBeInTheDocument());
 		expect(screen.getByText('teaser-b')).toBeInTheDocument();
 		expect(screen.getByText('teaser-c')).toBeInTheDocument();
-		expect(screen.getByText(m.c1_teaser_all_count({ total: 42 }))).toBeInTheDocument();
+		// Die Zahl im Teaser-Panel UND im Zahlen-Band kommt aus derselben
+		// API-Antwort – nirgends hart verdrahtet.
+		expect(screen.getByText(m.c1_teaser_heading_count({ total: '42' }))).toBeInTheDocument();
+		const entriesStat = screen.getByText(m.c1_stat_entries_label()).closest('.stat');
+		expect(entriesStat?.querySelector('.stat-value')?.textContent).toBe('42');
+		expect(container.querySelectorAll('.stats .stat')).toHaveLength(4);
 	});
 
-	it('blendet den Teaser bei einem API-Fehler still aus', async () => {
+	it('Teaser-CTA zeigt auf /index', async () => {
+		render(Page);
+		const cta = screen.getByRole('link', { name: m.c1_teaser_cta() });
+		expect(cta.getAttribute('href')).toContain('/index');
+	});
+
+	it('blendet Teaser und Index-Zahl bei einem API-Fehler still aus', async () => {
 		listEntries.mockRejectedValueOnce(new Error('network'));
 		const { container } = render(Page);
 		await waitFor(() => expect(listEntries).toHaveBeenCalled());
 		await waitFor(() => expect(container.querySelector('.teaser')).toBeNull());
+		// Keine erfundene Zahl: die Kachel verschwindet mit, das Band bleibt stehen.
+		expect(screen.queryByText(m.c1_stat_entries_label())).toBeNull();
+		expect(container.querySelectorAll('.stats .stat')).toHaveLength(3);
 	});
 });
