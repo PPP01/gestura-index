@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Api\ExchangeFormat;
 use App\Entity\Entry;
 use App\Enum\Category;
 use App\Enum\EntryStatus;
@@ -124,7 +125,7 @@ final class SubmissionService
         $successor = false;
         if (\array_key_exists('successorFormatId', $body)) {
             $successor = $body['successorFormatId'];
-            if ($successor !== null && (!\is_string($successor) || mb_strlen($successor) > 128)) {
+            if ($successor !== null && (!\is_string($successor) || mb_strlen($successor) > ExchangeFormat::ID_MAX_LENGTH)) {
                 throw new ApiProblem(400, 'Invalid successorFormatId');
             }
         }

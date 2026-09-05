@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Api\ExchangeFormat;
 use App\Enum\EntryStatus;
 use App\Exception\ApiProblem;
 use App\Repository\EntryRepository;
@@ -21,6 +22,9 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class VersionDownloadController
 {
+    /** Routenname – UpdateCheckController erzeugt daraus die Download-URL. */
+    public const ROUTE = 'api_version_download';
+
     /**
      * Liefert 200 mit dem Payload der angefragten Version als JSON.
      *
@@ -28,7 +32,7 @@ final class VersionDownloadController
      * ApiProblem 404, wenn der Eintrag nicht veröffentlicht ist oder die
      * angegebene Version nicht als genehmigt vorliegt.
      */
-    #[Route('/api/v1/entries/{formatId}/versions/{semver}', methods: ['GET'], requirements: ['semver' => '\d{1,5}\.\d{1,5}\.\d{1,5}'])]
+    #[Route('/api/v1/entries/{formatId}/versions/{semver}', name: self::ROUTE, methods: ['GET'], requirements: ['semver' => ExchangeFormat::SEMVER_PATTERN])]
     public function __invoke(
         string $formatId,
         string $semver,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use App\Api\ApiLevel;
+use App\Controller\Api\UpdateCheckController;
 
 final class UpdateCheckTest extends ApiTestCase
 {
@@ -230,7 +231,7 @@ final class UpdateCheckTest extends ApiTestCase
 
         self::assertResponseIsSuccessful();
         $rawBody = (string) $this->client->getResponse()->getContent();
-        self::assertLessThan(256 * 1024, \strlen($rawBody), 'Antwort muss unter dem 256-KiB-Cap des Clients bleiben');
+        self::assertLessThan(UpdateCheckController::CLIENT_RESPONSE_CAP_BYTES, \strlen($rawBody), 'Antwort muss unter dem 256-KiB-Cap des Clients bleiben');
 
         $updates = $this->json()['updates'];
         // Kein Element darf fehlen – nur changelog darf leer werden.
@@ -285,10 +286,38 @@ final class UpdateCheckTest extends ApiTestCase
         // Schätzung – der Sinn der Prüfung ist, was tatsächlich auf die
         // Leitung geht.
         $rawBody = (string) $this->client->getResponse()->getContent();
-        self::assertLessThan(262144, \strlen($rawBody), 'Antwort muss unter dem 256-KiB-Cap des Clients bleiben');
+        self::assertLessThan(UpdateCheckController::CLIENT_RESPONSE_CAP_BYTES, \strlen($rawBody), 'Antwort muss unter dem 256-KiB-Cap des Clients bleiben');
 
         // Kein Element darf fehlen, auch wenn viele changelogs wegen des
         // Budgets null werden.
+        self::assertCount($count, $this->json()['updates']);
+    }
+
+    public function testWorstCaseResponseStaysUnderTheClientCap(): void
+    {
+        // Das größtmögliche Skelett auf einmal: 200 Elemente (Vertragsgrenze),
+        // id und successor je 128 Zeichen (Formatgrenze), und ein changelog aus
+        // 1000 Zeichen, die JsonResponse sämtlich zu 6-Byte-Escapes eskaliert.
+        // Geprüft wird der ECHTE Body gegen den Cap – das ist die Absicherung
+        // der Budget-Marge, nicht ein nachgerechneter Kommentar am Controller.
+        $count = 200;
+        $expensive = str_repeat("'&\"<>", 200);
+        $formatId = static fn (int $i): string => str_repeat('a', 125) . sprintf('%03d', $i);
+        for ($i = 0; $i < $count; ++$i) {
+            $entry = $this->createPublishedEntry($formatId($i), ['version' => '2.0.0']);
+            $entry->currentVersion->changelog = $expensive;
+            $entry->successorFormatId = str_repeat('z', 128);
+        }
+        $this->em->flush();
+
+        $this->api('POST', '/api/v1/updates', ['entries' => array_map(
+            static fn (int $i): array => ['id' => $formatId($i), 'version' => '1.0.0'],
+            range(0, $count - 1),
+        )]);
+
+        self::assertResponseIsSuccessful();
+        $rawBody = (string) $this->client->getResponse()->getContent();
+        self::assertLessThan(UpdateCheckController::CLIENT_RESPONSE_CAP_BYTES, \strlen($rawBody), 'Antwort muss unter dem 256-KiB-Cap des Clients bleiben');
         self::assertCount($count, $this->json()['updates']);
     }
 
