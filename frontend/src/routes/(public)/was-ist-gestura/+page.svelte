@@ -84,8 +84,10 @@
 	<div class="c2-stars" aria-hidden="true"></div>
 
 	<div class="intro">
-		<span class="status-pill"><span class="dot"></span>{m.c2_status_pill()}</span>
-		<h1>{m.c2_h1_lead()} <span class="grad">{m.c2_h1_accent()}</span></h1>
+		<div class="intro-head">
+			<span class="status-pill"><span class="dot"></span>{m.c2_status_pill()}</span>
+			<h1>{m.c2_h1_lead()} <span class="grad">{m.c2_h1_accent()}</span></h1>
+		</div>
 		<p>{m.c2_intro()}</p>
 	</div>
 
@@ -187,7 +189,8 @@
 
 	/*
 	 * Beide Verlaufs-Ebenen greifen seitlich und nach oben ins Shell-Padding
-	 * (24px / 28px), damit sie nicht an der Spaltenkante beginnen.
+	 * (24px / 28px), sodass sie bündig an der Rahmenkante enden statt an der
+	 * Inhaltskante zu beginnen.
 	 */
 	.c2-glow,
 	.c2-stars {
@@ -197,20 +200,18 @@
 		z-index: 0;
 	}
 	/*
-	 * Ein Haupt-Glow oben mittig, zwei sehr schwache Seiten-Glows weiter unten.
-	 * Die Radien sind KLEINER als die Handoff-Zahlen (760×380): das Design ist
-	 * auf die volle Seitenbreite gezeichnet, hier steht nur die 900px-Lesespalte
-	 * zur Verfügung. Ein 760px-Verlauf, der erst bei 72 % ausläuft, misst rund
-	 * 1100px und wird an der Spaltenkante ABGESCHNITTEN – als sichtbares helles
-	 * Rechteck. Jeder Verlauf muss innerhalb der Ebene auslaufen; das Zentrum des
-	 * Haupt-Glows sitzt deshalb auf der Oberkante statt darüber, wo die
-	 * Trennlinie der Kopfleiste den Ansatz ohnehin verdeckt.
+	 * Ein Haupt-Glow oben mittig, zwei sehr schwache Seiten-Glows weiter unten –
+	 * die Werte des Handoffs. Sie setzen die volle Seitenbreite voraus: auf einer
+	 * schmaleren Fläche misst der 760px-Verlauf mit seinem 72%-Auslauf rund
+	 * 1100px, wird an der Kante abgeschnitten und steht als sichtbares helles
+	 * Rechteck hinter der Überschrift. Wer diese Seite je in eine schmale Spalte
+	 * setzt, muss die Radien mitziehen.
 	 */
 	.c2-glow {
 		background:
-			radial-gradient(560px 320px at 50% 0, var(--c2-glow-a), var(--c2-glow-b) 50%, transparent 72%),
-			radial-gradient(300px 220px at 76% 46%, var(--c2-glow-side), transparent 70%),
-			radial-gradient(300px 220px at 24% 74%, var(--c2-glow-side), transparent 70%);
+			radial-gradient(760px 380px at 50% -80px, var(--c2-glow-a), var(--c2-glow-b) 50%, transparent 72%),
+			radial-gradient(420px 260px at 92% 44%, var(--c2-glow-side), transparent 70%),
+			radial-gradient(420px 260px at 8% 72%, var(--c2-glow-side), transparent 70%);
 	}
 	/* Sternenrauschen nur im dunklen Thema – im hellen wäre es Schmutz. */
 	.c2-stars {
@@ -235,8 +236,20 @@
 		z-index: 1;
 	}
 
-	/* ---- Intro ---- */
+	/*
+	 * ---- Intro ----
+	 * Zweispaltig: Überschrift links, Einleitung rechts daneben. Über die volle
+	 * Shell-Breite wäre der Absatz sonst rund 1150px breit – etwa 150 Zeichen je
+	 * Zeile, weit jenseits des Lesbaren. Die zweite Spalte nutzt die Fläche
+	 * wirklich aus, statt sie über eine zweite Inhaltsbreite wegzuwerfen.
+	 */
 	.intro {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px 48px;
+		align-items: center;
+	}
+	.intro-head {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
@@ -324,14 +337,16 @@
 		flex-direction: column;
 		gap: 56px;
 	}
+	/* Breitere Bildspalte als die 340px des Handoffs: auf der vollen Shell bliebe
+	   sonst eine Textspalte von rund 780px stehen – zu breit für Fließtext. */
 	.sec {
 		display: grid;
-		grid-template-columns: 1fr 340px;
-		gap: 36px;
+		grid-template-columns: 1fr 480px;
+		gap: 48px;
 		align-items: center;
 	}
 	.sec.image-first {
-		grid-template-columns: 340px 1fr;
+		grid-template-columns: 480px 1fr;
 	}
 	.sec.image-first .shot-frame {
 		order: -1;
@@ -436,6 +451,14 @@
 	}
 	.banner p strong {
 		color: var(--text-primary);
+	}
+
+	/* Unter 900px trägt die Fläche die zweite Intro-Spalte nicht mehr. */
+	@media (max-width: 900px) {
+		.intro {
+			grid-template-columns: 1fr;
+			align-items: start;
+		}
 	}
 
 	@media (max-width: 640px) {
