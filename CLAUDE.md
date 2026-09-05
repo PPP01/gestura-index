@@ -10,7 +10,7 @@ Team-Gedächtnis (Fallen und Konventionen aus der Umsetzung): @.claude/lessons.m
 - `frontend/` – SvelteKit, **Svelte 5 mit Runes** (per `vite.config.ts` erzwungen), **TypeScript**, `adapter-static` (öffentliche Seiten prerendered, Admin als client-only SPA via `fallback`).
 - `schema/exchange-schema.json` – **Kopie** des Format-Vertrags aus dem Extension-Repo. Autoritative Quelle: `/mnt/c/Programme.alt/Gestura/js/exchange-schema.json`. Hier **nie direkt ändern** – bei Formatänderungen im Extension-Repo ändern und neu herüberkopieren. Achtung: die Datei wird zur **Laufzeit** von `ExchangeValidator` gelesen – eine neue Kopie ist eine Code-Änderung mit eigenem Testlauf.
 - `deploy/` – Deploy-Skripte (versionierte Releases), Runbook.
-- `exchange/` – Übergabekanal zum Extension-Repo (siehe Logbuch unten).
+- `exchange/` – Übergabekanal zum Extension-Repo: **lokaler Ordner, nicht im Repo** (gitignored). Was daraus dauerhaft gilt, steht in `docs/extension-austausch.md`.
 
 Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension).
 
@@ -19,7 +19,7 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 ## Wichtige Referenzen (Extension-Repo, aus WSL)
 
 - **Vertrag Extension ↔ Index (autoritativ, direkt lesen, nie kopieren):** `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md`
-- **Austausch-Logbuch: `exchange/AUSTAUSCH.md`** – vor Arbeit an der Extension-Schnittstelle zuerst hineinsehen, danach dort eine Zeile hinterlassen. Bei Mehrdeutigkeiten im Vertrag dort nachfragen, statt sie zu entscheiden.
+- **Austausch-Logbuch: `exchange/AUSTAUSCH.md`** (lokal, nicht im Repo) – vor Arbeit an der Extension-Schnittstelle zuerst hineinsehen, danach dort eine Zeile hinterlassen. Bei Mehrdeutigkeiten im Vertrag dort nachfragen, statt sie zu entscheiden. Repo-Fassung mit Stand und **offenen Rückfragen**: `docs/extension-austausch.md`.
 - Design-Spec (freigegeben): `/mnt/c/Programme.alt/Gestura/docs/superpowers/specs/2026-07-19-menu-index-design.md`
 - Referenz-Validator (autoritativ für Regeln jenseits des JSON-Schemas): `/mnt/c/Programme.alt/Gestura/js/menu-exchange.js`
 - Phase-1-Plan (Muster für Planformat): `/mnt/c/Programme.alt/Gestura/docs/superpowers/plans/2026-07-19-menu-index-phase1.md`

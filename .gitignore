@@ -24,3 +24,10 @@ node_modules/
 # Symfony-generierter Config-Referenz-Dump (environment-abhängig, wird bei
 # jedem cache:clear neu geschrieben – keine Handpflege, keine Diff-Relevanz)
 /backend/config/reference.php
+
+# Übergabekanal zum Extension-Repo (lokaler Arbeitsordner, kein Repo-Inhalt):
+# rohe Abzüge des Vertrags, Handover-Briefe und Design-Material, teils als
+# Binärdateien und mit Windows-ADS-Artefakten (»:Zone.Identifier«) aus dem
+# WSL-Mount. Was daraus dauerhaft gilt, steht in docs/extension-austausch.md
+# und – für den Vertrag selbst – in docs/gestura-eu-api.md.
+/exchange/

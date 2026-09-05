@@ -13,7 +13,7 @@ The optional sharing index for the **Gestura** browser extension — a service w
 | `schema/` | Shared contract: JSON Schema of the Gestura exchange format — **a copy** of `js/exchange-schema.json` from the extension repo, never edited here |
 | `deploy/` | Deployment scripts (versioned releases, rollback, smoke test, GC) and the deployment runbook |
 | `docs/` | Project documentation, design system, and the copy of the extension ↔ index contract |
-| `exchange/` | Hand-off channel with the extension repository — see below |
+| `exchange/` | Hand-off channel with the extension repository — a **local** working folder, gitignored and not part of the repo; see `docs/extension-austausch.md` |
 
 ## The extension contract
 
@@ -25,7 +25,7 @@ The extension and the index talk over a versioned contract. It is maintained **i
 /mnt/c/Programme.alt/Gestura/js/menu-exchange.js      the reference validator
 ```
 
-`exchange/AUSTAUSCH.md` is the shared log book between the two repositories: read it before touching anything on the extension boundary, and leave a line there afterwards. `docs/gestura-eu-api.md` is a convenience copy of the contract, marked with the commit it was taken from.
+`exchange/AUSTAUSCH.md` is the shared log book between the two repositories: read it before touching anything on the extension boundary, and leave a line there afterwards. That folder is local and **not** part of this repository — what stays true from it lives in [`docs/extension-austausch.md`](docs/extension-austausch.md), including the questions still open with the extension side. `docs/gestura-eu-api.md` is a convenience copy of the contract, marked with the commit it was taken from.
 
 The index implements **apiLevel 3**: the update check (`POST /api/v1/updates`) and the four anonymous, locator-addressed sync endpoints (`/api/v1/sync/*`).
 

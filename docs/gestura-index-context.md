@@ -29,7 +29,8 @@ ohne** – nichts an ihr hängt am Backend.
 Eigenes, **öffentliches GitHub-Monorepo** `gestura-index`:
 `backend/` (Symfony JSON-API) · `frontend/` (SvelteKit: öffentliche Website +
 Admin) · `schema/` (geteilter Format-Vertrag, Kopie) · `deploy/` (versionierte
-Releases) · `exchange/` (Übergabekanal zum Extension-Repo).
+Releases). Der Übergabekanal `exchange/` liegt lokal daneben, nicht im Repo –
+was daraus dauerhaft gilt, steht in `docs/extension-austausch.md`.
 
 ## Die Schnittstelle: das Austauschformat
 
@@ -95,8 +96,10 @@ lesen), Kopie zum Mitlesen in `docs/gestura-eu-api.md`.
   den `basePayloadHash`-Konflikt (412) des Servers.
 
 Beide Level sind umgesetzt. **Kanal für alles, was diese Grenze betrifft:**
-`exchange/AUSTAUSCH.md` – vorher hineinsehen, danach eine Zeile hinterlassen.
-Bei Mehrdeutigkeiten im Vertrag dort nachfragen, statt sie zu entscheiden.
+das lokale Logbuch `exchange/AUSTAUSCH.md` (nicht im Repo) – vorher hineinsehen,
+danach eine Zeile hinterlassen. Bei Mehrdeutigkeiten im Vertrag dort nachfragen,
+statt sie zu entscheiden. Repo-Fassung mit Stand und offenen Rückfragen:
+`docs/extension-austausch.md`.
 
 ## Bereits festgezurrte Entscheidungen
 
