@@ -1,8 +1,11 @@
 # Gestura & Gestura-Index – Kontext-Briefing (für die gestura-index-Sitzung)
 
 > Dieses Dokument setzt eine frische Claude-Code-Sitzung im **gestura-index**-Repo
-> sofort ins Bild. Kopiere es beim Setup nach `gestura-index/docs/` (aus WSL:
-> `cp /mnt/c/Programme.alt/Gestura/docs/gestura-index-context.md ~/gestura-index/docs/`).
+> sofort ins Bild. Es entstand als Kopie aus dem Extension-Repo, wird inzwischen
+> aber **hier** gepflegt – im Extension-Repo gibt es die Datei nicht mehr.
+>
+> **Stand: 5. September 2026.** Was einmal »Phase-2-Umfang« hieß, ist gebaut;
+> die Abschnitte darunter sind entsprechend als Ist-Stand zu lesen.
 
 ## Was Gestura ist
 
@@ -19,13 +22,14 @@ Nutzer konfigurieren u. a. Gesten-Aktionen, **eigene Suchmaschinen** und
 ## Was gestura-index ist (DIESES Projekt)
 
 Ein **optionales, kostenloses Zusatzfeature**: ein Backend-Dienst + eine Website,
-über die Nutzer Gestura-**Menüs und Suchmaschinen teilen** und (später) ihre
-Settings browserübergreifend synchronisieren. Die Extension läuft **vollständig
+über die Nutzer Gestura-**Menüs und Suchmaschinen teilen** und ihre Settings
+browserübergreifend **synchronisieren**. Die Extension läuft **vollständig
 ohne** – nichts an ihr hängt am Backend.
 
 Eigenes, **öffentliches GitHub-Monorepo** `gestura-index`:
 `backend/` (Symfony JSON-API) · `frontend/` (SvelteKit: öffentliche Website +
-Admin) · `schema/` (geteilter Format-Vertrag) · `deploy/`.
+Admin) · `schema/` (geteilter Format-Vertrag, Kopie) · `deploy/` (versionierte
+Releases) · `exchange/` (Übergabekanal zum Extension-Repo).
 
 ## Die Schnittstelle: das Austauschformat
 
@@ -33,8 +37,11 @@ Admin) · `schema/` (geteilter Format-Vertrag) · `deploy/`.
   (Suchmaschinen/Links). Felder u. a.: `id` (reverse-domain), `version` (SemVer),
   `name`/`description` (String **oder** `{lang: ...}` mit en-Fallback), `items`
   bzw. `url`, `patterns`, optionaler `transformCode` (JS) bei Engines.
-- **Autoritative Vertragsdatei:** `schema/exchange-schema.json` (aus dem
-  Extension-Repo kopiert). Die Extension hat einen **Laufzeit-Validator**
+- **Autoritativ ist das Extension-Repo**, nicht dieses hier: der Format-Vertrag
+  lebt in `/mnt/c/Programme.alt/Gestura/js/exchange-schema.json`.
+  `schema/exchange-schema.json` ist eine **Kopie** davon und wird hier nie direkt
+  editiert – bei Formatänderungen dort ändern und neu herüberkopieren.
+  Die Extension hat einen **Laufzeit-Validator**
   (`js/menu-exchange.js`) *und* dasselbe JSON-Schema. **Das Backend muss identisch
   validieren** (Aktions-Whitelist, `https:`-only URLs, Größen-/Anzahllimits,
   SemVer). Regeln, die JSON-Schema nicht ausdrücken kann (eindeutige Item-IDs,
@@ -46,9 +53,10 @@ Admin) · `schema/` (geteilter Format-Vertrag) · `deploy/`.
   (inkl. Favicon, Transform-Warnung, Chrome-only-Hinweis), sowie beim Import eines
   Standard-Eintrags die Wahl **„Standard ersetzen" vs. „neu hinzufügen"**.
 
-## Phase-2-Umfang (was jetzt gebaut wird)
+## Phase-2-Umfang (gebaut)
 
-- **Symfony JSON-API** (~12 Endpunkte): Stöbern/Suchen (nach Domain, Kategorie,
+- **Symfony JSON-API** (inzwischen rund 70 Routen, siehe `backend/README.md`):
+  Stöbern/Suchen (nach Domain, Kategorie,
   Tag), Detail + Versionen, Download (anonymer Install-Zähler, **keine
   IP-Speicherung**), Update-Check, Einreichen/Aktualisieren/Löschen
   (Konto-Session **oder** anonymer Edit-Token), Melden, Bewerten.
@@ -68,8 +76,27 @@ Admin) · `schema/` (geteilter Format-Vertrag) · `deploy/`.
 - **Bilder:** optional 1 Screenshot pro Eintrag, serverseitig neu enkodiert
   (→ WebP, feste Maximalgröße), nie Fremd-URLs.
 
-**Phase 3 (später, nicht jetzt):** Passkey-Konten, Sterne-Bewertungen, „Meine
-Daten", **E2E-verschlüsselter Settings-Sync**, Token-Überführung ins Konto.
+**Phase 3 (gebaut):** anonyme Konten, Sterne-Bewertungen, »Meine Daten«,
+E2E-verschlüsselter Settings-Sync, Token-Überführung ins Konto.
+
+## Der Extension-Vertrag (R2/R3, apiLevel 3)
+
+Über das Austauschformat hinaus gibt es einen **zweiten**, eigenen Vertrag
+zwischen Extension und Index – Endpunkte, Bodies, Fehlercodes:
+`/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md` (autoritativ, direkt
+lesen), Kopie zum Mitlesen in `docs/gestura-eu-api.md`.
+
+- **Level 2:** `POST /api/v1/updates` – Update-Check, anonym, ohne Kennung.
+- **Level 3:** vier `/api/v1/sync/*`-Endpunkte – anonymer Settings-Sync,
+  adressiert über einen aus dem Nutzergeheimnis abgeleiteten **Locator**, der
+  serverseitig nur als SHA-256 abgelegt wird. Der Server sieht ausschließlich
+  Chiffrate; er entschlüsselt nichts und merged nichts – das Zusammenführen
+  macht die Extension über eine lokal gehaltene Basis und stützt sich dabei auf
+  den `basePayloadHash`-Konflikt (412) des Servers.
+
+Beide Level sind umgesetzt. **Kanal für alles, was diese Grenze betrifft:**
+`exchange/AUSTAUSCH.md` – vorher hineinsehen, danach eine Zeile hinterlassen.
+Bei Mehrdeutigkeiten im Vertrag dort nachfragen, statt sie zu entscheiden.
 
 ## Bereits festgezurrte Entscheidungen
 
@@ -93,22 +120,32 @@ Daten", **E2E-verschlüsselter Settings-Sync**, Token-Überführung ins Konto.
 
 - Shared-Linux-Hosting (sieht nach ALL-INKL aus), **SSH-Zugang**, **PHP 8.5.3**
   (CLI-Binary heißt **`php85`**, nicht `php`), **Composer 2.9.8**, MySQL.
-- Deploy: SSH/rsync + `php85 composer install --no-dev -o` +
-  `php85 bin/console doctrine:migrations:migrate`. **Docroot muss auf
-  `backend/public/` zeigen** (Subdomain, z. B. `index.<domain>`, oder Alias).
-  Secrets in `.env.local` außerhalb des Repos. Frontend = statischer Build,
-  hochgeladen ins Web-Root der Index-Domain.
+- **Versionierte Releases:** `deploy/deploy.sh vX.Y.Z` bringt einen annotierten
+  Git-Tag nach `releases/<tag>/`; `current` zeigt aufs aktive Release,
+  geteilter Zustand liegt in `shared/` (`.env.local`, `media/`, `log/`).
+  `rollback.sh` schaltet zurück, `smoke.sh` prüft, `gc.sh` räumt auf.
+- **Ein gemeinsames Docroot für beide Domains** (`gestura.eu`,
+  `api.gestura.eu`): `current/backend/public/`. Der Frontend-Build liegt im
+  Release ebenfalls dort – nur so erreicht die Extension
+  `https://gestura.eu/api/v1/updates` ohne Umleitung, und der Vertrag verbietet
+  jedes `3xx` auf den API-Pfaden.
+- Secrets ausschließlich in `shared/.env.local`. Details und Runbook:
+  `deploy/README.md`.
 
 ## Autoritative Referenzen (aus WSL unter `/mnt/c/Programme.alt/Gestura/`)
 
-- Design-Spec: `docs/superpowers/specs/2026-07-19-menu-index-design.md`
+- **API-Vertrag Extension ↔ Index:** `docs/gestura-eu-api.md`
 - Format-Vertrag: `js/exchange-schema.json`
 - Referenz-Validator: `js/menu-exchange.js`
+- Design-Spec: `docs/superpowers/specs/2026-07-19-menu-index-design.md`
 - Phase-1-Plan (Referenz): `docs/superpowers/plans/2026-07-19-menu-index-phase1.md`
 
-## Wie in Phase 2 starten
+## Arbeitsweise
 
-Im `gestura-index`-Repo: **brainstorming → writing-plans → subagent-driven
-execution** (gleicher Ablauf wie Phase 1). Das Design-Spec ist grobkörnig – der
-Brainstorming-Durchlauf zurrt die Details fest (konkrete Endpunkte,
-Doctrine-Entities, Moderations-Statusmaschine, WebAuthn-Flow, Deploy-Skript).
+**brainstorming → writing-plans → subagent-driven execution.** Pläne und Specs
+landen unter `docs/superpowers/`; die dort liegenden Dateien sind Momentaufnahmen
+ihrer Umsetzung und werden nachträglich nicht mehr fortgeschrieben.
+
+Was ein neues Teammitglied sonst teuer bezahlt, steht in `.claude/lessons.md` –
+diese Datei wird laufend gepflegt und ist beim Einstieg die zweite Pflichtlektüre
+nach diesem Briefing.

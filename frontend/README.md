@@ -1,42 +1,52 @@
-# sv
+# gestura-index Frontend
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit mit **Svelte 5 (Runes)** und **TypeScript**. Zwei Teile in einer App:
 
-## Creating a project
+- die **öffentliche Website** – prerendered über `adapter-static`, damit sie SEO-fähig ist;
+- das **Admin-Panel** – client-only SPA gegen die API, ausgeliefert über den `fallback` (`200.html`).
 
-If you're seeing this, you've probably already done this step. Congrats!
+Die App konsumiert ausschließlich die JSON-API aus `../backend/`; eigene Serverlogik gibt es nicht.
 
-```sh
-# create a new project
-npx sv create my-app
+## Entwicklung
+
+```bash
+npm install
+npm run dev            # nur das Frontend (Port 5173)
+../dev.sh              # Backend + Frontend zusammen – der übliche Weg
 ```
 
-To recreate this project with the same configuration:
+`dev.sh` sucht sich ab 8000 den ersten freien Backend-Port und reicht ihn als `BACKEND_PORT` an den Vite-Proxy weiter (`vite.config.ts` → `server.proxy['/api']`). Beides läuft damit unter der einen Origin `http://localhost:5173` – das ist die Voraussetzung für die Passkey-Tests (WebAuthn verlangt Origin-Match) und erspart jede CORS-Frage.
 
-```sh
-# recreate this project
-npx sv@0.16.3 create --template minimal --types ts --install npm frontend
+> Aus einem **Windows-Browser** heraus `http://127.0.0.1:5173` statt `localhost` verwenden: `localhost` löst dort zuerst nach `::1` auf, der Portproxy zur WSL hängt aber nur an IPv4. Das sieht wie ein toter Dienst aus, ist aber nur die Namensauflösung.
+
+```bash
+npm run build          # statischer Build → build/
+npm run preview        # Build lokal ansehen
+npm run check          # svelte-check (TypeScript)
+npm run test           # vitest
 ```
 
-## Developing
+## Sprachen (Paraglide)
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Nachrichten liegen als JSON in `messages/en.json` und `messages/de.json`; kompiliert wird nach `src/lib/paraglide/`.
 
-```sh
-npm run dev
+**Das Kompilat ist gitignored und darf nicht committet werden.** `dev` und `build` erledigen es über das Vite-Plugin, `test`/`check`/`prepare` rufen `paraglide-js compile` vorab auf. Nach dem Ergänzen neuer Keys also nur die beiden JSON-Quellen committen.
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+> Ein `paraglide compile` **neben einem laufenden Dev-Server** kann dessen Modulgraph entwerten – die Seiten antworten dann mit 500 und der Server verlangt Dateien, die es im neuen Kompilat nicht mehr gibt. Heilung: Dev-Server neu starten. Ein `touch` auf die Message-JSONs genügt nicht.
 
-## Building
+## Design
 
-To create a production version of your app:
+Die Website übernimmt das Design der Extension. Regeln und die Liste der übernommenen Dateien: [`../docs/design-system.md`](../docs/design-system.md).
 
-```sh
-npm run build
-```
+Zwei davon sind **Kopien aus dem Extension-Repo** und werden hier nicht weiterentwickelt, sondern bei Änderungen neu herübergeholt:
 
-You can preview the production build with `npm run preview`.
+- `src/lib/styles/gestura-common.css` ← `css/common.css`
+- `src/lib/menu-icons.ts` ← `js/menu-icons.js` (die 50 Icon-Namen sind ein *Daten*-Vertrag des Austauschformats, kein Styling-Detail)
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Einzige gewollte Abweichung vom Extension-Design ist die Max-Width-Shell für sehr breite Bildschirme.
+
+## Übergabe an die Extension
+
+Der Knopf »An Gestura senden« holt das Bundle selbst über `POST /api/v1/bundle` und reicht es **inline** per DOM-Event `gestura:import` weiter – `detail` ist dabei ein **String**, kein Objekt. Die Extension fetcht auf diesem Weg nichts. Die Rückmeldung kommt als `gestura:import-result`.
+
+Der Rückkanal-Listener hängt bewusst am Lebenszyklus der Komponente, **nicht** am Sendevorgang: zwischen Klick und Rückmeldung steht der Nutzer im Import-Dialog der Extension, und das dauert regelmäßig länger als der 15-Sekunden-Hinweis. Details: [`../docs/extension-bundle-import-todo.md`](../docs/extension-bundle-import-todo.md).

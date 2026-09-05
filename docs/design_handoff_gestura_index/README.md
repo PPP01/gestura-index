@@ -1,5 +1,15 @@
 # Handoff: Gestura Index – Onepager + Marketing-/SEO-Seiten
 
+> **Empfangenes Design-Artefakt – Archivstand, nicht fortgeschrieben.** Der Text
+> unten steht so, wie er aus dem Design kam. Zwei Dinge stimmen inzwischen nicht
+> mehr mit dem Projekt überein und werden hier bewusst nicht im Original
+> korrigiert:
+>
+> - Die Domain heißt **`gestura.eu`**, nicht `gestura.app`.
+> - Die Zielumgebung stand bei der Übergabe noch nicht fest; sie ist inzwischen
+>   SvelteKit mit `adapter-static`. Verbindlich für die Umsetzung ist
+>   [`../design-system.md`](../design-system.md).
+
 ## Overview
 Website-Design für den **Gestura Index** (gestura.app): ein Onepager-Katalog zum Entdecken, Filtern und Sammeln von Gestura-Menüs und -Suchmaschinen, plus fünf Marketing-/SEO-Seiten (C1 Startseite, C2 „Was ist Gestura“, C3 „Was sind Maus-Gesten“, C4 Vergleich, C5 Beispiele). Die Website übernimmt den Look der Browser-Extension: Dark ist Default, Light als Variante.
 

@@ -7,9 +7,10 @@ Team-Gedächtnis (Fallen und Konventionen aus der Umsetzung): @.claude/lessons.m
 ## Repo-Struktur
 
 - `backend/` – Symfony 7.4 LTS JSON-API (reine API, kein Twig). Lokal: PHP 8.5.3, `composer`.
-- `frontend/` – SvelteKit, **Svelte 5 mit Runes** (per `vite.config.ts` erzwungen), **TypeScript**, `adapter-static` (öffentliche Seiten prerendered, Admin später als client-only SPA via `fallback`).
-- `schema/exchange-schema.json` – **Kopie** des Format-Vertrags aus dem Extension-Repo. Autoritative Quelle: `/mnt/c/Programme.alt/Gestura/js/exchange-schema.json`. Hier **nie direkt ändern** – bei Formatänderungen im Extension-Repo ändern und neu herüberkopieren.
-- `deploy/` – Deploy-Skripte, CI-Konfiguration.
+- `frontend/` – SvelteKit, **Svelte 5 mit Runes** (per `vite.config.ts` erzwungen), **TypeScript**, `adapter-static` (öffentliche Seiten prerendered, Admin als client-only SPA via `fallback`).
+- `schema/exchange-schema.json` – **Kopie** des Format-Vertrags aus dem Extension-Repo. Autoritative Quelle: `/mnt/c/Programme.alt/Gestura/js/exchange-schema.json`. Hier **nie direkt ändern** – bei Formatänderungen im Extension-Repo ändern und neu herüberkopieren. Achtung: die Datei wird zur **Laufzeit** von `ExchangeValidator` gelesen – eine neue Kopie ist eine Code-Änderung mit eigenem Testlauf.
+- `deploy/` – Deploy-Skripte (versionierte Releases), Runbook.
+- `exchange/` – Übergabekanal zum Extension-Repo (siehe Logbuch unten).
 
 Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension).
 
@@ -29,6 +30,7 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 - Alles anonym nutzbar; Konto (Phase 3) nur Komfort. Keine E-Mail-Pflicht, keine IP-Persistenz.
 - Server validiert Einreichungen **identisch** zum Client: Aktions-Whitelist, nur `https:`-URLs, Größen-/Anzahllimits, SemVer – Regeln stehen im Schema (`x-gestura` + `description`).
 - Einreichungen mit `transformCode` gehen **immer** in die Moderations-Warteschlange (Supply-Chain-Schutz), auch bei Trust-Level und Updates.
+- **Locator-Sync (apiLevel 3):** Request-Bodies werden **nie** protokolliert – der Locator ist ein Bearer-Token und reist nur dort. Seine Form (`^[A-Za-z0-9_-]{43}$`) wird geprüft, **bevor** er etwas adressiert, und abgelegt wird er ausschließlich als SHA-256. Kein `3xx` auf `/api/v1/…`.
 
 ## Befehle
 
@@ -41,17 +43,23 @@ npm run dev:all                                   # identisch, via Root-package.
 composer --working-dir=backend install
 php -S localhost:8000 -t backend/public          # Dev-Server (einzeln)
 php backend/bin/phpunit                           # Tests (Exit-Code prüfen: echo $?)
+                                                  # Achtung failOnDeprecation: »OK« kann trotzdem Exit 1 sein
 
 # Frontend
 npm --prefix frontend run dev                     # Dev-Server
 npm --prefix frontend run build                   # statischer Build → frontend/build/
 npm --prefix frontend run check                   # svelte-check (TypeScript)
+npm --prefix frontend run test                    # vitest
 ```
 
 ## Deployment (Zielumgebung, bestätigt)
 
 Shared-Linux-Hosting mit SSH, MySQL, Composer 2.9.8. **PHP-CLI heißt dort `php85`**, nicht `php` – Deploy-Skripte müssen `php85` verwenden. **Versionierte Releases:** `deploy/deploy.sh vX.Y.Z` deployt einen **annotierten** Git-Tag nach `releases/<tag>/`, geteilter Zustand liegt in `shared/`, `current` zeigt auf das aktive Release. Docroot **beider** Domains (`gestura.eu`, `api.gestura.eu`) ist `current/backend/public/` – der Frontend-Build liegt im Release in `backend/public/`, damit die Extension `https://gestura.eu/api/v1/updates` ohne Umleitung erreicht. `deploy/rollback.sh` schaltet zurück, `deploy/smoke.sh` prüft, `deploy/gc.sh` räumt auf. Secrets ausschließlich in `shared/.env.local`. Details: `deploy/README.md`.
 
+## Stand
+
+Phase 2 (Backend, öffentliche Website, Admin-SPA) und Phase 3 (anonyme Konten, Bewertungen, »Meine Daten«, Settings-Sync) sind gebaut. Der Extension-Vertrag ist auf **apiLevel 3** umgesetzt: `POST /api/v1/updates` und die vier `/api/v1/sync/*`-Endpunkte. Öffentlich antworten sie erst nach der manuellen Docroot-Umstellung beim Hoster – das ist der einzige verbliebene Release-Blocker (`deploy/README.md`).
+
 ## Arbeitsweise
 
-Phase 2 startet mit **brainstorming → writing-plans → subagent-driven execution** (gleicher Ablauf wie Phase 1 in der Extension). Sprachen im Frontend/Admin: **en/de** von Anfang an.
+**brainstorming → writing-plans → subagent-driven execution.** Pläne und Specs liegen unter `docs/superpowers/` und sind Momentaufnahmen ihrer Umsetzung – sie werden nachträglich nicht fortgeschrieben; der laufende Stand steht in `.claude/lessons.md` und in den READMEs. Sprachen im Frontend/Admin: **en/de**.

@@ -6,21 +6,31 @@ Ziel: die WebAuthn-/Passkey-Ceremonies (Registrierung, Login, Step-up, Backup-Pa
 
 ## Warum lokal Single-Origin
 
-WebAuthn braucht Secure-Context + Origin-Match: `navigator.credentials` läuft nur auf `https://` **oder** `http://localhost`, und die RP-ID muss zur Origin passen (`gestura.eu` matcht `localhost` nicht → lokal `WEBAUTHN_RP_ID=localhost`). Der Vite-Dev-Proxy (`/api → localhost:8000`, in `frontend/vite.config.ts`) sorgt dafür, dass SPA **und** API unter der einen Origin `http://localhost:5173` laufen – damit entfällt jede CORS-/Cross-Origin-Cookie-Frage (der produktiv hartkodierte CORS-Origin `https://gestura.eu` ist lokal schlicht irrelevant, weil same-origin).
+WebAuthn braucht Secure-Context + Origin-Match: `navigator.credentials` läuft nur auf `https://` **oder** `http://localhost`, und die RP-ID muss zur Origin passen (`gestura.eu` matcht `localhost` nicht → lokal `WEBAUTHN_RP_ID=localhost`). Der Vite-Dev-Proxy (`/api → localhost:$BACKEND_PORT`, in `frontend/vite.config.ts`) sorgt dafür, dass SPA **und** API unter der einen Origin `http://localhost:5173` laufen – damit entfällt jede CORS-/Cross-Origin-Cookie-Frage (der produktiv hartkodierte CORS-Origin `https://gestura.eu` ist lokal schlicht irrelevant, weil same-origin).
 
 ## Einmalige lokale Konfiguration (bereits gesetzt, gitignored)
 
 - `backend/.env.local`: `WEBAUTHN_RP_ID=localhost` (Override; `SESSION_COOKIE_DOMAIN` bleibt leer → host-only-Cookie auf localhost). `MAILER_DSN` bleibt `null://null` – der Bootstrap-Befehl druckt den Invite-Token in die Konsole.
 - `frontend/.env.local`: `PUBLIC_API_BASE=http://localhost:5173` – so stellt der API-Client same-origin-Requests, die der Proxy ans Backend weiterreicht.
-- `frontend/vite.config.ts`: `server.proxy` `'/api' → 'http://localhost:8000'` (nur für `vite dev`, ohne Wirkung auf den Build).
+- `frontend/vite.config.ts`: `server.proxy` `'/api' → 'http://localhost:${BACKEND_PORT ?? 8000}'` (nur für `vite dev`, ohne Wirkung auf den Build). **Der Port ist nicht mehr fest:** `dev.sh` sucht ab 8000 den ersten freien und reicht ihn als `BACKEND_PORT` an beide Seiten durch – eine Stellschraube, immer konsistent. Wer einen festen Port braucht: `BACKEND_PORT=8000 ./dev.sh`.
 
 Voraussetzung: lokale MariaDB mit der Datenbank `gestura_index` inkl. der Admin-Tabellen (die Migrationen wurden dort angewandt – Stand bestätigt: `admin_user` existiert).
 
 ## Ablauf
 
-### 1. Backend-Dev-Server starten
+### 1. Server starten
+
+Der bequeme Weg – startet Backend **und** Vite mit konsistentem Port:
 
 ```bash
+./dev.sh
+```
+
+Einzeln geht es weiterhin (dann muss der Vite-Proxy denselben Port sehen):
+
+```bash
+BACKEND_PORT=8000 ./dev.sh
+# oder ganz von Hand:
 php -S localhost:8000 -t backend/public backend/public/index.php
 ```
 

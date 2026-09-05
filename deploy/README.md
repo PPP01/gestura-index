@@ -8,6 +8,7 @@ Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Aktuelle Spec: `
 - `deploy.sh vX.Y.Z` – deployt einen **annotierten** Git-Tag als Release: Guards (Tag annotiert, Commit auf `origin/main`, Arbeitsbaum sauber), Preflight im Worktree des Tags (PHPUnit, `npm run build`), Upload nach `releases/<tag>/`, `shared/` verknüpfen, `php85 composer install --no-dev -o`, Migrationen, `cache:clear`, `RELEASE`-Datei, atomarer Tausch von `current`, `smoke.sh`, `gc.sh`. Leichtgewichtige Tags und Tags außerhalb von `main` werden mit Klartext abgelehnt. Braucht lokal `backend/.env.test.local` (Test-DB) für den Preflight.
 - `rollback.sh [vX.Y.Z]` – setzt `current` atomar auf ein früheres vollständiges Release (ohne Argument: das jüngste vor dem aktuellen), leert danach in einem eigenen Schritt den Cache – ein scheiterndes `cache:clear` meldet, dass `current` bereits auf dem Zielrelease steht, statt den Fehler zu verschlucken – und läuft abschließend `smoke.sh`. Migrationen bleiben vorwärtsgerichtet.
 - `smoke.sh [origin]` – prüft gegen `https://gestura.eu` (Default): Preflight und leere Antwort von `POST /api/v1/updates` ohne Umleitung, `GET /api/v1/entries` als JSON, `/de` als HTML, `/de/vergleich` erreicht Symfony. Nennt ein noch nicht umgestelltes KAS-Docroot ausdrücklich.
+  > **Bekannte Lücke:** Die vier `/api/v1/sync/*`-Endpunkte (apiLevel 3) prüft `smoke.sh` **noch nicht**. Sie gehören seit dem 2026-09-05 zum Release; bis das Skript nachgezogen ist, nach einem Deploy von Hand prüfen, dass `POST /api/v1/sync/list` mit einem gültigen Locator `200` und `{"states":[]}` liefert – und dass kein `3xx` dazwischen steht.
 - `gc.sh --root <pfad> [--dry-run]` – Garbage Collection der Releases (läuft auf dem Server per `ssh … 'bash -s' -- --root … < deploy/gc.sh`): `current` nie; die 5 jüngsten bleiben; zusätzlich immer das jüngste Release, das älter als heute ist, falls keines der 5 das schon ist; unvollständige Releases (ohne `RELEASE`) verschwinden. `--keep` und `--today-epoch` werden auf ganzzahlige Werte geprüft – ein fehlerhafter Wert bricht mit Exit-Code 2 ab, ohne etwas zu löschen. Regeln sind in `tests/gc-test.sh` fixiert.
 
 ## Server-Layout (versionierte Releases)
@@ -32,6 +33,8 @@ Zusätzlich zu den unten dokumentierten Admin-Variablen:
 - `FRONTEND_BUILD_DIR=%kernel.project_dir%/public` – der prerenderte Frontend-Build liegt im gemeinsamen Docroot; der `MarketingPageController` liest die schaltbaren Seiten von dort. Ohne diesen Wert greift der Dev-Default `../frontend/build`, der auf dem Server nicht existiert.
 
 ## Umstellung vom alten Layout (einmalig)
+
+> **Status 2026-09-05: noch nicht ausgeführt.** Die Schritte 3 und 4 sind manuelle Eingriffe im KAS und damit der **einzige verbliebene Release-Blocker** – `POST /api/v1/updates` und die vier `/api/v1/sync/*`-Endpunkte sind gebaut und getestet, antworten aber erst öffentlich, wenn beide Domains auf das gemeinsame Docroot zeigen. Bis dahin liefert `gestura.eu/api/…` die statische Seiten-Hülle statt der API – genau der Zustand, gegen den die Extension-Seite nicht testen will.
 
 Ausgangslage: `backend/`, `frontend/`, `schema/` direkt unter dem Deploy-Pfad, zwei Docroots (`api.gestura.eu` → `backend/public`, `gestura.eu` → `frontend`).
 
