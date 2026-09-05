@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
 	import GestureDiagram from '$lib/components/GestureDiagram.svelte';
+	import PageGlow from '$lib/components/PageGlow.svelte';
+	import PageHeading from '$lib/components/PageHeading.svelte';
 
 	// Acht Gesten-Karten (Screenshot 1l): sechs Pfeil-Gesten mit eigenem
 	// Polylinien-Pfad (viewBox 0 0 150 80) + zwei Sonderfälle (Rocker/Wheel)
@@ -47,14 +49,16 @@
 </svelte:head>
 
 <div class="c3">
+	<PageGlow />
+
 	<div class="intro">
-		<h1>{m.c3_page_title()}</h1>
+		<PageHeading lead={m.c3_h1_lead()} accent={m.c3_h1_accent()} />
 		<p>{m.c3_intro()}</p>
 	</div>
 
 	<div class="gesture-grid">
 		{#each cards as c (c.id)}
-			<div class="card gesture-card">
+			<div class="gesture-card">
 				<GestureDiagram kind={c.kind} path={c.path} label={c.label()} />
 				<span class="kuerzel" aria-hidden="true">{c.kuerzel()}</span>
 				<span class="label">{c.label()}</span>
@@ -67,25 +71,31 @@
 
 <style>
 	.c3 {
+		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 30px;
+		gap: 34px;
+	}
+	/* Der Inhalt liegt über der Verlaufs-Ebene von PageGlow. */
+	.intro,
+	.gesture-grid,
+	.footnote {
+		position: relative;
+		z-index: 1;
 	}
 
+	/* Kopf wie auf den anderen v2-Seiten: Überschrift links, Einleitung als
+	   zweite Spalte daneben – über die volle Shell-Breite wäre der Absatz sonst
+	   rund 150 Zeichen breit. */
 	.intro {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-	.intro h1 {
-		margin: 0;
-		font-size: 32px;
-		font-weight: 700;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px 48px;
+		align-items: center;
 	}
 	.intro p {
 		margin: 0;
-		max-width: 760px;
-		font-size: 15.5px;
+		font-size: 16.5px;
 		line-height: 1.7;
 		color: var(--text-secondary);
 	}
@@ -98,14 +108,23 @@
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
 	}
+	/* Getönte Karte im v2-Ton. Alle acht tragen denselben Akzent-Tint statt je
+	   einer eigenen Farbe: sie zeigen dieselbe Sache in acht Ausführungen, und
+	   die Gestenspur der Erweiterung ist ebenfalls akzentfarben. */
 	.gesture-card {
-		margin-bottom: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 10px;
 		padding: 22px 16px 20px;
 		text-align: center;
+		border-radius: 20px;
+		border: 1px solid var(--page-hairline);
+		background: linear-gradient(
+			160deg,
+			oklch(from var(--accent-color) l c h / 8%),
+			var(--page-card-end) 70%
+		);
 	}
 	.kuerzel {
 		font-family: var(--font-mono);
@@ -124,6 +143,10 @@
 	}
 
 	@media (max-width: 900px) {
+		.intro {
+			grid-template-columns: 1fr;
+			align-items: start;
+		}
 		.gesture-grid {
 			grid-template-columns: repeat(2, 1fr);
 		}

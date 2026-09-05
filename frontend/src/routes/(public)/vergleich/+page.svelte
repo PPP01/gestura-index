@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
+	import PageGlow from '$lib/components/PageGlow.svelte';
+	import PageHeading from '$lib/components/PageHeading.svelte';
 	import { TriangleAlert, Check } from '@lucide/svelte';
 	import tileLight from '$lib/assets/logo/icon128-tile.png';
 	import tileDark from '$lib/assets/logo/icon128-darktile.png';
@@ -30,8 +32,10 @@
 </svelte:head>
 
 <div class="c4">
+	<PageGlow />
+
 	<div class="intro">
-		<h1>{m.c4_page_title()}</h1>
+		<PageHeading lead={m.c4_h1_lead()} accent={m.c4_h1_accent()} />
 		<p>{m.c4_intro()}</p>
 	</div>
 
@@ -76,27 +80,38 @@
 
 <style>
 	.c4 {
+		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 26px;
+		gap: 30px;
+	}
+	/* Der Inhalt liegt über der Verlaufs-Ebene von PageGlow. */
+	.c4 > :global(:not(.page-glow):not(.page-stars)) {
+		position: relative;
+		z-index: 1;
 	}
 
+	/* Kopf wie auf den anderen v2-Seiten: Überschrift links, Einleitung als
+	   zweite Spalte daneben – über die volle Shell-Breite wäre der Absatz sonst
+	   rund 150 Zeichen breit. */
 	.intro {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-	.intro h1 {
-		margin: 0;
-		font-size: 32px;
-		font-weight: 700;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px 48px;
+		align-items: center;
 	}
 	.intro p {
 		margin: 0;
-		max-width: 760px;
-		font-size: 15.5px;
+		font-size: 16.5px;
 		line-height: 1.7;
 		color: var(--text-secondary);
+	}
+
+	@media (max-width: 900px) {
+		.intro {
+			grid-template-columns: 1fr;
+			align-items: start;
+		}
 	}
 
 	/* ---- Warnbanner (warning-getönt, analog dem success-Banner in C2) ---- */

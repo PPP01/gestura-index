@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
+	import PageGlow from '$lib/components/PageGlow.svelte';
+	import PageHeading from '$lib/components/PageHeading.svelte';
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import { Play } from '@lucide/svelte';
 	import { categoryColor, categoryIcon, entryTypeLabel } from '$lib/categories';
@@ -17,15 +19,17 @@
 </svelte:head>
 
 <div class="c5">
+	<PageGlow />
+
 	<div class="intro">
-		<h1>{m.c5_page_title()}</h1>
+		<PageHeading lead={m.c5_h1_lead()} accent={m.c5_h1_accent()} />
 		<p>{m.c5_intro()}</p>
 	</div>
 
 	<div class="showcase-grid">
 		{#each SHOWCASE as card (card.nameKey)}
 			{@const Icon = categoryIcon(card.category)}
-			<article class="card showcase-card">
+			<article class="showcase-card">
 				<div class="preview">
 					<span class="gesture-chip">{card.gesture}</span>
 					<div class="play-circle" aria-hidden="true"><Play size={22} fill="currentColor" /></div>
@@ -62,27 +66,38 @@
 
 <style>
 	.c5 {
+		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 26px;
+		gap: 30px;
+	}
+	/* Der Inhalt liegt über der Verlaufs-Ebene von PageGlow. */
+	.c5 > :global(:not(.page-glow):not(.page-stars)) {
+		position: relative;
+		z-index: 1;
 	}
 
+	/* Kopf wie auf den anderen v2-Seiten: Überschrift links, Einleitung als
+	   zweite Spalte daneben – über die volle Shell-Breite wäre der Absatz sonst
+	   rund 150 Zeichen breit. */
 	.intro {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-	.intro h1 {
-		margin: 0;
-		font-size: 32px;
-		font-weight: 700;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px 48px;
+		align-items: center;
 	}
 	.intro p {
 		margin: 0;
-		max-width: 760px;
-		font-size: 15.5px;
+		font-size: 16.5px;
 		line-height: 1.7;
 		color: var(--text-secondary);
+	}
+
+	@media (max-width: 900px) {
+		.intro {
+			grid-template-columns: 1fr;
+			align-items: start;
+		}
 	}
 
 	/* ---- 2×2-Showcase-Grid (Screenshot 1n) ---- */
@@ -91,12 +106,19 @@
 		grid-template-columns: repeat(2, 1fr);
 		gap: 20px;
 	}
+	/* Getönte Karte im v2-Ton statt der flachen globalen .card. */
 	.showcase-card {
-		margin-bottom: 0;
 		padding: 0;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
+		border-radius: 20px;
+		border: 1px solid var(--page-hairline);
+		background: linear-gradient(
+			160deg,
+			oklch(from var(--accent-color) l c h / 7%),
+			var(--page-card-end) 70%
+		);
 	}
 
 	/* Animierte-Vorschau-Platzhalter: 210px Gradient-Fläche mit Gesten-Chip
