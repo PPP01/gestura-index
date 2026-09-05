@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
+	import PageGlow from '$lib/components/PageGlow.svelte';
+	import PageHeading from '$lib/components/PageHeading.svelte';
 </script>
 
 <svelte:head>
@@ -7,13 +9,15 @@
 	<meta name="description" content={m.imprint_meta_description()} />
 </svelte:head>
 
-<h1>{m.imprint_title()}</h1>
+<div class="text-page">
+	<PageGlow variant="narrow" />
+	<PageHeading accent={m.imprint_title()} size={38} />
 
-<section class="card">
+<section class="lead-section">
 	<p>{m.imprint_intro()}</p>
 </section>
 
-<section class="card">
+<section>
 	<h2>{m.imprint_operator_heading()}</h2>
 	<dl class="imprint-fields">
 		<div>
@@ -37,10 +41,12 @@
 	</dl>
 </section>
 
-<section class="card">
+<section>
 	<h2>{m.imprint_note_heading()}</h2>
 	<p class="note">{m.imprint_noncommercial()}</p>
 </section>
+
+</div>
 
 <style>
 	.note {
