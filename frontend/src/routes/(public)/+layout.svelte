@@ -79,20 +79,18 @@
 	 * darüber – er steht im DOM nach der Leiste – und würde Logo und Navigation
 	 * überdecken.
 	 *
-	 * Der Hintergrund ist bewusst nur zu 55 % deckend, damit der Verlauf
-	 * darunter deutlich erkennbar bleibt – die Navigation schwimmt fast auf ihm,
-	 * wie im Ursprungsdesign. Nötig ist das vor allem im HELLEN Thema: dort ist
-	 * --bg-secondary reines Weiß und würde alles verdecken, während es im
-	 * dunklen ohnehin nur rund 5 % Deckkraft hat. Die Absetzung bleibt – sie
-	 * trägt die Trennlinie und die verbleibende Aufhellung –, wird aber
-	 * durchlässig statt undurchsichtig. Das Weichzeichnen dahinter hält die
-	 * Navigation über dem Verlauf ruhig lesbar; ohne es würde der Text bei
-	 * dieser Durchlässigkeit auf der Struktur darunter flimmern.
+	 * Der Hintergrund kommt unverändert aus --bg-secondary, das auf der Website
+	 * selbst teildurchlässig ist (65 % im hellen, rund 5 % im dunklen Thema –
+	 * site.css). Der Verlauf scheint dadurch hindurch, die Absetzung bleibt über
+	 * Trennlinie und Aufhellung erhalten. Eine zusätzliche Reduktion hier wäre
+	 * doppelt gemoppelt und würde die Leiste je nach Thema unterschiedlich stark
+	 * treffen. Das Weichzeichnen dahinter hält die Navigation über dem Verlauf
+	 * ruhig lesbar; ohne es würde der Text auf der Struktur darunter flimmern.
 	 */
 	.topbar {
 		position: relative;
 		z-index: 2;
-		background: color-mix(in srgb, var(--bg-secondary) 55%, transparent);
+		background: var(--bg-secondary);
 		backdrop-filter: blur(10px);
 		border-bottom: 1px solid var(--border-color);
 	}
