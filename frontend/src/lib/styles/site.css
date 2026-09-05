@@ -8,6 +8,29 @@
 :root {
 	--page-max-width: 1200px;
 	--content-max-width: 900px; /* wie .container der Extension-Options-Seite */
+
+	/*
+	 * Töne des v2-Seitenstils (Design-Handoff, Artboards 2a/3a). Violett und
+	 * Pink sind laut Handoff reine VERLAUFSFARBEN – sie stehen nie für sich als
+	 * Text- oder Flächenfarbe, sondern nur in Gradienten und Glows.
+	 * --page-hairline und --page-card-end tragen die getönten Karten: ein
+	 * Verlauf aus der Kartenfarbe ins Neutrale.
+	 */
+	--page-violet: #8b5cf6;
+	--page-hairline: rgba(255, 255, 255, 0.1);
+	--page-card-end: rgba(255, 255, 255, 0.03);
+	--page-glass: rgba(20, 20, 30, 0.6);
+	--page-shot-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme='light'] {
+	--page-violet: #7c4fe0;
+	/* Kräftiger als die üblichen 7 %: getönte Flächen liegen hell auf hell und
+	   verlören sonst jede Kante. */
+	--page-hairline: rgba(0, 0, 0, 0.1);
+	--page-card-end: rgba(255, 255, 255, 0.7);
+	--page-glass: rgba(255, 255, 255, 0.75);
+	--page-shot-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
 body {
@@ -80,4 +103,56 @@ body {
 	flex-wrap: wrap;
 	gap: 12px;
 	align-items: center;
+}
+
+/*
+ * v2-Textseiten (Datenschutz, Impressum, Doku): Lesespalte mit Glow-Ebene und
+ * getönten Abschnitten. Steht global statt in jeder Seite, weil die drei Seiten
+ * sich strukturell gleichen – Überschrift, dann eine Folge von Abschnitten.
+ * Der Container trägt die Positionierung für PageGlow; alles außer der
+ * Verlaufs-Ebene liegt darüber.
+ */
+.text-page {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+.text-page > *:not(.page-glow):not(.page-stars) {
+	position: relative;
+	z-index: 1;
+}
+.text-page section {
+	border-radius: 20px;
+	border: 1px solid var(--page-hairline);
+	background: linear-gradient(
+		160deg,
+		oklch(from var(--accent-color) l c h / 6%),
+		var(--page-card-end) 70%
+	);
+	padding: 20px 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	margin: 0;
+}
+.text-page section h2 {
+	margin: 0;
+	font-size: 17px;
+	font-weight: 700;
+}
+.text-page section p {
+	margin: 0;
+	font-size: 13.5px;
+	line-height: 1.7;
+	color: var(--text-secondary);
+}
+/* Der erste Abschnitt ist die Einleitung: etwas größer, ohne Kartenrahmen. */
+.text-page section.lead-section {
+	border: none;
+	background: none;
+	padding: 0 0 4px;
+}
+.text-page section.lead-section p {
+	font-size: 15.5px;
 }
