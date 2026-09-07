@@ -35,6 +35,29 @@
 	--page-shot-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
 
 	/*
+	 * Maße der Hülle. Sie stehen als Tokens hier, weil außer dem Layout selbst
+	 * noch drei Stellen mit ihnen RECHNEN: PageGlow greift um sie über den
+	 * Inhaltsrand hinaus, die Rail setzt ihr scroll-margin darauf, und die
+	 * Startseite zieht ihre Verlaufs-Sektion darüber hinweg. Vorher standen die
+	 * Zahlen an sieben Stellen als Literal, --topbar-h zusätzlich achtmal als
+	 * Rückfallwert `var(--topbar-h, 65px)` – ein Fallback für einen Wert, den
+	 * es immer gibt.
+	 *
+	 * Nur kausal Verbundenes steht hier: --body-pad und der negative Margin,
+	 * der ihn für die öffentliche Hülle aufhebt, MÜSSEN gleich sein. Die 28px
+	 * des Install-Streifens, die 20px der Admin-Hülle und die 24px der
+	 * schmalen Rail sind bloß zufällig dieselbe Zahl und bleiben Literale –
+	 * ein gemeinsames Token würde eine Kopplung behaupten, die es nicht gibt.
+	 *
+	 * --topbar-h ist ein Näherungswert (der Verlauf ist weich, ein paar Pixel
+	 * sind unsichtbar); die öffentliche Hülle setzt ihn unter 720px auf 56px.
+	 */
+	--topbar-h: 65px;
+	--shell-pad-inline: 24px;
+	--content-pad-block: 28px;
+	--body-pad: 20px;
+
+	/*
 	 * Diese vier Tokens gibt es in der Extension NICHT – sie sind hier
 	 * entstanden (StarRating, Sammelkorb-Panel, Akzent-Tönung) und standen
 	 * bis September 2026 fälschlich in gestura-common.css, also in der Kopie

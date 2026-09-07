@@ -169,7 +169,7 @@
 		padding: 2px 6px;
 		border-radius: 6px;
 		color: var(--accent-color);
-		background: var(--accent-tint, oklch(from var(--accent-color) l c h / 12%));
+		background: var(--accent-tint);
 	}
 	.site-nav {
 		display: flex;
@@ -217,7 +217,7 @@
 		font-size: 12px;
 	}
 	.lang-seg a.active {
-		background: var(--accent-tint, var(--bg-tertiary));
+		background: var(--accent-tint);
 		color: var(--text-primary);
 	}
 	.gh {

@@ -41,7 +41,7 @@ body {
 	background: var(--bg-primary);
 	color: var(--text-primary);
 	min-height: 100vh;
-	padding: 20px;
+	padding: var(--body-pad);
 	text-autospace: normal;
 	-webkit-font-smoothing: antialiased;
 }

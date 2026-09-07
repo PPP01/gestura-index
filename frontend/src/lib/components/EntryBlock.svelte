@@ -302,7 +302,7 @@
 		overflow: hidden;
 	}
 	.block.selected {
-		outline: 2px solid var(--accent-color, #5b9cf6);
+		outline: 2px solid var(--accent-color);
 	}
 	.block-row {
 		display: flex;
@@ -330,7 +330,7 @@
 		justify-content: center;
 	}
 	.block.selected .block-select {
-		background: var(--accent-color, #5b9cf6);
+		background: var(--accent-color);
 		color: #fff;
 		border-color: transparent;
 	}
@@ -349,7 +349,7 @@
 	}
 	.block-clickable:focus-visible {
 		outline: none;
-		box-shadow: 0 0 0 3px var(--input-focus-border-color, rgba(91, 156, 246, 0.15));
+		box-shadow: 0 0 0 3px var(--input-focus-border-color);
 		border-radius: 10px;
 	}
 	.block-body {
@@ -612,6 +612,6 @@
 		font-size: 0.85em;
 	}
 	.err {
-		color: var(--danger-color, #e5484d);
+		color: var(--danger-color);
 	}
 </style>

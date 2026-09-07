@@ -33,7 +33,8 @@
 		 * ~5 % Deckkraft hindurch. Die Leiste trägt dafür einen höheren z-index,
 		 * sonst verdeckte diese Ebene Logo und Navigation.
 		 */
-		inset: calc(-28px - var(--topbar-h, 65px)) -24px 0;
+		--reach-up: calc(var(--content-pad-block) + var(--topbar-h));
+		inset: calc(-1 * var(--reach-up)) calc(-1 * var(--shell-pad-inline)) 0;
 		pointer-events: none;
 		z-index: 0;
 
@@ -99,8 +100,8 @@
 	 * andere RADIEN braucht, soll nicht nebenbei auch anders sitzen.
 	 */
 	.page-glow.narrow {
-		inset: calc(-28px - var(--topbar-h, 65px)) -24px auto;
-		height: calc(460px + var(--topbar-h, 65px));
+		inset: calc(-1 * var(--reach-up)) calc(-1 * var(--shell-pad-inline)) auto;
+		height: calc(460px + var(--topbar-h));
 		background: radial-gradient(
 			540px 300px at 50% 40px,
 			var(--page-glow-a),

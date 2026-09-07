@@ -286,7 +286,7 @@
 		border: 1px solid oklch(from var(--accent-color) l c h / 25%);
 	}
 	.gesture-pill .arrows {
-		font-family: var(--font-mono, ui-monospace, monospace);
+		font-family: var(--font-mono);
 		letter-spacing: 0.14em;
 		color: var(--accent-color);
 	}

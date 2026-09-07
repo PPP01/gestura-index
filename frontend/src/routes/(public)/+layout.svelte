@@ -54,16 +54,8 @@
 	 * (»gerahmt«, nie randlos – wie in der Design-Referenz).
 	 */
 	.pub {
-		margin: -20px -20px 0;
+		margin: calc(-1 * var(--body-pad)) calc(-1 * var(--body-pad)) 0;
 
-		/*
-		 * Höhe der Kopfleiste. PageGlow zieht seine Ebene um diesen Betrag nach
-		 * oben, damit der Verlauf unter der Leiste liegt statt an ihrer Unterkante
-		 * zu beginnen. Ein Näherungswert genügt: der Verlauf ist weich, und ein
-		 * paar Pixel Abweichung sind unsichtbar – anders als die harte Kante, die
-		 * entsteht, wenn er erst unterhalb der Leiste ansetzt.
-		 */
-		--topbar-h: 65px;
 	}
 	@media (max-width: 720px) {
 		.pub {
@@ -100,11 +92,11 @@
 	.content {
 		max-width: var(--page-max-width); /* 1200px */
 		margin: 0 auto;
-		padding-inline: 24px;
+		padding-inline: var(--shell-pad-inline);
 	}
 
 	.content {
-		padding-block: 28px;
+		padding-block: var(--content-pad-block);
 	}
 
 	/* Textseiten: schmale Lesespalte. */

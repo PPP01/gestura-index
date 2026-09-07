@@ -83,7 +83,7 @@
 		display: flex;
 		gap: 24px;
 		align-items: flex-start;
-		max-width: var(--page-max-width, 1200px);
+		max-width: var(--page-max-width);
 		margin: 0 auto;
 		padding: 20px;
 	}

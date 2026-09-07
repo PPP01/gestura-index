@@ -278,7 +278,7 @@
 	 */
 	.c1 {
 		position: relative;
-		margin-inline: -24px;
+		margin-inline: calc(-1 * var(--shell-pad-inline));
 		/*
 		 * Nach oben bis unter die Kopfleiste (--topbar-h), damit die Glow-Ebene
 		 * dort hineinreicht und durch deren teildeckenden Hintergrund scheint –
@@ -287,8 +287,10 @@
 		 * der Inhalt unverändert unterhalb der Leiste beginnt; `overflow: hidden`
 		 * bleibt und begrenzt die Verläufe weiterhin auf die Sektion.
 		 */
-		margin-block: calc(-28px - var(--topbar-h, 65px)) -28px;
-		padding-block: calc(28px + var(--topbar-h, 65px)) 28px;
+		margin-block: calc(-1 * var(--content-pad-block) - var(--topbar-h))
+			calc(-1 * var(--content-pad-block));
+		padding-block: calc(var(--content-pad-block) + var(--topbar-h))
+			var(--content-pad-block);
 		overflow: hidden;
 
 		/*
@@ -353,18 +355,18 @@
 	.c1-glow {
 		background:
 			radial-gradient(
-				900px 520px at 50% calc(470px + var(--topbar-h, 65px)),
+				900px 520px at 50% calc(470px + var(--topbar-h)),
 				var(--c1-glow-1),
 				var(--c1-glow-2) 45%,
 				transparent 70%
 			),
 			radial-gradient(
-				700px 300px at 85% calc(-60px + var(--topbar-h, 65px)),
+				700px 300px at 85% calc(-60px + var(--topbar-h)),
 				var(--c1-glow-3),
 				transparent 70%
 			),
 			radial-gradient(
-				600px 300px at 8% calc(120px + var(--topbar-h, 65px)),
+				600px 300px at 8% calc(120px + var(--topbar-h)),
 				var(--c1-glow-4),
 				transparent 70%
 			);

@@ -147,7 +147,7 @@
 		font-size: 12px;
 		font-weight: 600;
 		color: var(--accent-color);
-		background: var(--accent-tint, oklch(from var(--accent-color) l c h / 14%));
+		background: var(--accent-tint);
 		border-radius: 999px;
 		padding: 4px 11px;
 	}
