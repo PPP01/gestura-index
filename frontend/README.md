@@ -38,10 +38,14 @@ Nachrichten liegen als JSON in `messages/en.json` und `messages/de.json`; kompil
 
 Die Website übernimmt das Design der Extension. Regeln und die Liste der übernommenen Dateien: [`../docs/design-system.md`](../docs/design-system.md).
 
-Zwei davon sind **Kopien aus dem Extension-Repo** und werden hier nicht weiterentwickelt, sondern bei Änderungen neu herübergeholt:
+Die globalen Styles liegen in sechs Dateien unter `src/lib/styles/`, geschnitten nach Zuständigkeit; einziger Import ist `main.css` im Wurzel-Layout, und die Datei enthält nichts als das Verzeichnis mit der Ladereihenfolge. Übersicht: [`../docs/design-system.md`](../docs/design-system.md).
 
-- `src/lib/styles/gestura-common.css` ← `css/common.css`
+Zwei Dateien sind **Kopien aus dem Extension-Repo** und werden hier nicht weiterentwickelt, sondern bei Änderungen neu herübergeholt:
+
+- `src/lib/styles/gestura-tokens.css` ← `css/common.css`, **nur** die beiden Token-Blöcke (Zeilen 1–70). Der Dateikopf trägt den `diff`-Einzeiler zur Prüfung. Bewusst so eng geschnitten: Die frühere Vollkopie (615 Zeilen) ist zweimal unbemerkt von Hand bearbeitet worden.
 - `src/lib/menu-icons.ts` ← `js/menu-icons.js` (die 50 Icon-Namen sind ein *Daten*-Vertrag des Austauschformats, kein Styling-Detail)
+
+Buttons, Formularfelder und Bausteine stammen ebenfalls aus dem Extension-Design, sind aber **eigener Bestand** (`base.css`, `elements.css`) – dort darf gearbeitet werden.
 
 Einzige gewollte Abweichung vom Extension-Design ist die Max-Width-Shell für sehr breite Bildschirme.
 
