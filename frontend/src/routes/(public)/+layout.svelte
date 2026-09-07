@@ -80,7 +80,7 @@
 	 * überdecken.
 	 *
 	 * Der Hintergrund kommt unverändert aus --bg-secondary, das auf der Website
-	 * selbst teildurchlässig ist (65 % im hellen, rund 5 % im dunklen Thema –
+	 * selbst teildurchlässig ist (45 % im hellen, rund 5 % im dunklen Thema –
 	 * site.css). Der Verlauf scheint dadurch hindurch, die Absetzung bleibt über
 	 * Trennlinie und Aufhellung erhalten. Eine zusätzliche Reduktion hier wäre
 	 * doppelt gemoppelt und würde die Leiste je nach Thema unterschiedlich stark

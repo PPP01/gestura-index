@@ -81,13 +81,28 @@
 			radial-gradient(420px 260px at 92% 44%, var(--page-glow-side), transparent 70%),
 			radial-gradient(420px 260px at 8% 72%, var(--page-glow-side), transparent 70%);
 	}
-	/* Lesespalte: kleinere Radien, damit der Verlauf innerhalb der Fläche
-	   ausläuft, und nur der obere Glow – für zwei Seiten-Glows ist kein Platz. */
+	/*
+	 * Lesespalte: kleinere Radien, damit der Verlauf innerhalb der Fläche
+	 * ausläuft, und nur der obere Glow – für zwei Seiten-Glows ist kein Platz.
+	 *
+	 * Die Anhebung um --topbar-h muss hier WIEDERHOLT werden: `inset` ist eine
+	 * Kurzschrift und setzt alle vier Kanten neu, überschreibt also auch den
+	 * oberen Wert der Grundregel. Ohne sie begann der Verlauf exakt an der
+	 * Unterkante der Kopfleiste, hinter der Leiste stand nur --bg-primary, und
+	 * im hellen Thema sah die Leiste dadurch rein weiß aus – unabhängig davon,
+	 * wie durchlässig --bg-secondary gestellt war.
+	 *
+	 * Das Zentrum liegt auf denselben 40px wie in der Grundregel – also INNERHALB
+	 * der Kopfleiste. Gegenüber einem Zentrum an ihrer Unterkante ist das
+	 * messbar fast gleichwertig (235,238,250 statt 234,238,250 im hellen Thema);
+	 * gleich zu sein ist hier der eigentliche Wert: eine Variante, die nur
+	 * andere RADIEN braucht, soll nicht nebenbei auch anders sitzen.
+	 */
 	.page-glow.narrow {
-		inset: -28px -24px auto;
-		height: 460px;
+		inset: calc(-28px - var(--topbar-h, 65px)) -24px auto;
+		height: calc(460px + var(--topbar-h, 65px));
 		background: radial-gradient(
-			540px 300px at 50% 0,
+			540px 300px at 50% 40px,
 			var(--page-glow-a),
 			var(--page-glow-b) 50%,
 			transparent 72%

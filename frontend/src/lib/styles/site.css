@@ -28,14 +28,14 @@
 	 * Web-spezifische Abweichung von der Extension-Kopie: dort ist
 	 * --bg-secondary im hellen Thema deckendes Weiß. Auf der Website liegt
 	 * hinter Kopfleiste, Karten und Pills der Seiten-Glow – deckendes Weiß
-	 * würde ihn überall abschneiden. Mit 65 % scheint er durch, ohne dass die
+	 * würde ihn überall abschneiden. Mit 45 % scheint er durch, ohne dass die
 	 * Flächen ihre Absetzung verlieren.
 	 *
 	 * Der Wert gehört NICHT nach gestura-common.css: die Datei ist eine Kopie
 	 * aus dem Extension-Repo (siehe docs/design-system.md) und wird bei jeder
 	 * Übernahme überschrieben. site.css lädt danach und gewinnt.
 	 */
-	--bg-secondary: rgba(255, 255, 255, 0.65);
+	--bg-secondary: rgba(255, 255, 255, 0.45);
 
 	--page-violet: #7c4fe0;
 	/* Kräftiger als die üblichen 7 %: getönte Flächen liegen hell auf hell und
