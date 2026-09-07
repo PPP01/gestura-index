@@ -3,7 +3,22 @@
 	import PageGlow from '$lib/components/PageGlow.svelte';
 	import PageHeading from '$lib/components/PageHeading.svelte';
 	import { TriangleAlert, Check } from '@lucide/svelte';
-	import tileLight from '$lib/assets/logo/icon128-tile.png';
+	/*
+	 * Helles Thema: die FREISTEHENDE Verlaufs-Hand aus dem Logo-Paket
+	 * (exchange/…Logo.zip, hand-only/hand-gradient.png) – keine Kachel.
+	 *
+	 * Aufbereitet als 137×141: Das Original wiegt 365 KB und stünde damit für
+	 * ein 36px-Logo in der Kopfleiste JEDER Seite; verkleinert sind es 28 KB,
+	 * dieselbe Größenordnung wie die dunkle Kachel, und bis knapp 4-fache
+	 * Pixeldichte noch scharf.
+	 *
+	 * Die krummen Maße sind gerechnet, nicht geraten: transparenter Rand
+	 * entfernt, Zeichnung auf 139 px Höhe, dann 1 px Rand zurück. Damit füllt
+	 * die Zeichnung 138/141 der Datei – genau das Verhältnis, mit dem die weiße
+	 * Hand ihre dunkle Kachel füllt (126/128). Gerendert ergibt das 33,96×35,23
+	 * gegen 34,31×35,44 px im dunklen Thema.
+	 */
+	import handLight from '$lib/assets/logo/logo-hand-gradient-137.png';
 	import tileDark from '$lib/assets/logo/icon128-darktile.png';
 
 	// Zehn Merkmal-Zeilen (Screenshot 1m / README §C4, Reihenfolge wie im Brief).
@@ -50,7 +65,7 @@
 				<div class="cell head col-feature">{m.c4_col_feature()}</div>
 				<div class="cell head col-gestura">
 					<span class="logo-img">
-						<img src={tileLight} alt="" class="logo-light" width="20" height="20" />
+						<img src={handLight} alt="" class="logo-light" width="20" height="20" />
 						<img src={tileDark} alt="" class="logo-dark" width="20" height="20" />
 					</span>
 					<span class="brand">Gestura</span>
@@ -203,6 +218,14 @@
 		overflow: hidden;
 		display: inline-flex;
 		flex-shrink: 0;
+	}
+	/*
+	 * Die freistehende Hand ist 137×141 – nicht quadratisch. Ohne `contain`
+	 * würde sie auf das quadratische Kästchen gedehnt (rund 3 % zu breit).
+	 * `contain` skaliert sie auf die Höhe des Kästchens und zentriert sie.
+	 */
+	.logo-light {
+		object-fit: contain;
 	}
 	.logo-dark {
 		display: none;

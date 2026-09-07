@@ -171,22 +171,35 @@ body {
 }
 
 /*
- * Logo-Kachel: die Website nutzt die FERTIGE Kachel (icon128-tile.png bzw.
- * icon128-darktile.png) – ein Bild, das Hintergrund und Rundung schon mitbringt.
+ * Logo-Fassung: Die Website zeigt im dunklen Thema die FERTIGE Kachel
+ * (icon128-darktile.png – ein Bild, das Hintergrund und Rundung mitbringt) und
+ * im hellen die FREISTEHENDE Hand ohne Kachel.
  *
  * gestura-common.css behandelt .logo-img dagegen als RAHMEN um ein
- * freigestelltes Icon und gibt ihm 5px Padding, einen hellen Verlauf und
- * Außenabstände. Zusammen mit box-sizing: border-box schrumpft die Inhaltsbox
- * damit auf 26px, während das Bild 36px breit bleibt: es beginnt 5px weiter
- * rechts und unten, wird an den beiden Kanten vom overflow abgeschnitten und
- * lässt oben links den hellen Verlauf durchscheinen – die Kachel sieht
- * verschoben aus. Der Außenabstand kommt zusätzlich zum gap der Markenzeile.
+ * freigestelltes Icon: 5px Padding, ein heller Verlauf, ein Schatten,
+ * Außenabstände – und im dunklen Thema ein eigener dunkler Verlauf mit
+ * Schatten. Für die Extension ist das richtig, hier ist es falsch: Das Padding
+ * schrumpft mit box-sizing: border-box die Inhaltsbox auf 26px, während das
+ * Bild 36px breit bleibt (die Kachel sieht verschoben aus), der Verlauf legt
+ * eine zweite Fläche unter ein Bild, das seinen Grund selbst mitbringt, und
+ * der Schatten rahmt im hellen Thema eine freistehende Hand ein.
  *
- * Beides ist für die Extension richtig und hier falsch. Der Schatten bleibt:
- * er gibt der Kachel dieselbe Tiefe wie dort.
+ * Diese Neutralisierung gehört ZWINGEND hierher und NICHT nach
+ * gestura-common.css: Die Datei ist eine Kopie aus dem Extension-Repo
+ * (docs/design-system.md) – dort Gelöschtes kommt beim nächsten Herüberkopieren
+ * stillschweigend zurück, und der Fehler zeigt sich dann als »der Schatten ist
+ * wieder da« ohne auffindbare Ursache. site.css lädt danach und gewinnt.
+ *
+ * Der dunkle Zweig braucht denselben Selektor wie dort ([data-theme] + Klasse):
+ * ein blankes .logo-img hätte eine Spezifität zu wenig und verlöre.
  */
 .logo-img {
 	padding: 0;
 	margin: 0;
 	background: none;
+	box-shadow: none;
+}
+[data-theme='dark'] .logo-img {
+	background: none;
+	box-shadow: none;
 }
