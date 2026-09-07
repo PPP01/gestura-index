@@ -152,7 +152,7 @@
 	 * Layout – wie alle Marketing-Seiten läuft C2 auf der vollen 1200px-Shell.
 	 *
 	 * Glow, Pill und Verlaufs-Überschrift kommen aus PageGlow/PageHeading, die
-	 * Töne als --page-*-Variablen aus site.css. Die --c1-*-Töne der Startseite
+	 * Töne als --page-*-Variablen aus tokens.css. Die --c1-*-Töne der Startseite
 	 * bleiben dort component-scoped: C1 leuchtet, die übrigen Seiten flüstern.
 	 */
 	.c2 {

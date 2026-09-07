@@ -4,8 +4,7 @@
 	// öffentliche Seiten UND den Admin-Bereich gelten: globale Styles, Favicon,
 	// Sprach-Attribut. So kann `admin/+layout@.svelte` per Layout-Reset auf genau
 	// diese schlanke Wurzel zurücksetzen, ohne das öffentliche Header/Footer zu erben.
-	import '$lib/styles/gestura-common.css';
-	import '$lib/styles/site.css';
+	import '$lib/styles/main.css';
 	import favicon from '$lib/assets/logo/icon32.png';
 	import { getLocale, localizeHref, locales } from '$lib/paraglide/runtime';
 	import { page } from '$app/state';

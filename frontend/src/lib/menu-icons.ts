@@ -2,7 +2,7 @@
  * Kopie des kuratierten Menü-Icon-Sets aus dem Gestura-Extension-Repo
  * (autoritative Quelle: /mnt/c/Programme.alt/Gestura/js/menu-icons.js).
  * Nicht hier weiterentwickeln – bei Änderungen in der Extension neu
- * herüberkopieren (wie gestura-common.css).
+ * herüberkopieren (wie gestura-tokens.css).
  *
  * Das Set ist ein DATEN-Vertrag, kein Design-Baustein: `item.icon` im
  * Austauschformat referenziert exakt diese Schlüssel. Deshalb bewusst die

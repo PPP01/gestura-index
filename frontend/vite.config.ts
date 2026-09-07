@@ -1,27 +1,10 @@
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
-import { createLogger } from 'vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { svelteTesting } from '@testing-library/svelte/vite';
 
-// LightningCSS warnt bei :host-context([data-theme="dark"]), das Shadow-DOM-
-// Theming in gestura-common.css nutzt. Die Pseudo-Klasse ist nicht im
-// LightningCSS-Spec-Katalog, wird aber korrekt durchgegeben — reine
-// Kompatibilitätswarnung, kein Ausgabe-Defekt.
-// SvelteKit überschreibt build.cssMinify intern (Quelle: @sveltejs/kit
-// src/exports/vite/index.js ~1093), deshalb kann cssMinify: 'esbuild' die
-// Meldungen nicht unterdrücken. Wir filtern sie stattdessen über den Logger.
-const logger = createLogger();
-const baseWarn = logger.warn.bind(logger);
-logger.warn = (msg, options) => {
-	if (msg.includes('[lightningcss minify]') && msg.includes('host-context')) return;
-	baseWarn(msg, options);
-};
-
 export default defineConfig({
-	customLogger: logger,
-
 	plugins: [
 		sveltekit({
 			compilerOptions: {

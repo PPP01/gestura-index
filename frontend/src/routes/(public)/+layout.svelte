@@ -45,7 +45,7 @@
 
 <style>
 	/*
-	 * body trägt global padding:20px (gestura-common.css). Wir heben das für die
+	 * body trägt global padding:20px (base.css). Wir heben das für die
 	 * öffentliche Hülle auf und steuern Abstände selbst.
 	 *
 	 * Schmal/mobil: randlose, abgesetzte Kopfleiste, Inhalt in zentrierter Shell.
@@ -81,7 +81,7 @@
 	 *
 	 * Der Hintergrund kommt unverändert aus --bg-secondary, das auf der Website
 	 * selbst teildurchlässig ist (45 % im hellen, rund 5 % im dunklen Thema –
-	 * site.css). Der Verlauf scheint dadurch hindurch, die Absetzung bleibt über
+	 * tokens.css). Der Verlauf scheint dadurch hindurch, die Absetzung bleibt über
 	 * Trennlinie und Aufhellung erhalten. Eine zusätzliche Reduktion hier wäre
 	 * doppelt gemoppelt und würde die Leiste je nach Thema unterschiedlich stark
 	 * treffen. Das Weichzeichnen dahinter hält die Navigation über dem Verlauf

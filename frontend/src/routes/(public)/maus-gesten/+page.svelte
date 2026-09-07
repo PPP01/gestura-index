@@ -100,9 +100,10 @@
 		color: var(--text-secondary);
 	}
 
-	/* Eigene 4-Spalten-Klasse statt der globalen .grid-cards (auto-fill,
-	   site.css) – analog C1s .feature-grid: hier sind exakt 4 feste Spalten
-	   verlangt (README §C3), kein auto-fill-Zeilenumbruch. */
+	/* Eigenes Gitter analog C1s .feature-grid: hier sind exakt 4 feste
+	   Spalten verlangt (README §C3), kein auto-fill-Zeilenumbruch. Eine
+	   globale auto-fill-Klasse gab es früher (.grid-cards in site.css); sie
+	   war nirgends in Gebrauch und ist beim Aufteilen der Styles entfallen. */
 	.gesture-grid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);

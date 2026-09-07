@@ -46,7 +46,7 @@
 
 <style>
 	/* Design-Handoff: Theme-Toggle 32px, r9, 1px Border (statt der generischen
-	   .btn-icon-only-Maße aus gestura-common.css). */
+	   .btn-icon-only-Maße aus base.css). */
 	.theme-toggle {
 		width: 32px;
 		height: 32px;

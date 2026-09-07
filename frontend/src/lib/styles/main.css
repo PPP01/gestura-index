@@ -1,0 +1,22 @@
+/*
+ * Einstiegspunkt für alle globalen Styles – der EINZIGE CSS-Import des
+ * Projekts (routes/+layout.svelte). Vite bündelt die Kette: im Build zu
+ * einer minifizierten Datei, im Dev-Modus zu einer Style-Injektion mit HMR.
+ *
+ * CSS verlangt, dass @import vor allen Regeln steht. Daraus wird hier ein
+ * Vorteil: Diese Datei enthält nichts als das Verzeichnis, und die
+ * Ladereihenfolge – bei gleicher Spezifität gewinnt das Spätere – ist an
+ * einer einzigen Stelle ablesbar.
+ *
+ * Warum kein SCSS: Die Farben MÜSSEN CSS-Custom-Properties bleiben, weil das
+ * Theme zur Laufzeit umschaltet; Sass rechnet zur Compile-Zeit und kann sie
+ * nicht anfassen – rgba($accent, .12) oder darken() sind in diesem Projekt
+ * unbrauchbar. Verschachtelung gibt es native, das Bündeln übernimmt Vite.
+ * Bliebe der Gewinn der Partials, und den leistet @import genauso.
+ */
+
+@import './gestura-tokens.css'; /* Tokens der Extension – KOPIE, nie ändern */
+@import './tokens.css'; /* eigene Tokens und Überschreibungen */
+@import './base.css'; /* Reset, body, Buttons, Formularfelder */
+@import './elements.css'; /* Container, Karte, Kachel, Badge, Schalter */
+@import './pages.css'; /* Rail, Textseiten */

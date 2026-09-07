@@ -836,7 +836,7 @@
 		color: var(--text-secondary);
 		line-height: 1.6;
 	}
-	/* Icon-Kacheln: .icon-tile aus site.css, hier nur die Farbe je Kachel. */
+	/* Icon-Kacheln: .icon-tile aus elements.css, hier nur die Farbe je Kachel. */
 	.icon-tile.tone-accent {
 		--icon-color: var(--accent-color);
 	}

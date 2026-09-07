@@ -1,0 +1,138 @@
+/*
+ * Benannte Bausteine: Inhalts-Container, Karte, Icon-Kachel, Badge,
+ * Filterleiste, Schalter. Alles, was als Klasse angesprochen wird und auf
+ * mehreren Seiten oder im Admin wiederkehrt.
+ *
+ * »elements« und nicht »components«: In einem Svelte-Projekt ist Komponente
+ * belegt, und eine Datei components.css ohne eine einzige Svelte-Komponente
+ * führt beim Suchen in die Irre.
+ *
+ * Die Logo-Regeln der Extension (.logo-img als Rahmen mit Verlauf und
+ * Schatten, .logo-light/.logo-dark) stehen bewusst NICHT mehr hier: Die
+ * Website definiert .logo-img vollständig in Header.svelte bzw. auf der
+ * Vergleichsseite (36 bzw. 20 px), das Umschalten hell/dunkel ebenfalls
+ * dort. Die globale Fassung musste früher Zeile für Zeile neutralisiert
+ * werden – mit dem * -Reset oben bleibt ohne sie genau derselbe Zustand,
+ * nur ohne Gegenregeln. Damit ist auch der letzte :host-context aus dem
+ * Projekt verschwunden (die LightningCSS-Warnung, für die vite.config.ts
+ * einen Logger-Filter hielt).
+ */
+
+/* Inhalts-Container wie in der Extension (option.css .container) */
+.container {
+	max-width: var(--content-max-width);
+	margin: 0 auto;
+}
+
+/* Karten-Grundform der Extension (option.css .section-body) */
+.card {
+	background: var(--bg-secondary);
+	border-radius: 20px;
+	border: 1px solid var(--section-border);
+	box-shadow: var(--section-shadow) 0px 1px 3px 0px;
+	padding: 20px 26px;
+	margin-bottom: 20px;
+}
+
+/* Farbige Icon-Kachel nach dem Muster der Extension (option.css). */
+.icon-tile {
+	width: 40px;
+	height: 40px;
+	border-radius: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--icon-color, var(--accent-color));
+	background: oklch(from var(--icon-color, var(--accent-color)) l c h / 12%);
+	flex-shrink: 0;
+}
+
+/* Badge (Typ, Kategorie, Warnung). */
+.badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 0.8em;
+	background: var(--bg-tertiary);
+	color: var(--text-secondary);
+	border: 1px solid var(--border-color);
+}
+.badge.badge-warning {
+	color: var(--warning-color);
+	border-color: var(--warning-color);
+}
+
+/* Zeilenleiste für Filter und Blätter-Navigation. */
+.filter-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+}
+
+.toggle {
+	position: relative;
+	width: 45px;
+	height: 26px;
+	flex-shrink: 0;
+}
+
+.toggle input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.toggle .slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: var(--rail-color);
+	transition: 0.3s;
+	border-radius: 26px;
+}
+
+.toggle .slider:before {
+	position: absolute;
+	content: "";
+	height: 20px;
+	width: 20px;
+	left: 3px;
+	bottom: 3px;
+	background-color: #fff;
+	transition: transform 0.2s var(--bezier), width 0.2s var(--bezier), left 0.2s var(--bezier);
+	border-radius: 10px;
+}
+
+.toggle input:checked+.slider {
+	background-color: var(--accent-color);
+}
+
+.toggle input:checked+.slider:before {
+	transform: translateX(19px);
+}
+
+.toggle .slider:active:before {
+	width: 28px;
+}
+
+.toggle input:checked+.slider:active:before {
+	left: -5px;
+}
+
+.toggle input:focus-visible+.slider {
+	box-shadow: 0 0 0 2px var(--input-focus-border-color);
+}
+
+.toggle input[type="checkbox"] {
+	width: 0 !important;
+	height: 0 !important;
+	margin: 0 !important;
+	opacity: 0 !important;
+	position: absolute;
+}

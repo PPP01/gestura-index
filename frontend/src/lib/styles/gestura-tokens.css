@@ -1,0 +1,92 @@
+/*
+ * Design-Tokens des Gestura-Designs – WÖRTLICHE KOPIE der beiden
+ * Token-Blöcke aus css/common.css des Extension-Repos.
+ * Autoritative Quelle: /mnt/c/Programme.alt/Gestura/css/common.css
+ *
+ * HIER NIEMALS ÄNDERN. Bei Design-Änderungen in der Extension dort ändern
+ * und neu herüberkopieren. Eigene Werte und Überschreibungen gehören nach
+ * tokens.css – die Datei lädt danach und gewinnt bei gleicher Spezifität.
+ *
+ * Die Datei enthält bewusst NUR die Tokens und nicht mehr die Bausteine der
+ * Extension (Buttons, Formularfelder, Schalter). Die stehen jetzt als
+ * eigener Bestand in base.css und elements.css, weil die Website dort
+ * ohnehin eigene Wege geht. Der enge Schnitt macht die Prüfung zum
+ * Einzeiler – der Rumpf ab hier ist Zeile 1–70 der Quelle:
+ *
+ *   diff <(sed -n '1,70p' /mnt/c/Programme.alt/Gestura/css/common.css) \
+ *        <(tail -n +23 frontend/src/lib/styles/gestura-tokens.css)
+ *
+ * Das ist nicht theoretisch: An der alten, 615 Zeilen langen Kopie ist
+ * zweimal von Hand gearbeitet worden (b62b977, 87b2477). Beides wäre beim
+ * nächsten Herüberkopieren spurlos verschwunden.
+ */
+:root {
+	--bg-primary: #121216;
+	--bg-secondary: rgba(255, 255, 255, 0.055);
+	--bg-tertiary: rgba(255, 255, 255, 0.035);
+	--text-primary: #ececf1;
+	--text-secondary: #a1a1aa;
+	--text-muted: #71717a;
+	--border-color: rgba(255, 255, 255, 0.08);
+	--border-color-solid: #2a2a2e;
+	--checkbox-border-color: rgba(255, 255, 255, 0.13);
+	--accent-color: #5b9cf6;
+	--accent-hover: #4a8ae8;
+	--danger-color: #ef5350;
+	--success-color: #4caf50;
+	--input-bg: #161618;
+	--card-bg: #1b1b1b;
+	--bg-color: #111114;
+	--text-color: var(--text-primary);
+	--primary-color: #5b9cf6;
+	--section-border: rgba(255, 255, 255, 0.04);
+	--section-shadow: rgba(0, 0, 0, 0.3);
+	--badge-bg: rgba(255, 255, 255, 0.1);
+	--badge-text: rgba(255, 255, 255, 0.7);
+	--toggle-secondary-bg: rgba(255, 255, 255, 0.18);
+	--input-focus-border-color: #5b9cf680;
+	--warning-color: #e6a117;
+	--notice-color: #60a5fa;
+	--attention-color: #e6a117;
+	--attention-bg: rgba(230, 161, 23, 0.12);
+	--attention-border: rgba(230, 161, 23, 0.30);
+	--bezier: cubic-bezier(.4, 0, .2, 1);
+	--rail-color: rgba(255, 255, 255, .20);
+	--rail-color-advanced-muted: rgba(255, 255, 255, .3);
+	--font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+	--select-arrow: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath fill='none' stroke='%23ececf1' stroke-opacity='0.4' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+[data-theme="light"] {
+	--bg-primary: #f0f2f5;
+	--bg-secondary: rgb(255, 255, 255, 1);
+	--bg-tertiary: rgb(3, 35, 86, 0.04);
+	--text-primary: #222;
+	--text-secondary: #666;
+	--text-muted: #999;
+	--border-color: rgba(0, 0, 0, 0.1);
+	--border-color-solid: #dcdcdc;
+	--checkbox-border-color: rgba(0, 0, 0, 0.15);
+	--accent-color: #4285f4;
+	--accent-hover: #3367d6;
+	--success-color: #2e7d32;
+	--input-bg: #fff;
+	--card-bg: #ffffff;
+	--bg-color: #f5f7fa;
+	--text-color: var(--text-primary);
+	--primary-color: #4285f4;
+	--section-border: rgba(0, 0, 0, 0);
+	--section-shadow: rgba(113, 113, 122, 0.152);
+	--badge-bg: rgba(0, 0, 0, 0.45);
+	--badge-text: #fff;
+	--toggle-secondary-bg: rgba(0, 0, 0, .25);
+	--input-focus-border-color: #4285f480;
+	--warning-color: #e6a117;
+	--notice-color: #3b82f6;
+	--attention-color: #b45309;
+	--attention-bg: rgba(230, 161, 23, 0.16);
+	--attention-border: rgba(230, 161, 23, 0.45);
+	--rail-color: rgba(0, 0, 0, .27);
+	--rail-color-advanced-muted: rgba(0, 0, 0, .3);
+	--select-arrow: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath fill='none' stroke='%23222222' stroke-opacity='0.4' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+}

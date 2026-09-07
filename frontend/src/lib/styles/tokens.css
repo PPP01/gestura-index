@@ -1,0 +1,70 @@
+/*
+ * Eigene Design-Tokens der Website – alles, was NICHT aus der Extension
+ * kommt: die Töne des v2-Seitenstils, die Maximalbreiten der Shell, die
+ * hier entstandenen Bausteine (Sterne, Sammelkorb-Panel) und die eine
+ * Überschreibung der Kopie (--bg-secondary im hellen Thema).
+ *
+ * Lädt nach gestura-tokens.css und gewinnt deshalb bei gleicher
+ * Spezifität. Was hier steht, überlebt jedes Herüberkopieren.
+ */
+
+:root {
+	--page-max-width: 1200px;
+	--content-max-width: 900px; /* wie .container der Extension-Options-Seite */
+
+	/*
+	 * Töne des v2-Seitenstils (Design-Handoff, Artboards 2a/3a). Violett und
+	 * Pink sind laut Handoff reine VERLAUFSFARBEN – sie stehen nie für sich als
+	 * Text- oder Flächenfarbe, sondern nur in Gradienten und Glows.
+	 * --page-hairline und --page-card-end tragen die getönten Karten: ein
+	 * Verlauf aus der Kartenfarbe ins Neutrale.
+	 */
+	--page-violet: #8b5cf6;
+	--page-hairline: rgba(255, 255, 255, 0.1);
+	--page-card-end: rgba(255, 255, 255, 0.03);
+	--page-glass: rgba(20, 20, 30, 0.6);
+	--page-shot-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+
+	/*
+	 * Diese vier Tokens gibt es in der Extension NICHT – sie sind hier
+	 * entstanden (StarRating, Sammelkorb-Panel, Akzent-Tönung) und standen
+	 * bis September 2026 fälschlich in gestura-common.css, also in der Kopie
+	 * mit Schreibverbot. Ein Herüberkopieren aus dem Extension-Repo hätte sie
+	 * gelöscht und die Sterne unsichtbar gemacht. Eigene Tokens gehören
+	 * hierher.
+	 *
+	 * --star-fill ist in beiden Themen gleich und steht deshalb nur hier.
+	 */
+	--star-fill: #e6a117;
+	--star-base: rgba(255, 255, 255, 0.18);
+	--accent-tint: rgba(91, 156, 246, 0.16);
+	--panel-bg: #1c1c22;
+}
+
+[data-theme='light'] {
+	/*
+	 * Web-spezifische Abweichung von der Extension-Kopie: dort ist
+	 * --bg-secondary im hellen Thema deckendes Weiß. Auf der Website liegt
+	 * hinter Kopfleiste, Karten und Pills der Seiten-Glow – deckendes Weiß
+	 * würde ihn überall abschneiden. Mit 45 % scheint er durch, ohne dass die
+	 * Flächen ihre Absetzung verlieren.
+	 *
+	 * Der Wert gehört NICHT nach gestura-tokens.css: die Datei ist eine Kopie
+	 * aus dem Extension-Repo (siehe docs/design-system.md) und wird bei jeder
+	 * Übernahme überschrieben. Diese Datei lädt danach und gewinnt.
+	 */
+	--bg-secondary: rgba(255, 255, 255, 0.45);
+
+	--page-violet: #7c4fe0;
+	/* Kräftiger als die üblichen 7 %: getönte Flächen liegen hell auf hell und
+	   verlören sonst jede Kante. */
+	--page-hairline: rgba(0, 0, 0, 0.1);
+	--page-card-end: rgba(255, 255, 255, 0.7);
+	--page-glass: rgba(255, 255, 255, 0.75);
+	--page-shot-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+	/* Eigene Tokens, siehe :root – --star-fill bleibt unverändert. */
+	--star-base: rgba(0, 0, 0, 0.15);
+	--accent-tint: rgba(66, 133, 244, 0.12);
+	--panel-bg: #ffffff;
+}

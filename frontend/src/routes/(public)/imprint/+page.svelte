@@ -2,7 +2,7 @@
 	/*
 	 * Impressum im Rail-Layout der Datenschutzseite (Handoff »4a«): Kopfbereich
 	 * mit Status-Pill, darunter die Rail mit einem Knoten je Abschnitt. Struktur
-	 * und Knotenform stehen global in site.css (`.rail-page`, `.rail-node`) –
+	 * und Knotenform stehen global in pages.css (`.rail-page`, `.rail-node`) –
 	 * hier unten nur die Betreiber-Felder.
 	 *
 	 * Die Pflichtangabe »Angaben gemäß § 5 DDG« steht in der Pill statt als

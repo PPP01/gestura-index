@@ -6,9 +6,9 @@
 	 *
 	 * Die Rail ersetzt die Karten: eine durchgehende Linie links, je Abschnitt
 	 * ein leuchtender Knoten. Deshalb nutzt diese Seite NICHT die
-	 * `.text-page`-Struktur aus site.css – die gibt jedem `section` eine
+	 * `.text-page`-Struktur aus pages.css – die gibt jedem `section` eine
 	 * getönte Karte, und Karte plus Rail wäre doppelt gerahmt. Die Rail selbst
-	 * steht als `.rail-page`/`.rail-node` ebenfalls in site.css und trägt auch
+	 * steht als `.rail-page`/`.rail-node` ebenfalls in pages.css und trägt auch
 	 * das Impressum; hier unten stehen nur die Eigenheiten dieser Seite. Die
 	 * Doku bleibt unberührt bei `.text-page`.
 	 *
@@ -273,7 +273,7 @@
 <style>
 	/*
 	 * Nur Seitenspezifisches. Rail, Kopfbereich und Knoten-Grundform stehen
-	 * global in site.css – sie tragen auch das Impressum.
+	 * global in pages.css – sie tragen auch das Impressum.
 	 */
 
 	/* Das Schild der Status-Pill: grün wie im Entwurf. Die Regel steht hier und
