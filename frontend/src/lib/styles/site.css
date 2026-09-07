@@ -203,3 +203,166 @@ body {
 	background: none;
 	box-shadow: none;
 }
+
+/*
+ * v2-Rail-Seiten (Datenschutz, Impressum) – Handoff »4a«, September 2026.
+ *
+ * Steht hier und nicht in den Seiten, weil zwei Seiten dieselbe Struktur
+ * tragen: eine durchgehende Linie links, je Abschnitt ein leuchtender Knoten.
+ * Die Regeln sind mit `rail-` benannt, weil diese Datei GLOBAL gilt – ein
+ * blankes `.node` wäre in einem projektweiten Stylesheet ein Name, den sich
+ * irgendwann eine zweite Komponente nimmt.
+ *
+ * Seitenspezifisches (Kurzfassungs-Raster, Schlüsseltabelle, Verzeichnis,
+ * Impressums-Felder) bleibt in der jeweiligen Seite.
+ */
+.rail-page {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 36px;
+}
+/* Über der Verlaufs-Ebene von PageGlow, die als erstes Kind darunter liegt. */
+.rail-page > .page-hero,
+.rail-page > .rail {
+	position: relative;
+	z-index: 1;
+}
+
+.page-hero {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+/* Luft zwischen Titel und Einleitung – der 18px-Gap ist für eine
+   44px-Überschrift zu knapp. */
+.page-hero .page-heading {
+	margin-bottom: 10px;
+}
+.page-lead {
+	margin: 0;
+	max-width: 760px;
+	font-size: 16px;
+	line-height: 1.7;
+	color: var(--text-secondary);
+	text-wrap: pretty;
+}
+
+.rail {
+	display: flex;
+	flex-direction: column;
+	gap: 42px;
+	padding-left: 36px;
+}
+/*
+ * Die Linie ist ein eigenes Element, kein ::before des Containers: sie muss
+ * oben und unten um 8px hinter dem ersten und letzten Punkt zurückbleiben,
+ * damit sie nicht ins Leere ausläuft.
+ *
+ * Der Verlauf greift die Tonfolge der Knoten auf (grün → blau → violett →
+ * verklingend) und macht die Rail zu einem Weg mit Anfang und Ende, statt zu
+ * einem Strich.
+ */
+.rail-line {
+	position: absolute;
+	left: 5px;
+	top: 8px;
+	bottom: 8px;
+	width: 1px;
+	background: linear-gradient(
+		180deg,
+		oklch(from var(--success-color) l c h / 50%),
+		oklch(from var(--accent-color) l c h / 35%) 30%,
+		oklch(from var(--page-violet) l c h / 25%) 65%,
+		var(--page-hairline)
+	);
+}
+
+.rail-node {
+	--dot: var(--accent-color);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	margin: 0;
+}
+.rail-node.green {
+	--dot: var(--success-color);
+}
+.rail-node.violet {
+	--dot: var(--page-violet);
+}
+.rail-node.grey {
+	--dot: var(--text-muted);
+}
+.rail-node.rail-wide {
+	gap: 14px;
+}
+/*
+ * Der Knotenpunkt sitzt auf der Linie (left:-36px hebt das Padding des
+ * Containers wieder auf) und leuchtet in zwei Stufen: ein weicher Schein nach
+ * außen und ein harter Ring, der ihn von der Linie abhebt.
+ */
+.rail-node::before {
+	content: '';
+	position: absolute;
+	left: -36px;
+	top: 4px;
+	width: 11px;
+	height: 11px;
+	border-radius: 50%;
+	background: var(--dot);
+	box-shadow:
+		0 0 10px oklch(from var(--dot) l c h / 80%),
+		0 0 0 3px oklch(from var(--dot) l c h / 18%);
+}
+/* Sprungziele: ohne scroll-margin landet die Überschrift unter der Kopfleiste,
+   die über dem Inhalt liegt. */
+.rail-node[id] {
+	scroll-margin-top: calc(var(--topbar-h, 65px) + 16px);
+}
+
+.rail-head {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+.rail-node h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+.rail-node p {
+	margin: 0;
+	font-size: 13.5px;
+	line-height: 1.7;
+	color: var(--text-secondary);
+}
+/* Kurzform der Rechtsgrundlage in der Farbe des Knotenpunkts, Speicherdauer
+   gedämpft dahinter. */
+.rail-basis {
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--dot);
+}
+.rail-retention {
+	font-size: 11.5px;
+	color: var(--text-muted);
+	/* Zieht den Trennpunkt an die Rechtsgrundlage heran: die beiden gehören als
+	   ein Datenpaar zusammen, der 12px-Gap der Zeile trennte sie sonst optisch
+	   gleich stark wie vom Titel. */
+	margin-left: -6px;
+}
+
+/* Auf schmalen Geräten ist die Rail Zierde, die Platz kostet: Punkte bleiben,
+   die Einrückung schrumpft. */
+@media (max-width: 640px) {
+	.rail {
+		padding-left: 24px;
+	}
+	.rail-node::before {
+		left: -24px;
+	}
+}

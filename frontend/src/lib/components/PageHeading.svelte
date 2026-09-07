@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	/*
 	 * Der Seitenkopf der v2-Seiten: optionale Status-Pill, darunter eine
 	 * Überschrift, deren zweiter Teil einen Blau-nach-Violett-Verlauf trägt.
@@ -15,17 +17,31 @@
 	// `lead` bleibt leer, wo der Titel aus einem einzigen Wort besteht
 	// (»Datenschutz«, »Impressum«): dann trägt die ganze Überschrift den Verlauf,
 	// statt ihn künstlich an einer Wortgrenze anzusetzen, die es nicht gibt.
+	// `icon` ersetzt den grünen Punkt der Pill durch ein eigenes Zeichen (z. B.
+	// das Schild der Datenschutzseite, Handoff 4a). Als Snippet statt als
+	// Komponenten-Prop, damit die aufrufende Seite Größe, Strichstärke und Farbe
+	// selbst bestimmt – die Pill weiß nichts über Lucide.
 	let {
 		pill = '',
+		icon,
 		lead = '',
 		accent,
 		size = 44
-	}: { pill?: string; lead?: string; accent: string; size?: number } = $props();
+	}: {
+		pill?: string;
+		icon?: Snippet;
+		lead?: string;
+		accent: string;
+		size?: number;
+	} = $props();
 </script>
 
 <div class="page-heading">
+	<!-- Kein Zeilenumbruch zwischen den Kindern der Pill: sie ist ein
+	     inline-flex-Container mit gap, und ein Whitespace-Textknoten wäre dort
+	     ein eigenes Flex-Item – also ein zweiter Abstand vor dem Text. -->
 	{#if pill}
-		<span class="status-pill"><span class="dot"></span>{pill}</span>
+		<span class="status-pill">{#if icon}<span class="pill-icon">{@render icon()}</span>{:else}<span class="dot"></span>{/if}{pill}</span>
 	{/if}
 	<!-- Das Trennzeichen gehört in den Ausdruck: als Template-Whitespace zwischen
 	     {/if} und <span> wäre nicht garantiert, dass es erhalten bleibt, und der
@@ -53,6 +69,13 @@
 		background: var(--bg-secondary);
 		color: var(--text-secondary);
 		backdrop-filter: blur(6px);
+	}
+	/* Nur Ausrichtung – Größe und Farbe bestimmt die aufrufende Seite in ihrem
+	   eigenen Snippet, sonst müsste die Pill jedes Icon kennen. */
+	.status-pill .pill-icon {
+		display: inline-flex;
+		align-items: center;
+		flex-shrink: 0;
 	}
 	.status-pill .dot {
 		width: 7px;
