@@ -51,6 +51,50 @@
 				location.replace('/' + lang + location.search + location.hash);
 			})();
 		</script>
+		<!--
+			Favicon nach dem BROWSER-Theme, nicht nach dem der Seite: das Icon sitzt
+			in der Tab-Leiste, und deren Farbe bestimmt das Betriebssystem, nicht
+			diese Seite. Wer hier auf hell stellt, waehrend das System dunkel laeuft,
+			bekaeme sonst ein dunkles Icon in eine dunkle Leiste.
+
+			Muster und Dateien aus der Extension (js/page-favicon-theme.js): zwei
+			freistehende Haende in EINER Farbe, Schattierung im Alphakanal - bei 16 px
+			verliert die Verlaufs-Hand gegen eine weisse Tab-Leiste die Fingerspitzen.
+			Die Extension nimmt aus demselben Grund JS statt eines media-Attributs am
+			Icon-Link: Chromes Auswertung hat bekannte Fehler. Die reine Erstauswahl
+			funktioniert zwar (am 07.09.2026 gemessen), deckt aber den Themewechsel im
+			laufenden Tab nicht ab.
+
+			Link UND Weiche stehen hier statt in svelte:head, also VOR dem
+			Kopf-Platzhalter von SvelteKit: so traegt schon der erste Paint das
+			richtige Icon. Ueber svelte:head stuende der Link erst nach diesem Script
+			im Dokument, und der Tausch waere ein sichtbares Nachladen.
+
+			ACHTUNG, hier stand schon einmal ein Fehler: Den Namen des
+			Kopf-Platzhalters darf man in dieser Datei NICHT ausschreiben, auch nicht
+			im Kommentar. SvelteKit ersetzt ihn per einfacher Textersetzung und trifft
+			das erste Vorkommen - also den Kommentar. Der eingesetzte Markup-Block
+			beginnt mit Sveltes Hydrations-Markern, und die enthalten die Zeichen,
+			die einen HTML-Kommentar beenden - damit schliesst er vorzeitig und der
+			Rest wird sichtbarer Text. (Genau diese Zeichenfolge darf deshalb auch
+			hier nicht stehen.) Deutsche Umlaute und
+			Gedankenstriche bleiben hier ebenfalls aussen vor, damit der Kommentar
+			keine Zeichen enthaelt, die eine Ersetzung stoeren koennten.
+		-->
+		<link rel="icon" href="/icon48-light.png" />
+		<script>
+			(function () {
+				var mq = matchMedia('(prefers-color-scheme: dark)');
+				function apply(isDark) {
+					var link = document.querySelector('link[rel~="icon"]');
+					if (link) link.href = isDark ? '/icon48-dark.png' : '/icon48-light.png';
+				}
+				apply(mq.matches);
+				mq.addEventListener('change', function (e) {
+					apply(e.matches);
+				});
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

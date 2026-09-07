@@ -6,23 +6,8 @@
 	import { getPageVisibility } from '$lib/api';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import GithubMark from './GithubMark.svelte';
-	/*
-	 * Helles Thema: die FREISTEHENDE Verlaufs-Hand aus dem Logo-Paket
-	 * (exchange/…Logo.zip, hand-only/hand-gradient.png) – keine Kachel.
-	 *
-	 * Aufbereitet als 137×141: Das Original wiegt 365 KB und stünde damit für
-	 * ein 36px-Logo in der Kopfleiste JEDER Seite; verkleinert sind es 28 KB,
-	 * dieselbe Größenordnung wie die dunkle Kachel, und bis knapp 4-fache
-	 * Pixeldichte noch scharf.
-	 *
-	 * Die krummen Maße sind gerechnet, nicht geraten: transparenter Rand
-	 * entfernt, Zeichnung auf 139 px Höhe, dann 1 px Rand zurück. Damit füllt
-	 * die Zeichnung 138/141 der Datei – genau das Verhältnis, mit dem die weiße
-	 * Hand ihre dunkle Kachel füllt (126/128). Gerendert ergibt das 33,96×35,23
-	 * gegen 34,31×35,44 px im dunklen Thema.
-	 */
-	import handLight from '$lib/assets/logo/logo-hand-gradient-137.png';
-	import tileDark from '$lib/assets/logo/icon128-darktile.png';
+	import handLight from '$lib/assets/logo/icon128.png';
+	import handDark from '$lib/assets/logo/icon128-dark.png';
 
 	const GITHUB_URL = 'https://github.com/PPP01/Gestura';
 
@@ -77,8 +62,8 @@
 <header class="site-header">
 	<a class="brand" href={localizeHref('/')}>
 		<span class="logo-img">
-			<img src={handLight} alt="" class="logo-light" width="36" height="36" />
-			<img src={tileDark} alt="" class="logo-dark" width="36" height="36" />
+			<img src={handLight} alt="" class="logo-light" width="26" height="26" />
+			<img src={handDark} alt="" class="logo-dark" width="26" height="26" />
 		</span>
 		<span class="brand-name">Gestura</span>
 		{#if isIndex}<span class="index-badge">INDEX</span>{/if}
@@ -134,20 +119,37 @@
 		text-decoration: none;
 		color: inherit;
 	}
+	/*
+	 * Die Kachel ist CSS, nicht Bild – genau wie in der Extension
+	 * (css/common.css, `.logo-img`): 5px Padding, 10px Rundung, ein Verlauf je
+	 * Thema, dazu ein feiner Schatten. Darauf liegt die FREISTEHENDE Hand
+	 * (icon128.png dunkel-getönt für hell, icon128-dark.png weiß für dunkel).
+	 *
+	 * Warum nicht die fertige Verlaufs-Kachel als Bild: Die Extension zeigt in
+	 * ihrem Options-Kopf genau diese Kombination, und das Logo der Website soll
+	 * ihr gleichen. Die Verlaufs-Kachel aus dem Logo-Paket ist das APP-Icon
+	 * (Store, Toolbar), nicht das Kopf-Logo.
+	 *
+	 * Die Außenabstände der Quelle (margin-top 4px, margin-inline-end 12px)
+	 * bleiben weg: die Markenzeile setzt ihren Abstand über `gap`, beides
+	 * zusammen wäre doppelt.
+	 */
 	.logo-img {
 		width: 36px;
 		height: 36px;
+		padding: 5px;
 		border-radius: 10px;
-		overflow: hidden;
 		display: inline-flex;
+		background: linear-gradient(145deg, #ffffff, #f1f9ff);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 	}
-	/*
-	 * Die freistehende Hand ist 137×141 – nicht quadratisch. Ohne `contain`
-	 * würde sie auf das quadratische Kästchen gedehnt (rund 3 % zu breit).
-	 * `contain` skaliert sie auf die Höhe des Kästchens und zentriert sie.
-	 */
-	.logo-light {
-		object-fit: contain;
+	:global([data-theme='dark']) .logo-img {
+		background: linear-gradient(145deg, #2a3040, #1c222e);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+	}
+	.logo-img img {
+		width: 100%;
+		height: 100%;
 	}
 	.logo-dark {
 		display: none;
