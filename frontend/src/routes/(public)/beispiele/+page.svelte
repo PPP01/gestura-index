@@ -29,7 +29,7 @@
 	<div class="showcase-grid">
 		{#each SHOWCASE as card (card.nameKey)}
 			{@const Icon = categoryIcon(card.category)}
-			<article class="showcase-card">
+			<article class="showcase-card tinted-card">
 				<div class="preview">
 					<span class="gesture-chip">{card.gesture}</span>
 					<div class="play-circle" aria-hidden="true"><Play size={22} fill="currentColor" /></div>
@@ -106,19 +106,13 @@
 		grid-template-columns: repeat(2, 1fr);
 		gap: 20px;
 	}
-	/* Getönte Karte im v2-Ton statt der flachen globalen .card. */
+	/* Getönte Karte (.tinted-card) statt der flachen globalen .card. */
 	.showcase-card {
+		--card-tint-alpha: 7%;
 		padding: 0;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
-		border-radius: 20px;
-		border: 1px solid var(--page-hairline);
-		background: linear-gradient(
-			160deg,
-			oklch(from var(--accent-color) l c h / 7%),
-			var(--page-card-end) 70%
-		);
 	}
 
 	/* Animierte-Vorschau-Platzhalter: 210px Gradient-Fläche mit Gesten-Chip

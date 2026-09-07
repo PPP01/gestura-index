@@ -59,7 +59,7 @@
 		<h2>{m.about_can_heading()}</h2>
 		<div class="ability-grid">
 			{#each abilities as a (a.title())}
-				<div class="ability-card" style={`--tint:${a.color}`}>
+				<div class="ability-card tinted-card" style={`--card-tint:${a.color}`}>
 					<!-- Kennzeichnung in der Icon-Zeile, nicht hinter dem Titel: dort
 					     bräche sie je nach Titellänge mal um und mal nicht. -->
 					<div class="ability-head">
@@ -167,13 +167,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 9px;
-		border-radius: 20px;
-		border: 1px solid var(--page-hairline);
-		background: linear-gradient(
-			160deg,
-			oklch(from var(--tint) l c h / 9%),
-			var(--page-card-end) 70%
-		);
+		--card-tint-alpha: 9%;
 	}
 	.ability-head {
 		display: flex;

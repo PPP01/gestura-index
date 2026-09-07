@@ -58,7 +58,7 @@
 
 	<div class="gesture-grid">
 		{#each cards as c (c.id)}
-			<div class="gesture-card">
+			<div class="gesture-card tinted-card">
 				<GestureDiagram kind={c.kind} path={c.path} label={c.label()} />
 				<span class="kuerzel" aria-hidden="true">{c.kuerzel()}</span>
 				<span class="label">{c.label()}</span>
@@ -119,13 +119,6 @@
 		gap: 10px;
 		padding: 22px 16px 20px;
 		text-align: center;
-		border-radius: 20px;
-		border: 1px solid var(--page-hairline);
-		background: linear-gradient(
-			160deg,
-			oklch(from var(--accent-color) l c h / 8%),
-			var(--page-card-end) 70%
-		);
 	}
 	.kuerzel {
 		font-family: var(--font-mono);

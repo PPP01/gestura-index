@@ -64,6 +64,34 @@
 	border-color: var(--warning-color);
 }
 
+/*
+ * Getönte Karte – die Kartenform der v2-Seiten: ein Verlauf aus der
+ * Kartenfarbe nach unten ins Neutrale, dazu Rundung und Haarlinie.
+ *
+ * Stand bis September 2026 in fünf Dateien einzeln nachgebaut, jedes Mal mit
+ * derselben Geometrie (160°, Auslauf bei 70 %, 20 px Radius, --page-hairline)
+ * und nur anderem Ton. Eine Änderung an der Form hätte fünf Stellen gebraucht.
+ *
+ * Eingänge:
+ *   --card-tint        Kartenfarbe (Standard: Akzentfarbe)
+ *   --card-tint-alpha  ihre Stärke im Verlauf (Standard: 8 %)
+ *
+ * Die Stärke ist je Seite verschieden (6 bis 9 %). Ob das gewollt war oder mit
+ * den Seiten gewachsen ist, hat niemand entschieden – deshalb bleibt sie ein
+ * Eingang und wird hier nicht vereinheitlicht. Die beiden Rückfallwerte sind,
+ * anders als die im September entfernten, echte Vorgaben eines Bausteins: das
+ * Muster von --icon-color.
+ */
+.tinted-card {
+	border-radius: 20px;
+	border: 1px solid var(--page-hairline);
+	background: linear-gradient(
+		160deg,
+		oklch(from var(--card-tint, var(--accent-color)) l c h / var(--card-tint-alpha, 8%)),
+		var(--page-card-end) 70%
+	);
+}
+
 /* Zeilenleiste für Filter und Blätter-Navigation. */
 .filter-bar {
 	display: flex;

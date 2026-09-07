@@ -95,7 +95,7 @@
 
 	<div class="persona-grid">
 		{#each personas as p (p.title())}
-			<div class="persona-card" style={`--tint:${p.color}`}>
+			<div class="persona-card tinted-card" style={`--card-tint:${p.color}`}>
 				<span class="icon-tile persona-icon" style={`--icon-color:${p.color}`}>
 					<p.Icon size={19} />
 				</span>
@@ -203,14 +203,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 9px;
-		border-radius: 20px;
-		border: 1px solid var(--page-hairline);
-		/* Verlaufs-Tint in der Kartenfarbe, nach unten ins Neutrale auslaufend. */
-		background: linear-gradient(
-			160deg,
-			oklch(from var(--tint) l c h / 9%),
-			var(--page-card-end) 70%
-		);
+		--card-tint-alpha: 9%;
 	}
 	.persona-icon {
 		width: 40px;
