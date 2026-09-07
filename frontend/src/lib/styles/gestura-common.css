@@ -32,14 +32,13 @@
 	--input-focus-border-color: #5b9cf680;
 	--warning-color: #e6a117;
 	--notice-color: #60a5fa;
+	--attention-color: #e6a117;
+	--attention-bg: rgba(230, 161, 23, 0.12);
+	--attention-border: rgba(230, 161, 23, 0.30);
 	--bezier: cubic-bezier(.4, 0, .2, 1);
 	--rail-color: rgba(255, 255, 255, .20);
 	--rail-color-advanced-muted: rgba(255, 255, 255, .3);
 	--font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-	--star-fill: #e6a117;
-	--star-base: rgba(255, 255, 255, 0.18);
-	--accent-tint: rgba(91, 156, 246, 0.16);
-	--panel-bg: #1c1c22;
 	--select-arrow: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath fill='none' stroke='%23ececf1' stroke-opacity='0.4' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
 }
 
@@ -55,7 +54,7 @@
 	--checkbox-border-color: rgba(0, 0, 0, 0.15);
 	--accent-color: #4285f4;
 	--accent-hover: #3367d6;
-	--success-color: #3d8b40;
+	--success-color: #2e7d32;
 	--input-bg: #fff;
 	--card-bg: #ffffff;
 	--bg-color: #f5f7fa;
@@ -69,13 +68,12 @@
 	--input-focus-border-color: #4285f480;
 	--warning-color: #e6a117;
 	--notice-color: #3b82f6;
+	--attention-color: #b45309;
+	--attention-bg: rgba(230, 161, 23, 0.16);
+	--attention-border: rgba(230, 161, 23, 0.45);
 	--rail-color: rgba(0, 0, 0, .27);
 	--rail-color-advanced-muted: rgba(0, 0, 0, .3);
 	--select-arrow: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath fill='none' stroke='%23222222' stroke-opacity='0.4' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
-	--star-fill: #e6a117;
-	--star-base: rgba(0, 0, 0, 0.15);
-	--accent-tint: rgba(66, 133, 244, 0.12);
-	--panel-bg: #ffffff;
 }
 
 * {
