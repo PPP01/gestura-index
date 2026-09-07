@@ -38,7 +38,7 @@
 		z-index: 0;
 
 		--page-glow-a: oklch(from var(--accent-color) l c h / 16%);
-		--page-glow-b: rgba(139, 92, 246, 0.06);
+		--page-glow-b: oklch(from var(--page-violet) l c h / 6%);
 		--page-glow-side: oklch(from var(--accent-color) l c h / 5%);
 	}
 	/*
@@ -58,7 +58,7 @@
 	 */
 	:global([data-theme='light']) .page-glow {
 		--page-glow-a: oklch(from var(--accent-color) l c h / 34%);
-		--page-glow-b: rgba(124, 79, 224, 0.2);
+		--page-glow-b: oklch(from var(--page-violet) l c h / 20%);
 		--page-glow-side: oklch(from var(--accent-color) l c h / 12%);
 	}
 

@@ -93,14 +93,15 @@
 		letter-spacing: -0.02em;
 		text-wrap: balance;
 	}
+	/*
+	 * Beide Töne sind theme-abhängige Tokens, also genügt EINE Regel. Vorher
+	 * standen hier zwei identische, die sich nur im Rückfallwert unterschieden
+	 * (#8b5cf6 bzw. #7c4fe0) – ein Fallback für eine Variable, die immer
+	 * existiert, und dazu die einzige Stelle, an der die Literale nochmals
+	 * auftauchten.
+	 */
 	h1 .grad {
-		background: linear-gradient(100deg, var(--accent-color), var(--page-violet, #8b5cf6) 70%);
-		background-clip: text;
-		-webkit-background-clip: text;
-		color: transparent;
-	}
-	:global([data-theme='light']) h1 .grad {
-		background: linear-gradient(100deg, var(--accent-color), var(--page-violet, #7c4fe0) 70%);
+		background: linear-gradient(100deg, var(--accent-color), var(--page-violet) 70%);
 		background-clip: text;
 		-webkit-background-clip: text;
 		color: transparent;

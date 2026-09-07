@@ -15,11 +15,20 @@
 	/*
 	 * Töne des v2-Seitenstils (Design-Handoff, Artboards 2a/3a). Violett und
 	 * Pink sind laut Handoff reine VERLAUFSFARBEN – sie stehen nie für sich als
-	 * Text- oder Flächenfarbe, sondern nur in Gradienten und Glows.
+	 * Text- oder Flächenfarbe, sondern nur in Gradienten und Glows; Petrol und
+	 * Gold tragen dagegen Icon-Kacheln.
+	 *
+	 * Die vier standen bis September 2026 zusätzlich als --c1-* im <style>-Block
+	 * der Startseite, mit identischen Werten in beiden Themen. Zwei Namen für
+	 * dieselbe Entscheidung heißt: jede neue Seite wählt neu, und die Hälfte
+	 * wählt falsch.
 	 * --page-hairline und --page-card-end tragen die getönten Karten: ein
 	 * Verlauf aus der Kartenfarbe ins Neutrale.
 	 */
 	--page-violet: #8b5cf6;
+	--page-pink: #ec4899;
+	--page-teal: #2bb8a8;
+	--page-gold: #e6a117;
 	--page-hairline: rgba(255, 255, 255, 0.1);
 	--page-card-end: rgba(255, 255, 255, 0.03);
 	--page-glass: rgba(20, 20, 30, 0.6);
@@ -56,6 +65,9 @@
 	--bg-secondary: rgba(255, 255, 255, 0.45);
 
 	--page-violet: #7c4fe0;
+	--page-pink: #d63384;
+	--page-teal: #1f9587;
+	--page-gold: #b07d0e;
 	/* Kräftiger als die üblichen 7 %: getönte Flächen liegen hell auf hell und
 	   verlören sonst jede Kante. */
 	--page-hairline: rgba(0, 0, 0, 0.1);

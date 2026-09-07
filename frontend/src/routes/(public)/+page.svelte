@@ -291,28 +291,28 @@
 		padding-block: calc(28px + var(--topbar-h, 65px)) 28px;
 		overflow: hidden;
 
-		/* Glow-Töne: Violett/Pink sind laut Handoff reine Verlaufsfarben. */
-		--c1-violet: #8b5cf6;
-		--c1-pink: #ec4899;
-		--c1-teal: #2bb8a8;
-		--c1-gold: #e6a117;
+		/*
+		 * Violett, Pink, Petrol und Gold stehen global in tokens.css (--page-*):
+		 * sie hatten hier dieselben Werte, und andere Seiten brauchen sie auch.
+		 *
+		 * Was hier bleibt, ist ABSICHTLICH anders als die globalen Töne: C1
+		 * leuchtet, die übrigen Seiten flüstern. Die Glow-Alphas sind auf gleiche
+		 * WAHRGENOMMENE Intensität abgestimmt (siehe Hell-Block), die Glasflächen
+		 * sind dichter als --page-glass, und --c1-panel-end blendet in den
+		 * Seitengrund statt ins Weiße. Nicht »vereinheitlichen«.
+		 */
 		--c1-glow-1: oklch(from var(--accent-color) l c h / 28%);
 		--c1-glow-2: rgba(139, 92, 246, 0.12);
 		--c1-glow-3: rgba(139, 92, 246, 0.14);
 		--c1-glow-4: oklch(from var(--accent-color) l c h / 8%);
 		--c1-surface: rgba(255, 255, 255, 0.035);
 		--c1-surface-strong: rgba(255, 255, 255, 0.055);
-		--c1-hairline: rgba(255, 255, 255, 0.1);
 		--c1-glass: rgba(20, 20, 30, 0.75);
 		--c1-glass-deep: rgba(10, 10, 18, 0.78);
 		--c1-panel-end: oklch(from var(--bg-primary) l c h / 40%);
 		--c1-card-shadow: none;
 	}
 	:global([data-theme='light']) .c1 {
-		--c1-violet: #7c4fe0;
-		--c1-pink: #d63384;
-		--c1-teal: #1f9587;
-		--c1-gold: #b07d0e;
 		/*
 		 * Deutlich höhere Alpha-Werte als die 16/7/8/6 % des Handoffs: auf dem
 		 * dunklen Grund liegt ein Glow HELLER als der Untergrund und hat nach oben
@@ -332,7 +332,6 @@
 		--c1-glow-4: oklch(from var(--accent-color) l c h / 14%);
 		--c1-surface: #ffffff;
 		--c1-surface-strong: rgba(255, 255, 255, 0.7);
-		--c1-hairline: rgba(0, 0, 0, 0.07);
 		--c1-glass: rgba(255, 255, 255, 0.86);
 		--c1-glass-deep: rgba(255, 255, 255, 0.94);
 		--c1-panel-end: #ffffff;
@@ -433,7 +432,7 @@
 		text-wrap: balance;
 	}
 	.hero-h1 .grad {
-		background: linear-gradient(100deg, var(--accent-color), var(--c1-violet) 60%, var(--c1-pink));
+		background: linear-gradient(100deg, var(--accent-color), var(--page-violet) 60%, var(--page-pink));
 		background-clip: text;
 		-webkit-background-clip: text;
 		color: transparent;
@@ -595,7 +594,7 @@
 		color: var(--accent-color);
 	}
 	.key.violet {
-		color: var(--c1-violet);
+		color: var(--page-violet);
 	}
 
 	.pill,
@@ -668,16 +667,16 @@
 		animation-delay: 2.1s;
 	}
 	.tone-pink {
-		border-color: oklch(from var(--c1-pink) l c h / 40%);
+		border-color: oklch(from var(--page-pink) l c h / 40%);
 	}
 	.tone-pink .key {
-		color: var(--c1-pink);
+		color: var(--page-pink);
 	}
 	.tone-violet {
-		border-color: oklch(from var(--c1-violet) l c h / 40%);
+		border-color: oklch(from var(--page-violet) l c h / 40%);
 	}
 	.tone-violet .key {
-		color: var(--c1-violet);
+		color: var(--page-violet);
 	}
 	.tone-accent {
 		border-color: oklch(from var(--accent-color) l c h / 40%);
@@ -784,7 +783,7 @@
 	.bento-card {
 		grid-column: span 2;
 		border-radius: 20px;
-		border: 1px solid var(--c1-hairline);
+		border: 1px solid var(--page-hairline);
 		background: var(--c1-surface);
 		box-shadow: var(--c1-card-shadow);
 		padding: 24px;
@@ -841,16 +840,16 @@
 		--icon-color: var(--accent-color);
 	}
 	.icon-tile.tone-violet {
-		--icon-color: var(--c1-violet);
+		--icon-color: var(--page-violet);
 	}
 	.icon-tile.tone-pink {
-		--icon-color: var(--c1-pink);
+		--icon-color: var(--page-pink);
 	}
 	.icon-tile.tone-teal {
-		--icon-color: var(--c1-teal);
+		--icon-color: var(--page-teal);
 	}
 	.icon-tile.tone-gold {
-		--icon-color: var(--c1-gold);
+		--icon-color: var(--page-gold);
 	}
 	.icon-tile.tone-success {
 		--icon-color: var(--success-color);
@@ -933,7 +932,7 @@
 		position: relative;
 		border-radius: 16px;
 		background: var(--c1-glass-deep);
-		border: 1px solid var(--c1-hairline);
+		border: 1px solid var(--page-hairline);
 		overflow: hidden;
 		backdrop-filter: blur(8px);
 	}
