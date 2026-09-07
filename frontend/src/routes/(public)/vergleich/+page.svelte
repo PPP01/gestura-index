@@ -50,8 +50,8 @@
 				<div class="cell head col-feature">{m.c4_col_feature()}</div>
 				<div class="cell head col-gestura">
 					<span class="logo-img">
-						<img src={handLight} alt="" class="logo-light" width="14" height="14" />
-						<img src={handDark} alt="" class="logo-dark" width="14" height="14" />
+						<img src={handLight} alt="" class="logo-light" width="20" height="20" />
+						<img src={handDark} alt="" class="logo-dark" width="20" height="20" />
 					</span>
 					<span class="brand">Gestura</span>
 				</div>
@@ -196,25 +196,17 @@
 		justify-content: center;
 		color: var(--accent-color);
 	}
-	/* Kachel wie im Kopf (Header.svelte), auf 20px maßstäblich verkleinert:
-	   Padding 5→3px, Rundung 10→6px. */
+	/* Reine Hand wie im Kopf (Header.svelte), hier bei 20px. */
 	.logo-img {
 		width: 20px;
 		height: 20px;
-		padding: 3px;
-		border-radius: 6px;
 		display: inline-flex;
 		flex-shrink: 0;
-		background: linear-gradient(145deg, #ffffff, #f1f9ff);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-	}
-	:global([data-theme='dark']) .logo-img {
-		background: linear-gradient(145deg, #2a3040, #1c222e);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 	}
 	.logo-img img {
 		width: 100%;
 		height: 100%;
+		object-fit: contain;
 	}
 	.logo-dark {
 		display: none;

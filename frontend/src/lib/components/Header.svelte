@@ -62,8 +62,8 @@
 <header class="site-header">
 	<a class="brand" href={localizeHref('/')}>
 		<span class="logo-img">
-			<img src={handLight} alt="" class="logo-light" width="26" height="26" />
-			<img src={handDark} alt="" class="logo-dark" width="26" height="26" />
+			<img src={handLight} alt="" class="logo-light" width="36" height="36" />
+			<img src={handDark} alt="" class="logo-dark" width="36" height="36" />
 		</span>
 		<span class="brand-name">Gestura</span>
 		{#if isIndex}<span class="index-badge">INDEX</span>{/if}
@@ -120,36 +120,31 @@
 		color: inherit;
 	}
 	/*
-	 * Die Kachel ist CSS, nicht Bild – genau wie in der Extension
-	 * (css/common.css, `.logo-img`): 5px Padding, 10px Rundung, ein Verlauf je
-	 * Thema, dazu ein feiner Schatten. Darauf liegt die FREISTEHENDE Hand
-	 * (icon128.png dunkel-getönt für hell, icon128-dark.png weiß für dunkel).
+	 * Die REINE Hand, ohne Kachel und ohne Rahmen – in beiden Themen: im hellen
+	 * die getönte Verlaufs-Hand (icon128.png), im dunklen die weiße
+	 * (icon128-dark.png). Beide sind eng beschnitten (Zeichnung 125×128 von
+	 * 128×128, also 97 % der Breite) und füllen das Kästchen damit fast ganz;
+	 * ohne das 5px-Padding der Extension-Kachel steht die Hand entsprechend
+	 * größer da.
 	 *
-	 * Warum nicht die fertige Verlaufs-Kachel als Bild: Die Extension zeigt in
-	 * ihrem Options-Kopf genau diese Kombination, und das Logo der Website soll
-	 * ihr gleichen. Die Verlaufs-Kachel aus dem Logo-Paket ist das APP-Icon
-	 * (Store, Toolbar), nicht das Kopf-Logo.
+	 * Bewusste Abweichung von der Extension: Deren Options-Kopf setzt die Hand
+	 * auf eine CSS-Kachel (Verlauf, Rundung, Schatten – css/common.css,
+	 * `.logo-img`). Die Website zeigt sie frei. Wer die Kachel zurückholt, holt
+	 * auch das Padding zurück und macht die Hand wieder kleiner.
 	 *
-	 * Die Außenabstände der Quelle (margin-top 4px, margin-inline-end 12px)
-	 * bleiben weg: die Markenzeile setzt ihren Abstand über `gap`, beides
-	 * zusammen wäre doppelt.
+	 * Keine `border-radius`/`overflow`-Reste: ohne Hintergrund rundet das
+	 * nichts und beschneidet nichts – unsichtbares Styling, das nur so aussieht,
+	 * als täte es etwas.
 	 */
 	.logo-img {
 		width: 36px;
 		height: 36px;
-		padding: 5px;
-		border-radius: 10px;
 		display: inline-flex;
-		background: linear-gradient(145deg, #ffffff, #f1f9ff);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-	}
-	:global([data-theme='dark']) .logo-img {
-		background: linear-gradient(145deg, #2a3040, #1c222e);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 	}
 	.logo-img img {
 		width: 100%;
 		height: 100%;
+		object-fit: contain;
 	}
 	.logo-dark {
 		display: none;
