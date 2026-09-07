@@ -19,6 +19,10 @@ vi.mock('$lib/api', async (orig) => {
 	return { ...actual, getPageVisibility: (...a: unknown[]) => getPageVisibility(...a) };
 });
 
+// SvelteKit ruft `load` stets MIT Event auf; die Seite holt die Sichtbarkeit
+// über dessen `fetch` (Vertrag geprüft in ../marketing-load-fetch.test.ts).
+const EVENT = { fetch: vi.fn() } as never;
+
 describe('C4 »Gestura im Vergleich« – Dev-404-Gate', () => {
 	beforeEach(() => {
 		getPageVisibility.mockReset();
@@ -27,18 +31,18 @@ describe('C4 »Gestura im Vergleich« – Dev-404-Gate', () => {
 	it('wirft ein 404, wenn die Seite per Flag deaktiviert ist', async () => {
 		getPageVisibility.mockResolvedValue({ vergleich: false });
 		const { load } = await import('./+page.ts');
-		await expect(load()).rejects.toMatchObject({ status: 404 });
+		await expect(load(EVENT)).rejects.toMatchObject({ status: 404 });
 	});
 
 	it('lädt normal, wenn die Seite aktiviert ist', async () => {
 		getPageVisibility.mockResolvedValue({ vergleich: true });
 		const { load } = await import('./+page.ts');
-		await expect(load()).resolves.toBeUndefined();
+		await expect(load(EVENT)).resolves.toBeUndefined();
 	});
 
 	it('lädt fail-open, wenn der Sichtbarkeits-Fetch scheitert', async () => {
 		getPageVisibility.mockRejectedValue(new Error('network error'));
 		const { load } = await import('./+page.ts');
-		await expect(load()).resolves.toBeUndefined();
+		await expect(load(EVENT)).resolves.toBeUndefined();
 	});
 });

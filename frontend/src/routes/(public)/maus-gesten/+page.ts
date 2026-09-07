@@ -1,6 +1,7 @@
 import { dev } from '$app/environment';
 import { error } from '@sveltejs/kit';
 import { getPageVisibility } from '$lib/api';
+import type { PageLoad } from './$types';
 
 // C3 »Was sind Maus-Gesten«: statisch prerendern (SEO), wie C1/C2.
 export const prerender = true;
@@ -9,13 +10,17 @@ export const ssr = true;
 // Nur im Dev (Vite rendert die Seite) prüfen wir das Flag und werfen ein echtes
 // 404. Im Prod-Build ist dev=false ⇒ dieser Code tut nichts, die Seite wird
 // normal prerendered und Symfony (MarketingPageController) übernimmt das Gating.
-export const load = async () => {
+//
+// Das `fetch` aus dem load-Event durchreichen statt des globalen: nur so
+// ordnet SvelteKit den Request dem Rendern zu (und wiederholt ihn beim
+// Hydrieren nicht). Ohne das warnt der Client bei jedem Link-Preload.
+export const load: PageLoad = async ({ fetch }) => {
 	if (!dev) {
 		return;
 	}
 	let vis: Record<string, boolean>;
 	try {
-		vis = await getPageVisibility();
+		vis = await getPageVisibility({ fetch });
 	} catch {
 		return; // fail-open im Dev
 	}
