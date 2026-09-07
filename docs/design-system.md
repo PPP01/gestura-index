@@ -8,7 +8,8 @@ Die Index-Website übernimmt das Design der Gestura-Extension (Options-Seite als
 | --- | --- | --- |
 | Design-Tokens (Farben, beide Themes) | `css/common.css`, Zeilen 1–70 | `frontend/src/lib/styles/gestura-tokens.css` (**wörtliche Kopie**, nie hier ändern) |
 | Basis-Bausteine (Buttons, Formularfelder, Schalter) | `css/common.css` | `frontend/src/lib/styles/base.css` + `elements.css` – seit September 2026 **eigener Bestand**, kein Schreibverbot |
-| Logo (hell/dunkel, mehrere Größen) | `icons/icon{16,32,48,128}[-dark].png`, `icon48-light.png` | `frontend/src/lib/assets/logo/` + `frontend/static/` (Favicon-Paar) |
+| Logo: freistehende Hände | `icons/icon128.png` (getönt) und `icon128-dark.png` (weiß) | `frontend/src/lib/assets/logo/` |
+| Favicon-Paar | `icons/icon48-light.png` und `icon48-dark.png` | `frontend/static/` (+ `favicon.png` als Pfad-Rückfall) |
 | Menü-Icon-Set (50 kuratierte Lucide-SVGs) | `js/menu-icons.js` | `frontend/src/lib/menu-icons.ts` (Kopie, nicht hier weiterentwickeln) |
 | Darstellung des In-Page-Menüs (Rahmen, Liste, Items, Separator, Themes) | `js/content.js` (`ContentContextMenu.generateStyles()`) + `js/context-menu.js` (`FmContextMenu.styles`) | `frontend/src/lib/components/MenuPreview.svelte` |
 | Vorschau-Bühne (Karo-Raster + Chip-Label) | `js/components/css-editor-page.js` (`.preview-panel`/`.preview-label`/`.preview-stage`) | ebenda |
