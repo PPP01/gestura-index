@@ -52,7 +52,15 @@ for dir in "$ROOT"/releases/*/; do
 done
 
 # Nach Epoch absteigend sortieren; die ersten KEEP bleiben.
-mapfile -t sorted < <(printf '%s\n' "${candidates[@]-}" | grep -v '^$' | sort -t '|' -k1,1nr)
+# Keine Prozess-Substitution (< <(…)): sie braucht /dev/fd, und das fehlt in
+# der gejailten SSH-Shell des Hosters – der Lauf brach dort ab (v0.2.0).
+# Eine Variable plus Here-String kommt ohne aus; »|| true«, weil grep bei
+# leerer Liste Exit 1 liefert und pipefail das sonst zum Abbruch machte.
+sorted_text=$(printf '%s\n' "${candidates[@]-}" | grep -v '^$' | sort -t '|' -k1,1nr || true)
+sorted=()
+while IFS= read -r line; do
+    [ -n "$line" ] && sorted+=("$line")
+done <<<"$sorted_text"
 keep=(); rest=()
 for i in "${!sorted[@]}"; do
     if [ "$i" -lt "$KEEP" ]; then keep+=("${sorted[$i]}"); else rest+=("${sorted[$i]}"); fi

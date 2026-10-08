@@ -101,4 +101,11 @@ r=$(newroot); setup_shared "$r"; seed_hourly "$r" release_with_shared
 expect "$r" v8 v7 v6 v5 v4 v3
 expect_shared_intact "$r"
 
+CASE="8: gc.sh enthält keine Prozess-Substitution (auf dem Hoster fehlt /dev/fd)"
+if grep -nE '<\(|>\(' "$GC" | grep -vE '^[0-9]+:\s*#' >/dev/null; then
+    echo "FEHLT $CASE"; grep -nE '<\(|>\(' "$GC" | grep -vE '^[0-9]+:\s*#'; fail=1
+else
+    echo "OK    $CASE"
+fi
+
 [ "$fail" -eq 0 ] && echo "== gc-test: alle Fälle grün ==" || { echo "== gc-test FEHLGESCHLAGEN =="; exit 1; }
