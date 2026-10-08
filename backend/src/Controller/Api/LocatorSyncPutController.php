@@ -57,7 +57,7 @@ final class LocatorSyncPutController
 
         return new JsonResponse([
             'stateId' => $state->stateId,
-            'updatedAt' => $state->updatedAt->format(\DateTimeInterface::ATOM),
+            'updatedAt' => SyncContract::formatTimestamp($state->updatedAt),
             'size' => $state->sizeBytes,
         ]);
     }

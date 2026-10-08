@@ -53,7 +53,10 @@ final class SyncPruneCommandTest extends KernelTestCase
         self::assertNotNull($em->find(SyncState::class, $jungId));
     }
 
-    /** Ein Stand knapp innerhalb der Frist bleibt liegen. */
+    /**
+     * Ein Stand knapp innerhalb der Frist (inklusive Toleranzpuffer) bleibt
+     * liegen: -364 Tage liegt sicher unter dem Stichtag RETENTION_DAYS + PRUNE_TOLERANCE_DAYS.
+     */
     public function testAStateJustInsideTheWindowSurvives(): void
     {
         $tester = $this->tester();
@@ -64,6 +67,39 @@ final class SyncPruneCommandTest extends KernelTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
         self::assertNotNull($em->find(SyncState::class, $id));
+    }
+
+    /**
+     * Ein Stand bei exakt -365 Tagen (Vertragsfrist ohne Puffer) überlebt
+     * ebenfalls: der Prune-Stichtag liegt bei RETENTION_DAYS + PRUNE_TOLERANCE_DAYS
+     * Tagen, also -367 Tage.
+     */
+    public function testAStateAtExactlyRetentionDaysSurvivesDueToTolerance(): void
+    {
+        $tester = $this->tester();
+        $id = $this->seedAged(str_repeat('d', 43), '-365 days');
+
+        $tester->execute([]);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+        self::assertNotNull($em->find(SyncState::class, $id));
+    }
+
+    /**
+     * Ein Stand bei -400 Tagen (weit jenseits der Frist) wird gelöscht –
+     * Gegenbeweis, dass der Prune bei zu langer Abwesenheit trotzdem greift.
+     */
+    public function testAStateWellBeyondTheToleanceIsDeleted(): void
+    {
+        $tester = $this->tester();
+        $id = $this->seedAged(str_repeat('e', 43), '-400 days');
+
+        $tester->execute([]);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+        self::assertNull($em->find(SyncState::class, $id));
     }
 
     public function testItRejectsANonPositiveThreshold(): void

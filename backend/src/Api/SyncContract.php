@@ -56,6 +56,18 @@ final class SyncContract
     public const RETENTION_DAYS = 365;
 
     /**
+     * Puffer für den Prune-Stichtag: RETENTION_DAYS + PRUNE_TOLERANCE_DAYS
+     * Tage werden tatsächlich abgewartet, bevor der Prune einen Stand löscht.
+     * Begründung: (1) TOUCH_AFTER führt dazu, dass lastAccessAt bis zu einen
+     * Tag hinter dem letzten tatsächlichen Zugriff liegen kann; (2) ein Jahr
+     * mit 29. Februar ist 366, nicht 365 Tage lang – ein Stand könnte sonst
+     * rund einen Tag vor dem versprochenen 12-Monats-Datum gelöscht werden.
+     * Die dem Nutzer kommunizierte Frist von 12 Monaten bleibt unverändert;
+     * nur der interne Stichtag wird um diesen Puffer verlängert.
+     */
+    public const PRUNE_TOLERANCE_DAYS = 2;
+
+    /**
      * Granularität des mengenbasierten Per-IP-Limits: ein Token je
      * angefangenem KiB. Die Gegenstelle ist die Größenordnung der Limiter
      * »sync_v1_bytes« in config/packages/rate_limiter.yaml – wer hier
@@ -119,5 +131,17 @@ final class SyncContract
         $raw = base64_decode($value, true);
 
         return $raw === false ? null : $raw;
+    }
+
+    /**
+     * Einheitliche Zeitstempel-Ausgabe für alle Sync-Antworten: ISO-8601
+     * ATOM-Format, normiert auf UTC. Der Vertrag schreibt UTC vor; alle
+     * Controller und der Service leiten ihre »updatedAt«-Felder hierüber.
+     */
+    public static function formatTimestamp(\DateTimeInterface $dt): string
+    {
+        return \DateTimeImmutable::createFromInterface($dt)
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format(\DateTimeInterface::ATOM);
     }
 }

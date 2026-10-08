@@ -51,7 +51,7 @@ final class LocatorSyncService
         return array_map(static fn (array $row): array => [
             'stateId' => $row['stateId'],
             'size' => $row['sizeBytes'],
-            'updatedAt' => $row['updatedAt']->format(\DateTimeInterface::ATOM),
+            'updatedAt' => SyncContract::formatTimestamp($row['updatedAt']),
             'meta' => $row['meta'],
         ], $found);
     }

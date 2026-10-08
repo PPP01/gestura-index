@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exception;
 
+use App\Api\SyncContract;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -69,7 +70,7 @@ final class SyncProblem extends HttpException implements RendersOwnApiResponse
      */
     public static function conflict(\DateTimeImmutable $updatedAt): self
     {
-        return new self(412, 'conflict', ['updatedAt' => $updatedAt->format(\DateTimeInterface::ATOM)]);
+        return new self(412, 'conflict', ['updatedAt' => SyncContract::formatTimestamp($updatedAt)]);
     }
 
     /** Ein einzelner Blob überschreitet seine Grenze. */

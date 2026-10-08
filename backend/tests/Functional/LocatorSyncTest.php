@@ -144,7 +144,7 @@ final class LocatorSyncTest extends ApiTestCase
         // Sekundengenau vergleichen: die Spalte ist DATETIME und das
         // Wire-Format ATOM – Mikrosekunden gibt es an keiner der beiden
         // Stellen, nur im frisch erzeugten PHP-Objekt.
-        self::assertSame($updatedAt->format(\DateTimeInterface::ATOM), $state->updatedAt->format(\DateTimeInterface::ATOM));
+        self::assertSame(SyncContract::formatTimestamp($updatedAt), SyncContract::formatTimestamp($state->updatedAt));
         self::assertGreaterThan(new \DateTimeImmutable('-1 hour'), $state->lastAccessAt);
     }
 
@@ -211,7 +211,7 @@ final class LocatorSyncTest extends ApiTestCase
 
         self::assertSame(412, $status);
         self::assertSame('conflict', $body['error']);
-        self::assertSame($vorher['updatedAt']->format(\DateTimeInterface::ATOM), $body['updatedAt']);
+        self::assertSame(SyncContract::formatTimestamp($vorher['updatedAt']), $body['updatedAt']);
 
         // Nach dem 412 muss der EntityManager noch benutzbar und der Stand
         // unverändert sein – kein Byte darf geschrieben worden sein.
@@ -219,7 +219,7 @@ final class LocatorSyncTest extends ApiTestCase
         $nachher = $this->syncStates()->findOneByLocatorAndState(SyncContract::locatorHash(self::SYNC_LOCATOR), self::SYNC_STATE_ID);
         self::assertSame($vorher['payload'], $nachher->payload);
         self::assertSame($vorher['meta'], $nachher->meta);
-        self::assertSame($vorher['updatedAt']->format(\DateTimeInterface::ATOM), $nachher->updatedAt->format(\DateTimeInterface::ATOM));
+        self::assertSame(SyncContract::formatTimestamp($vorher['updatedAt']), SyncContract::formatTimestamp($nachher->updatedAt));
     }
 
     /**
@@ -313,6 +313,15 @@ final class LocatorSyncTest extends ApiTestCase
         self::assertSame(SyncContract::MAX_PAYLOAD_BYTES, $body['size']);
     }
 
+    /** Kein sauberes Base64 ist bad-request, nicht »irgendwelche Bytes«. */
+    public function testANonBase64EnvelopeIsBadRequest(): void
+    {
+        [$status, $body] = $this->put(['payload' => 'kein base64 !!!']);
+
+        self::assertSame(400, $status);
+        self::assertSame('bad-request', $body['error']);
+    }
+
     /**
      * stateId mit abschließendem \n: ohne /D-Modifier würde PCRE das als
      * gültig akzeptieren ($ matcht vor \n). Muss 400 liefern, nicht 200/500.
@@ -320,15 +329,6 @@ final class LocatorSyncTest extends ApiTestCase
     public function testPutWithAStateIdWithTrailingNewlineIsBadRequest(): void
     {
         [$status, $body] = $this->put(['stateId' => self::SYNC_STATE_ID . "\n"]);
-
-        self::assertSame(400, $status);
-        self::assertSame('bad-request', $body['error']);
-    }
-
-    /** Kein sauberes Base64 ist bad-request, nicht »irgendwelche Bytes«. */
-    public function testANonBase64EnvelopeIsBadRequest(): void
-    {
-        [$status, $body] = $this->put(['payload' => 'kein base64 !!!']);
 
         self::assertSame(400, $status);
         self::assertSame('bad-request', $body['error']);
@@ -358,7 +358,7 @@ final class LocatorSyncTest extends ApiTestCase
         self::assertSame(200, $status);
         self::assertSame(self::SYNC_STATE_ID, $body['stateId']);
         self::assertSame(base64_encode('geheim'), $body['payload']);
-        self::assertSame($state->updatedAt->format(\DateTimeInterface::ATOM), $body['updatedAt']);
+        self::assertSame(SyncContract::formatTimestamp($state->updatedAt), $body['updatedAt']);
     }
 
     /** Ein fremder Stand ist unter meinem Locator schlicht nicht da. */

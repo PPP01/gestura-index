@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Api\LocatorSyncRequest;
+use App\Api\SyncContract;
 use App\Service\LocatorSyncService;
 use App\Service\RateLimitGuard;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -38,7 +39,7 @@ final class LocatorSyncGetController
 
         return new JsonResponse([
             'stateId' => $state->stateId,
-            'updatedAt' => $state->updatedAt->format(\DateTimeInterface::ATOM),
+            'updatedAt' => SyncContract::formatTimestamp($state->updatedAt),
             'payload' => $state->payload,
         ]);
     }

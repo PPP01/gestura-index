@@ -57,7 +57,11 @@ final class SyncPruneCommand extends Command
             return Command::INVALID;
         }
 
-        $deleted = $this->states->deleteUnusedBefore(new \DateTimeImmutable(sprintf('-%d days', $days)));
+        // + PRUNE_TOLERANCE_DAYS: gleicht die TOUCH_AFTER-Auflösung (bis 1 Tag)
+        // und Schaltjahre (29. Februar, 366 statt 365 Tage) aus, ohne die
+        // dem Nutzer kommunizierte 12-Monats-Frist zu verkürzen.
+        $cutoff = new \DateTimeImmutable(sprintf('-%d days', $days + SyncContract::PRUNE_TOLERANCE_DAYS));
+        $deleted = $this->states->deleteUnusedBefore($cutoff);
 
         $io->success(sprintf('%d Sync-Stände gelöscht (unberührt seit mehr als %d Tagen).', $deleted, $days));
 
