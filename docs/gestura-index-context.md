@@ -84,12 +84,10 @@ E2E-verschlüsselter Settings-Sync, Token-Überführung ins Konto.
 
 Über das Austauschformat hinaus gibt es einen **zweiten**, eigenen Vertrag
 zwischen Extension und Index – Endpunkte, Bodies, Fehlercodes:
-`/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md` (für den überwiegenden
-Teil des Vertrags autoritativ), Kopie und Erweiterung in `docs/gestura-eu-api.md`.
-**Ausnahme:** Der Abschnitt `POST /api/v1/sync/meta` (samt dem `features`-Feld
-in `/sync/list`) ist in **diesem Repo** festgeschrieben und umgesetzt; die
-Extension richtet sich danach, nicht umgekehrt. Alle anderen Abschnitte bleiben
-im Extension-Repo die autoritative Quelle.
+`/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md` (autoritativ, direkt
+lesen, nie kopieren). Der Vertrag wird im Extension-Repo ganz gepflegt; wie
+Änderungen laufen (sichtbar für Clients: erst melden, sonst ändern und
+melden), steht in `CLAUDE.md`.
 
 - **Level 2:** `POST /api/v1/updates` – Update-Check, anonym, ohne Kennung.
 - **Level 3:** die `/api/v1/sync/*`-Endpunkte – anonymer Settings-Sync,
@@ -141,7 +139,7 @@ statt sie zu entscheiden. Repo-Fassung mit Stand und offenen Rückfragen:
 
 ## Autoritative Referenzen (aus WSL unter `/mnt/c/Programme.alt/Gestura/`)
 
-- **API-Vertrag Extension ↔ Index:** `docs/gestura-eu-api.md`
+- **API-Vertrag Extension ↔ Index:** `docs/gestura-eu-api.md` (im Extension-Repo)
 - Format-Vertrag: `js/exchange-schema.json`
 - Referenz-Validator: `js/menu-exchange.js`
 - Design-Spec: `docs/superpowers/specs/2026-07-19-menu-index-design.md`

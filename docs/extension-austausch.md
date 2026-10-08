@@ -12,7 +12,9 @@ Vertrag, Format-Schema und Referenz-Validator werden **im Extension-Repo gepfleg
 | `/mnt/c/Programme.alt/Gestura/js/exchange-schema.json` | das Format-Schema |
 | `/mnt/c/Programme.alt/Gestura/js/menu-exchange.js` | der Referenz-Validator |
 
-`docs/gestura-eu-api.md` in diesem Repo ist eine **Kopie zum Mitlesen**, markiert mit dem Commit, aus dem sie stammt. `schema/exchange-schema.json` ebenso. Beide werden hier nie direkt geändert: bei Formatänderungen im Extension-Repo ändern und neu herüberkopieren. Bei Abweichungen zwischen Vertrag und Index gilt die Datei im Extension-Repo.
+`docs/gestura-eu-api.md` in diesem Repo ist nur noch ein **Verweis** auf den Vertrag im Extension-Repo. `schema/exchange-schema.json` dagegen ist eine **Kopie** (sie wird zur Laufzeit gelesen) und wird hier nie direkt geändert: bei Formatänderungen im Extension-Repo ändern und neu herüberkopieren. Bei Abweichungen zwischen Vertrag und Index gilt die Datei im Extension-Repo.
+
+**Änderungsregel:** Ändert etwas, was ein ausgelieferter Client sehen kann (Status, Feld, Grenze, neues Verhalten, Entfallenes; im Zweifel zählt es als sichtbar), wird es **zuerst im Logbuch gemeldet**, die Antwort abgewartet und dann geändert. Ändert es nichts Sichtbares (interne Frist, Rate-Limit-Zählung, Härtung gegen kaputte Eingaben), wird es geändert und **danach gemeldet**, mit dem Text, der in den Vertrag soll. Der Index schreibt den Vertragstext nie selbst; eingetragen und committet wird im Extension-Repo.
 
 ## Der Kanal liegt lokal, nicht im Repo
 
@@ -22,7 +24,7 @@ Das Logbuch `exchange/AUSTAUSCH.md` führt beide Seiten fort und ist der Ort, an
 
 ## Stand der Schnittstelle (5. September 2026)
 
-Der Vertrag ist auf **apiLevel 3** vollständig umgesetzt: `POST /api/v1/updates` (Level 2) und die `/api/v1/sync/*`-Endpunkte (Level 3, inklusive `POST /api/v1/sync/meta` – dieser Abschnitt ist in `gestura-index` festgeschrieben). Die Grenzen sind serverseitig durchgesetzt, die Aufbewahrung läuft über `index:sync:prune`, und die drei nicht verhandelbaren Punkte des Vertrags sind nachgewiesen: kein Request-Body im Log, Locator-Formprüfung vor jeder Adressierung, Ablage ausschließlich als SHA-256.
+Der Vertrag ist auf **apiLevel 3** vollständig umgesetzt: `POST /api/v1/updates` (Level 2) und die `/api/v1/sync/*`-Endpunkte (Level 3, inklusive `POST /api/v1/sync/meta`). Die Grenzen sind serverseitig durchgesetzt, die Aufbewahrung läuft über `index:sync:prune`, und die drei nicht verhandelbaren Punkte des Vertrags sind nachgewiesen: kein Request-Body im Log, Locator-Formprüfung vor jeder Adressierung, Ablage ausschließlich als SHA-256.
 
 Die Docroot-Umstellung beim Hoster ist erledigt: beide Endpunktgruppen antworten öffentlich unter `https://gestura.eu` (Live-Check der Extension-Seite, Logbuch 2026-09-17). Neuer Code erreicht den Dienst per Tag-Deploy (`deploy/README.md`). R2 und R3 gehen nach Entscheidung des Eigentümers in **einer** Version heraus.
 

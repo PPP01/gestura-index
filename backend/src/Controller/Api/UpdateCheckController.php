@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
- * Update-Check der Extension (Vertrag docs/gestura-eu-api.md, Abschnitt
+ * Update-Check der Extension (Vertrag im Extension-Repo, docs/gestura-eu-api.md, Abschnitt
  * »Update check«, apiLevel 2). Anonym, cookielos, öffentliche »*«-CORS-API.
  *
  * Der Client fragt mit (id, version|null)-Paaren; geantwortet wird nur für

@@ -6,7 +6,7 @@ namespace App\Api;
 
 /**
  * Der apiLevel, den dieser Index gegenüber der Extension umsetzt (Vertrag
- * docs/gestura-eu-api.md). Die Level sind additiv: 2 = Update-Check
+ * im Extension-Repo, docs/gestura-eu-api.md). Die Level sind additiv: 2 = Update-Check
  * (/api/v1/updates), 3 = zusätzlich die /api/v1/sync/*-Endpunkte.
  *
  * Genau EINE Stelle für die Zahl: jede Antwort, die einen apiLevel trägt,

@@ -29,5 +29,5 @@ node_modules/
 # rohe Abzüge des Vertrags, Handover-Briefe und Design-Material, teils als
 # Binärdateien und mit Windows-ADS-Artefakten (»:Zone.Identifier«) aus dem
 # WSL-Mount. Was daraus dauerhaft gilt, steht in docs/extension-austausch.md
-# und – für den Vertrag selbst – in docs/gestura-eu-api.md.
+# und – für den Vertrag selbst – im Extension-Repo (docs/gestura-eu-api.md).
 /exchange/
