@@ -58,7 +58,7 @@ Shared-Linux-Hosting mit SSH, MySQL, Composer 2.9.8. **PHP-CLI heißt dort `php8
 
 ## Stand
 
-Phase 2 (Backend, öffentliche Website, Admin-SPA) und Phase 3 (anonyme Konten, Bewertungen, »Meine Daten«, Settings-Sync) sind gebaut. Der Extension-Vertrag ist auf **apiLevel 3** umgesetzt: `POST /api/v1/updates` und die `/api/v1/sync/*`-Endpunkte. Öffentlich antworten sie erst nach der manuellen Docroot-Umstellung beim Hoster – das ist der einzige verbliebene Release-Blocker (`deploy/README.md`).
+Phase 2 (Backend, öffentliche Website, Admin-SPA) und Phase 3 (anonyme Konten, Bewertungen, »Meine Daten«, Settings-Sync) sind gebaut. Der Extension-Vertrag ist auf **apiLevel 3** umgesetzt: `POST /api/v1/updates` und die `/api/v1/sync/*`-Endpunkte. Die Docroot-Umstellung beim Hoster ist erledigt, sie antworten öffentlich unter `https://gestura.eu` (Live-Check der Extension-Seite, Logbuch 2026-09-17); neuer Code wird per Tag-Deploy ausgeliefert (`deploy/README.md`).
 
 ## Arbeitsweise
 

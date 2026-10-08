@@ -34,7 +34,7 @@ Zusätzlich zu den unten dokumentierten Admin-Variablen:
 
 ## Umstellung vom alten Layout (einmalig)
 
-> **Status 2026-09-05: noch nicht ausgeführt.** Die Schritte 3 und 4 sind manuelle Eingriffe im KAS und damit der **einzige verbliebene Release-Blocker** – `POST /api/v1/updates` und die `/api/v1/sync/*`-Endpunkte sind gebaut und getestet, antworten aber erst öffentlich, wenn beide Domains auf das gemeinsame Docroot zeigen. Bis dahin liefert `gestura.eu/api/…` die statische Seiten-Hülle statt der API – genau der Zustand, gegen den die Extension-Seite nicht testen will.
+> **Status: ausgeführt.** Beide Domains zeigen auf das gemeinsame Docroot; `POST /api/v1/updates` und die `/api/v1/sync/*`-Endpunkte antworten öffentlich (Live-Check der Extension-Seite, 2026-09-17, Logbuch). Der Abschnitt bleibt als Beschreibung des einmaligen Umzugs stehen.
 
 Ausgangslage: `backend/`, `frontend/`, `schema/` direkt unter dem Deploy-Pfad, zwei Docroots (`api.gestura.eu` → `backend/public`, `gestura.eu` → `frontend`).
 
