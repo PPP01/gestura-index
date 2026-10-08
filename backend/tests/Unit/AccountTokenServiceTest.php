@@ -42,4 +42,18 @@ final class AccountTokenServiceTest extends TestCase
         $gen = $svc->generate();
         self::assertFalse($svc->verify('wrong-verifier', $gen->hash));
     }
+
+    /**
+     * Die Regex für Account-Tokens lehnt ein abschließendes \n ab (D-Modifier).
+     * parseAuthorizationHeader() ruft trim() auf – das /D schützt zusätzlich
+     * die Regex selbst. Geprüft direkt gegen das Token-Format.
+     */
+    public function testTokenPatternRejectsTrailingNewline(): void
+    {
+        $gen = (new AccountTokenService())->generate();
+        $pattern = '/^gacc_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/D';
+
+        self::assertMatchesRegularExpression($pattern, $gen->token);
+        self::assertDoesNotMatchRegularExpression($pattern, $gen->token . "\n");
+    }
 }

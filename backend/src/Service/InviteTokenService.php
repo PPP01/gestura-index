@@ -12,7 +12,7 @@ namespace App\Service;
  */
 final class InviteTokenService
 {
-    private const PATTERN = '/^gsta_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/';
+    private const PATTERN = '/^gsta_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/D';
 
     /**
      * Erstellt ein neues Invite-Token und gibt Klartext-Token, Selector und

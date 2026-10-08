@@ -52,7 +52,7 @@ final class EditTokenService
      */
     public function parseToken(string $token): ?array
     {
-        if (!preg_match('/^gsti_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/', trim($token), $m)) {
+        if (!preg_match('/^gsti_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/D', trim($token), $m)) {
             return null;
         }
 

@@ -21,7 +21,7 @@ final class SyncContract
      * trotzdem nur einmal: eine Korrektur am Zeichenvorrat soll nicht an der
      * zweiten Stelle stillschweigend liegen bleiben.
      */
-    private const BASE64URL_32_BYTES = '/^[A-Za-z0-9_-]{43}$/';
+    private const BASE64URL_32_BYTES = '/^[A-Za-z0-9_-]{43}$/D';
 
     /**
      * Der Locator. Diese Form wird geprüft, BEVOR der Wert etwas adressiert –
@@ -33,7 +33,7 @@ final class SyncContract
     public const PAYLOAD_HASH_REGEX = self::BASE64URL_32_BYTES;
 
     /** stateId: clientseitig erzeugte 16 Zufallsbytes als Kleinbuchstaben-Hex. */
-    public const STATE_ID_REGEX = '/^[0-9a-f]{32}$/';
+    public const STATE_ID_REGEX = '/^[0-9a-f]{32}$/D';
 
     /**
      * Die Grenzen messen den Envelope »wie übertragen«, also die Länge des

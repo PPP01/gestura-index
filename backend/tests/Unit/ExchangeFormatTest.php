@@ -31,4 +31,15 @@ final class ExchangeFormatTest extends TestCase
             );
         }
     }
+
+    /**
+     * ID_REGEX und SEMVER_REGEX lehnen ein abschließendes \n ab (D-Modifier).
+     * Ohne /D würde PCRE $ auch vor einem abschließenden \n matchen – eine ID
+     * oder Version mit Zeilenumbruch am Ende gälte dann als gültig.
+     */
+    public function testRegexesRejectTrailingNewline(): void
+    {
+        self::assertDoesNotMatchRegularExpression(ExchangeFormat::ID_REGEX, "com.example.shop\n");
+        self::assertDoesNotMatchRegularExpression(ExchangeFormat::SEMVER_REGEX, "1.0.0\n");
+    }
 }

@@ -44,4 +44,19 @@ final class EditTokenServiceTest extends TestCase
         self::assertNull($this->service->parseAuthorizationHeader('Basic abc'));
         self::assertNull($this->service->parseAuthorizationHeader('Bearer gsti_zzzz_kurz'));
     }
+
+    /**
+     * Die Regex für Edit-Tokens lehnt ein abschließendes \n ab (D-Modifier).
+     * parseToken() ruft trim() auf und wäre ohne /D bereits geschützt – der
+     * Modifier sichert die Korrektheit der Regex selbst, unabhängig vom trim.
+     * Geprüft direkt gegen das Format des generierten Tokens (ohne trim-Bypass).
+     */
+    public function testTokenPatternRejectsTrailingNewline(): void
+    {
+        $generated = $this->service->generate();
+        $pattern = '/^gsti_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/D';
+
+        self::assertMatchesRegularExpression($pattern, $generated->token);
+        self::assertDoesNotMatchRegularExpression($pattern, $generated->token . "\n");
+    }
 }

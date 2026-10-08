@@ -313,6 +313,18 @@ final class LocatorSyncTest extends ApiTestCase
         self::assertSame(SyncContract::MAX_PAYLOAD_BYTES, $body['size']);
     }
 
+    /**
+     * stateId mit abschließendem \n: ohne /D-Modifier würde PCRE das als
+     * gültig akzeptieren ($ matcht vor \n). Muss 400 liefern, nicht 200/500.
+     */
+    public function testPutWithAStateIdWithTrailingNewlineIsBadRequest(): void
+    {
+        [$status, $body] = $this->put(['stateId' => self::SYNC_STATE_ID . "\n"]);
+
+        self::assertSame(400, $status);
+        self::assertSame('bad-request', $body['error']);
+    }
+
     /** Kein sauberes Base64 ist bad-request, nicht »irgendwelche Bytes«. */
     public function testANonBase64EnvelopeIsBadRequest(): void
     {

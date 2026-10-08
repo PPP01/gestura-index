@@ -23,6 +23,6 @@ final class ExchangeFormat
     public const SEMVER_PATTERN = '\d{1,5}\.\d{1,5}\.\d{1,5}';
 
     /** Fertige PCRE mit Ankern und Delimitern, direkt für preg_match(). */
-    public const ID_REGEX = '/^' . self::ID_PATTERN . '$/';
-    public const SEMVER_REGEX = '/^' . self::SEMVER_PATTERN . '$/';
+    public const ID_REGEX = '/^' . self::ID_PATTERN . '$/D';
+    public const SEMVER_REGEX = '/^' . self::SEMVER_PATTERN . '$/D';
 }

@@ -41,7 +41,7 @@ final class AccountTokenService
         if ($header === null || !str_starts_with($header, 'Bearer ')) {
             return null;
         }
-        if (!preg_match('/^gacc_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/', trim(substr($header, 7)), $m)) {
+        if (!preg_match('/^gacc_([0-9a-f]{16})_([A-Za-z0-9_-]{43})$/D', trim(substr($header, 7)), $m)) {
             return null;
         }
 

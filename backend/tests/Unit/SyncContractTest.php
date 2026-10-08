@@ -48,6 +48,8 @@ final class SyncContractTest extends TestCase
         yield 'Padding' => [str_repeat('a', 42) . '='];
         yield 'Nullbyte' => [str_repeat('a', 42) . "\0"];
         yield 'Zeilenumbruch' => [str_repeat('a', 21) . "\n" . str_repeat('a', 21)];
+        // /D-Modifier: $ matcht ohne D auch vor einem abschließenden \n
+        yield 'abschließendes Newline' => [str_repeat('a', 43) . "\n"];
         yield 'leer' => [''];
     }
 
@@ -58,6 +60,8 @@ final class SyncContractTest extends TestCase
         self::assertDoesNotMatchRegularExpression(SyncContract::STATE_ID_REGEX, '0123456789ABCDEF0123456789ABCDEF');
         self::assertDoesNotMatchRegularExpression(SyncContract::STATE_ID_REGEX, '0123456789abcdef0123456789abcde');
         self::assertDoesNotMatchRegularExpression(SyncContract::STATE_ID_REGEX, '../etc/passwd');
+        // /D-Modifier: abschließendes \n darf nicht als gültig durchgehen
+        self::assertDoesNotMatchRegularExpression(SyncContract::STATE_ID_REGEX, '0123456789abcdef0123456789abcdef' . "\n");
     }
 
     /**

@@ -24,4 +24,17 @@ final class InviteTokenServiceTest extends TestCase
     {
         self::assertNull((new InviteTokenService())->parse('nope'));
     }
+
+    /**
+     * Ein Token mit abschließendem \n muss null liefern. Ohne /D-Modifier in
+     * PATTERN würde $ auch vor einem abschließenden \n matchen und das Token
+     * fälschlicherweise als gültig akzeptieren (kein trim() vor dem Match).
+     */
+    public function testParseRejectsTokenWithTrailingNewline(): void
+    {
+        $svc = new InviteTokenService();
+        $gen = $svc->generate();
+
+        self::assertNull($svc->parse($gen->token . "\n"));
+    }
 }
