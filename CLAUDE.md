@@ -18,7 +18,7 @@ Lizenz: **AGPL-3.0-or-later** (Netzwerk-Copyleft-Pendant zur GPL 3 der Extension
 
 ## Wichtige Referenzen (Extension-Repo, aus WSL)
 
-- **Vertrag Extension ↔ Index (autoritativ, direkt lesen, nie kopieren):** `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md`
+- **Vertrag Extension ↔ Index:** `/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md` – für den überwiegenden Teil des Vertrags autoritativ; die Extension richtet sich danach. **Ausnahme:** Der Abschnitt `POST /api/v1/sync/meta` (samt dem `features`-Feld in `/sync/list`) ist in **diesem Repo** (`docs/gestura-eu-api.md`) festgeschrieben – hier wurden er umgesetzt und hier ist er die Quelle; die Extension-Fassung zieht nach. Alle anderen Abschnitte bleiben im Extension-Repo die autoritative Quelle; `docs/gestura-eu-api.md` ist dort Kopie.
 - **Austausch-Logbuch: `exchange/AUSTAUSCH.md`** (lokal, nicht im Repo) – vor Arbeit an der Extension-Schnittstelle zuerst hineinsehen, danach dort eine Zeile hinterlassen. Bei Mehrdeutigkeiten im Vertrag dort nachfragen, statt sie zu entscheiden. Repo-Fassung mit Stand und **offenen Rückfragen**: `docs/extension-austausch.md`.
 - Design-Spec (freigegeben): `/mnt/c/Programme.alt/Gestura/docs/superpowers/specs/2026-07-19-menu-index-design.md`
 - Referenz-Validator (autoritativ für Regeln jenseits des JSON-Schemas): `/mnt/c/Programme.alt/Gestura/js/menu-exchange.js`
@@ -58,7 +58,7 @@ Shared-Linux-Hosting mit SSH, MySQL, Composer 2.9.8. **PHP-CLI heißt dort `php8
 
 ## Stand
 
-Phase 2 (Backend, öffentliche Website, Admin-SPA) und Phase 3 (anonyme Konten, Bewertungen, »Meine Daten«, Settings-Sync) sind gebaut. Der Extension-Vertrag ist auf **apiLevel 3** umgesetzt: `POST /api/v1/updates` und die vier `/api/v1/sync/*`-Endpunkte. Öffentlich antworten sie erst nach der manuellen Docroot-Umstellung beim Hoster – das ist der einzige verbliebene Release-Blocker (`deploy/README.md`).
+Phase 2 (Backend, öffentliche Website, Admin-SPA) und Phase 3 (anonyme Konten, Bewertungen, »Meine Daten«, Settings-Sync) sind gebaut. Der Extension-Vertrag ist auf **apiLevel 3** umgesetzt: `POST /api/v1/updates` und die `/api/v1/sync/*`-Endpunkte. Öffentlich antworten sie erst nach der manuellen Docroot-Umstellung beim Hoster – das ist der einzige verbliebene Release-Blocker (`deploy/README.md`).
 
 ## Arbeitsweise
 

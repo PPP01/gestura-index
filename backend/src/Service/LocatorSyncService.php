@@ -11,9 +11,9 @@ use App\Repository\SyncStateRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Die Fachschicht der vier Locator-Sync-Endpunkte (Vertrag, apiLevel 3).
- * Alle vier laufen hierüber, damit die Regeln der Aufbewahrung und der
- * Quote an EINER Stelle stehen und nicht in vier Controllern.
+ * Die Fachschicht der Locator-Sync-Endpunkte (Vertrag, apiLevel 3).
+ * Alle laufen hierüber, damit die Regeln der Aufbewahrung und der
+ * Quote an EINER Stelle stehen und nicht in jedem Controller.
  *
  * Die Auffrischung der Aufbewahrungsfrist ist so eine Regel: jeder Lese- UND
  * Schreibzugriff frischt »lastAccessAt« auf, »updatedAt« bleibt unberührt –
@@ -128,6 +128,43 @@ final class LocatorSyncService
             }
 
             $state->replaceBlobs($meta, $payload);
+
+            return $state;
+        });
+
+        if ($result instanceof SyncProblem) {
+            throw $result;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Ersetzt nur den Meta-Blob (Umbenennen), siehe SyncState::replaceMeta().
+     * $basePayloadHash ist hier Pflicht (400 sonst schon in der Request-Klasse).
+     *
+     * @throws SyncProblem 404 not-found, 412 conflict
+     */
+    public function replaceMeta(
+        string $locatorHash,
+        string $stateId,
+        string $meta,
+        string $basePayloadHash,
+    ): SyncState {
+        // Sentinel statt Throw aus der Closure: Begründung siehe write().
+        /** @var SyncState|SyncProblem $result */
+        $result = $this->em->wrapInTransaction(function () use ($locatorHash, $stateId, $meta, $basePayloadHash) {
+            $state = $this->states->findOneForUpdate($locatorHash, $stateId);
+
+            if ($state === null) {
+                return SyncProblem::notFound();
+            }
+
+            if (!hash_equals($state->payloadHash, $basePayloadHash)) {
+                return SyncProblem::conflict($state->updatedAt);
+            }
+
+            $state->replaceMeta($meta);
 
             return $state;
         });

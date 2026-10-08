@@ -84,11 +84,15 @@ E2E-verschlüsselter Settings-Sync, Token-Überführung ins Konto.
 
 Über das Austauschformat hinaus gibt es einen **zweiten**, eigenen Vertrag
 zwischen Extension und Index – Endpunkte, Bodies, Fehlercodes:
-`/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md` (autoritativ, direkt
-lesen), Kopie zum Mitlesen in `docs/gestura-eu-api.md`.
+`/mnt/c/Programme.alt/Gestura/docs/gestura-eu-api.md` (für den überwiegenden
+Teil des Vertrags autoritativ), Kopie und Erweiterung in `docs/gestura-eu-api.md`.
+**Ausnahme:** Der Abschnitt `POST /api/v1/sync/meta` (samt dem `features`-Feld
+in `/sync/list`) ist in **diesem Repo** festgeschrieben und umgesetzt; die
+Extension richtet sich danach, nicht umgekehrt. Alle anderen Abschnitte bleiben
+im Extension-Repo die autoritative Quelle.
 
 - **Level 2:** `POST /api/v1/updates` – Update-Check, anonym, ohne Kennung.
-- **Level 3:** vier `/api/v1/sync/*`-Endpunkte – anonymer Settings-Sync,
+- **Level 3:** die `/api/v1/sync/*`-Endpunkte – anonymer Settings-Sync,
   adressiert über einen aus dem Nutzergeheimnis abgeleiteten **Locator**, der
   serverseitig nur als SHA-256 abgelegt wird. Der Server sieht ausschließlich
   Chiffrate; er entschlüsselt nichts und merged nichts – das Zusammenführen

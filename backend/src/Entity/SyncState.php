@@ -114,6 +114,23 @@ class SyncState
     }
 
     /**
+     * Ersetzt nur den Meta-Blob und frischt lastAccessAt auf – updatedAt
+     * bleibt unangetastet: der Client zeigt updatedAt als »zuletzt geändert«
+     * an, und ein Umbenennen ist kein Inhaltsschreibvorgang. payload,
+     * payloadHash und sizeBytes bleiben ebenfalls unverändert; sie beschreiben
+     * weiterhin denselben Inhalt.
+     *
+     * lastAccessAt wird fortgeschrieben, weil der Vertrag das Umbenennen als
+     * Schreibzugriff zählt (»A rename counts as a write for retention«) – der
+     * 12-Monats-Prune-Stichtag ist lastAccessAt, nicht updatedAt.
+     */
+    public function replaceMeta(string $meta): void
+    {
+        $this->meta = $meta;
+        $this->lastAccessAt = new \DateTimeImmutable();
+    }
+
+    /**
      * meta und payload werden immer ZUSAMMEN gesetzt – der Client prüft die
      * heruntergeladene Nutzlast gegen den payloadHash aus dem Meta-Blob, ein
      * gemischtes Paar lässt seinen Download fehlschlagen.

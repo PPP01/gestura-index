@@ -59,8 +59,9 @@ CORS: `*` und cookielos für alles unter `/api/`, **außer** `^/api/admin` – d
 | Methode | Pfad | Auth | Zweck |
 | --- | --- | --- | --- |
 | POST | `/updates` | – | Update-Check (Liste id+version; Antwort nur für Einträge mit Neuigkeit) |
-| POST | `/sync/list` | Locator im Body | Stände eines Locators – Meta-Blobs, **nie** die Nutzlast |
+| POST | `/sync/list` | Locator im Body | Stände eines Locators – Meta-Blobs, **nie** die Nutzlast; meldet `features: ["sync-meta"]` |
 | PUT | `/sync/state` | Locator im Body | Stand anlegen/ersetzen; `basePayloadHash` → 412 bei Konflikt |
+| POST | `/sync/meta` | Locator im Body | Nur Meta-Blob ersetzen (Umbenennen), Payload/updatedAt unverändert; `basePayloadHash` Pflicht |
 | POST | `/sync/get` | Locator im Body | Nutzlast eines Standes |
 | POST | `/sync/delete` | Locator im Body | Einen Stand oder (ohne `stateId`) alle löschen |
 

@@ -22,7 +22,7 @@ Das Logbuch `exchange/AUSTAUSCH.md` führt beide Seiten fort und ist der Ort, an
 
 ## Stand der Schnittstelle (5. September 2026)
 
-Der Vertrag ist auf **apiLevel 3** vollständig umgesetzt: `POST /api/v1/updates` (Level 2) und die vier `/api/v1/sync/*`-Endpunkte (Level 3). Die Grenzen sind serverseitig durchgesetzt, die Aufbewahrung läuft über `index:sync:prune`, und die drei nicht verhandelbaren Punkte des Vertrags sind nachgewiesen: kein Request-Body im Log, Locator-Formprüfung vor jeder Adressierung, Ablage ausschließlich als SHA-256.
+Der Vertrag ist auf **apiLevel 3** vollständig umgesetzt: `POST /api/v1/updates` (Level 2) und die `/api/v1/sync/*`-Endpunkte (Level 3, inklusive `POST /api/v1/sync/meta` – dieser Abschnitt ist in `gestura-index` festgeschrieben). Die Grenzen sind serverseitig durchgesetzt, die Aufbewahrung läuft über `index:sync:prune`, und die drei nicht verhandelbaren Punkte des Vertrags sind nachgewiesen: kein Request-Body im Log, Locator-Formprüfung vor jeder Adressierung, Ablage ausschließlich als SHA-256.
 
 **Der einzige verbliebene Release-Blocker ist der manuelle Docroot-Schritt beim Hoster** (`deploy/README.md`). Bis er steht, antworten beide Endpunktgruppen nur lokal. R2 und R3 gehen nach Entscheidung des Eigentümers in **einer** Version heraus.
 

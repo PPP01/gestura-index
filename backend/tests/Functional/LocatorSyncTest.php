@@ -10,7 +10,7 @@ use App\Repository\SyncStateRepository;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Die vier Locator-Sync-Endpunkte des Extension-Vertrags (apiLevel 3).
+ * Die originären Locator-Sync-Endpunkte des Extension-Vertrags (apiLevel 3).
  *
  * Der wichtigste Test hier ist testPutWithAStaleBaseHashIsRefusedWithoutAnyEffect:
  * der Drei-Wege-Merge der Extension setzt alles auf das 412, und eine
@@ -194,9 +194,11 @@ final class LocatorSyncTest extends ApiTestCase
 
     /**
      * Der tragende Fall: falscher basePayloadHash → 412, updatedAt im Body,
-     * und NICHTS wurde geschrieben. Scheitert dieser Test mit
-     * »EntityManagerClosed«, wirft ein Guard noch aus der Transaktions-Closure
-     * heraus (siehe LocatorSyncService).
+     * und NICHTS wurde geschrieben. Das Sentinel-Muster (SyncProblem zurückgeben
+     * statt werfen) wird durch `assertTrue($this->em->isOpen())` direkt nach
+     * dem 412 abgesichert – dieser Assert schlägt fehl, sobald write() das
+     * SyncProblem aus der wrapInTransaction-Closure wirft statt zurückgibt
+     * (siehe .claude/lessons.md, »wrapInTransaction-Falle«).
      */
     public function testPutWithAStaleBaseHashIsRefusedWithoutAnyEffect(): void
     {
@@ -212,9 +214,10 @@ final class LocatorSyncTest extends ApiTestCase
         self::assertSame(412, $status);
         self::assertSame('conflict', $body['error']);
         self::assertSame(SyncContract::formatTimestamp($vorher['updatedAt']), $body['updatedAt']);
+        // Sentinel-Muster: EM darf nach einem 412 nicht geschlossen sein.
+        self::assertTrue($this->em->isOpen());
 
-        // Nach dem 412 muss der EntityManager noch benutzbar und der Stand
-        // unverändert sein – kein Byte darf geschrieben worden sein.
+        // Nach dem 412 muss der Stand unverändert sein – kein Byte darf geschrieben worden sein.
         $this->em->clear();
         $nachher = $this->syncStates()->findOneByLocatorAndState(SyncContract::locatorHash(self::SYNC_LOCATOR), self::SYNC_STATE_ID);
         self::assertSame($vorher['payload'], $nachher->payload);

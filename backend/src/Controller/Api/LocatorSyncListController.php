@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Api\LocatorSyncRequest;
+use App\Api\SyncContract;
 use App\Service\LocatorSyncService;
 use App\Service\RateLimitGuard;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -35,6 +36,9 @@ final class LocatorSyncListController
     ): JsonResponse {
         [, $locatorHash] = LocatorSyncRequest::open($request, $guard, $syncV1Limiter);
 
-        return new JsonResponse(['states' => $sync->list($locatorHash)]);
+        return new JsonResponse([
+            'states' => $sync->list($locatorHash),
+            'features' => SyncContract::FEATURES,
+        ]);
     }
 }

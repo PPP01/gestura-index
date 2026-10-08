@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Api\SyncContract;
+
 /**
  * Der apiLevel, den der Index gegenüber der Extension meldet, ist ein
- * Versprechen: Level 3 heißt »die vier /api/v1/sync/*-Endpunkte antworten«.
+ * Versprechen: Level 3 heißt »die /api/v1/sync/*-Endpunkte antworten«.
  * Dieser Test hält beides zusammen – die Zahl und ihre Deckung.
  */
 final class ApiLevelTest extends ApiTestCase
@@ -20,14 +22,16 @@ final class ApiLevelTest extends ApiTestCase
     }
 
     /**
-     * Und die Deckung: alle vier Endpunkte antworten. Ein Level ohne Deckung
+     * Und die Deckung: alle Sync-Endpunkte antworten. Ein Level ohne Deckung
      * waere schlimmer als ein zu niedriges - der Client richtet sein
      * Verhalten danach aus.
      */
-    public function testAllFourSyncEndpointsAnswer(): void
+    public function testAllSyncEndpointsAnswer(): void
     {
+        // PUT zuerst: legt den Stand an, auf den meta und get zugreifen.
         foreach ([
             ['PUT', '/api/v1/sync/state', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR, 'stateId' => self::SYNC_STATE_ID, 'meta' => 'bQ==', 'payload' => 'cA==']],
+            ['POST', '/api/v1/sync/meta', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR, 'stateId' => self::SYNC_STATE_ID, 'meta' => 'bQ==', 'basePayloadHash' => SyncContract::payloadHash('cA==')]],
             ['POST', '/api/v1/sync/list', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR]],
             ['POST', '/api/v1/sync/get', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR, 'stateId' => self::SYNC_STATE_ID]],
             ['POST', '/api/v1/sync/delete', ['apiLevel' => 3, 'locator' => self::SYNC_LOCATOR, 'stateId' => self::SYNC_STATE_ID]],

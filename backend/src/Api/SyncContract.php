@@ -68,6 +68,17 @@ final class SyncContract
     public const PRUNE_TOLERANCE_DAYS = 2;
 
     /**
+     * Feature-Bezeichner für POST /api/v1/sync/meta – wird von /sync/list im
+     * optionalen Feld »features« gemeldet, damit ältere Extensions den
+     * Endpunkt nicht erraten müssen (Vertrag: »Telling whether the service
+     * has it«).
+     */
+    public const FEATURE_SYNC_META = 'sync-meta';
+
+    /** Was /sync/list im Feld »features« meldet – ein neuer Endpunkt trägt sich hier ein. */
+    public const FEATURES = [self::FEATURE_SYNC_META];
+
+    /**
      * Granularität des mengenbasierten Per-IP-Limits: ein Token je
      * angefangenem KiB. Die Gegenstelle ist die Größenordnung der Limiter
      * »sync_v1_bytes« in config/packages/rate_limiter.yaml – wer hier

@@ -10,10 +10,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
 /**
- * Das gemeinsame Prüfwerk der vier Locator-Sync-Endpunkte: JSON auspacken,
- * apiLevel, Locator, stateId und die beiden Envelopes prüfen. Vier
- * Endpunkte, eine Prüfung – die Reihenfolge (Form prüfen, BEVOR der Wert
- * etwas adressiert) ist Vertrag und steht deshalb an genau einer Stelle.
+ * Das gemeinsame Prüfwerk der Locator-Sync-Endpunkte: JSON auspacken,
+ * apiLevel, Locator, stateId und die beiden Envelopes prüfen. Eine
+ * Prüfstelle für alle Endpunkte – die Reihenfolge (Form prüfen, BEVOR der
+ * Wert etwas adressiert) ist Vertrag und steht deshalb an genau einer Stelle.
  *
  * Nichts in dieser Klasse loggt. Der Body trägt den Locator, und der ist ein
  * Bearer-Token: ein Log mit Bodies wäre ein Log voller Zugangsschlüssel.
@@ -21,9 +21,9 @@ use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 final class LocatorSyncRequest
 {
     /**
-     * Der Eintritt, den alle vier Endpunkte teilen: Per-IP-Limit ziehen,
+     * Der Eintritt, den alle Sync-Endpunkte teilen: Per-IP-Limit ziehen,
      * Umschlag auspacken, Locator prüfen. Eine Zeile je Controller – so kann
-     * ein fünfter Endpunkt das Limit nicht vergessen und ungedrosselt laufen.
+     * ein neuer Endpunkt das Limit nicht vergessen und ungedrosselt laufen.
      *
      * @return array{0: array<string, mixed>, 1: string} Body und Locator-Hash
      */
@@ -80,7 +80,7 @@ final class LocatorSyncRequest
     }
 
     /**
-     * Der Pflicht-stateId von get, put und dem Einzel-delete.
+     * Der Pflicht-stateId von get, put, meta und dem Einzel-delete.
      *
      * @param array<string, mixed> $body
      */
@@ -157,5 +157,17 @@ final class LocatorSyncRequest
         }
 
         return $hash;
+    }
+
+    /**
+     * Wie basePayloadHash(), aber Pflicht: der meta-Endpunkt legt nie einen
+     * Stand an, ein fehlendes Feld ist hier ein kaputter Request (400) und
+     * kein »bedingungslos schreiben«.
+     *
+     * @param array<string, mixed> $body
+     */
+    public static function requiredBasePayloadHash(array $body): string
+    {
+        return self::basePayloadHash($body) ?? throw SyncProblem::badRequest();
     }
 }
