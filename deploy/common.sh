@@ -2,7 +2,7 @@
 # Gemeinsame Konstanten und Helfer der Deploy-Skripte. Wird per »source« geladen.
 # Layout auf dem Server (Spec 2026-09-03, Abschnitt 4.3):
 #   $DEPLOY_PATH/releases/<tag>/{backend,schema,RELEASE}
-#   $DEPLOY_PATH/shared/{.env.local,media,log}
+#   $DEPLOY_PATH/shared/{.env.local,media,log,state}
 #   $DEPLOY_PATH/current -> releases/<tag>
 # Docroot beider Domains: $DEPLOY_PATH/current/backend/public
 
