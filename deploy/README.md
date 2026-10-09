@@ -18,7 +18,7 @@ Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Aktuelle Spec: `
   releases/v1.0.3/backend/      public/ enthält den Frontend-Build
   releases/v1.0.3/schema/
   releases/v1.0.3/RELEASE       tag, commit, deployed_at, deployed_at_epoch, message – wird als LETZTER Schritt geschrieben
-  shared/.env.local  shared/media/  shared/log/
+  shared/.env.local  shared/media/  shared/log/  shared/state/
   current -> releases/v1.0.3
 ```
 
@@ -132,6 +132,29 @@ Anonym, cookielos, ohne Konto: adressiert wird über einen aus dem Nutzergeheimn
 - **Keine Weiterleitung auf `/api/v1/sync/*`.** Der Client schickt `redirect: "error"`; ein `307`/`308` erhielte Methode **und** Body und reichte den Locator an die Zielorigin weiter. Die `.htaccess`-Regel »`/api/…` immer an `index.php`« deckt das ab – siehe den Abschnitt zu den `.htaccess`-Regeln.
 
 **Edit-Token-Migration (Sub-Projekt C):** `submitter.account_id` trägt `ON DELETE SET NULL` – Konto-Löschung/-Prune lässt Einreichungen als anonyme Edit-Token-Submitter zurück (Regressionstest `AccountSubmitterCascadeTest`). Der Trust-Pfad (Sofort-Publish ab `TRUST_THRESHOLD = 3` aggregierten Freigaben) ist damit erstmals aktiv – ausschließlich für Konto-Einreichungen.
+
+### Wartungsmodus (Sync)
+
+Während einer geplanten Wartung (DB-Migration, längerer Ausfall) antwortet jeder `/api/v1/sync/*`-Endpunkt mit `503 {"error":"maintenance"}`. Der Modus wird über eine Flag-Datei in `shared/state/sync-maintenance` gesteuert, nicht über die Datenbank – so funktioniert er auch bei DB-Ausfall. Die Datei überlebt Deploys und Rollbacks (per Symlink in `shared/state/`).
+
+Ein-/Ausschalten per SSH:
+
+```bash
+# Wartungsmodus aktivieren (ohne Zeitangabe):
+cd ~/current/backend && php85 bin/console index:maintenance:on
+
+# Wartungsmodus aktivieren mit voraussichtlichem Ende:
+cd ~/current/backend && php85 bin/console index:maintenance:on --until='2026-10-09T14:00:00+00:00'
+
+# Wartungsmodus beenden:
+cd ~/current/backend && php85 bin/console index:maintenance:off
+```
+
+**Abgelaufenes `until`:** Die Wartung bleibt aktiv, auch wenn `until` in der Vergangenheit liegt – der Server antwortet dann weiterhin `503 maintenance`, aber ohne `until` und ohne `Retry-After`. Beendet wird sie nur durch `index:maintenance:off`.
+
+**Deploy während Wartung:** `smoke.sh` gibt bei aktivem Wartungsmodus eine Warnung aus, bricht aber NICHT ab (`fail` bleibt 0). Ein Deploy während einer geplanten DB-Migration ist damit möglich.
+
+**Rollback auf Vorfeature-Release:** Ein Rollback auf ein Release ohne den Ping-Endpunkt (vor diesem Feature) führt dazu, dass Subscriber und Symlink fehlen – die Wartung greift nicht, die Extension sieht `404` am Ping und meldet den Dienst als »nicht erreichbar«. `rollback.sh` setzt `SMOKE_LEGACY=1`, damit `smoke.sh` den `404` als Legacy-Warnung behandelt.
 
 ## Schaltbare Seiten (Admin-Seiten-Sichtbarkeit)
 
