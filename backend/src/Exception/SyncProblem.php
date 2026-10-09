@@ -90,4 +90,30 @@ final class SyncProblem extends HttpException implements RendersOwnApiResponse
     {
         return new self(429, 'rate-limited', [], ['Retry-After' => (string) $retryAfter]);
     }
+
+    /** DB-Lebenszeichen gescheitert – der Sync-Dienst funktioniert nicht. */
+    public static function unavailable(): self
+    {
+        return new self(503, 'unavailable', [], ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * Geplante Wartung. $until ist optional; wenn gesetzt (immer in der
+     * Zukunft, Aufrufer stellt das sicher), wird until als ATOM-UTC-String
+     * und Retry-After als Sekunden bis dahin mitgeliefert.
+     */
+    public static function maintenance(?\DateTimeImmutable $until = null): self
+    {
+        $extra = [];
+        $headers = ['Cache-Control' => 'no-store'];
+        if ($until !== null) {
+            $extra['until'] = SyncContract::formatTimestamp($until);
+            $headers['Retry-After'] = (string) max(
+                1,
+                $until->getTimestamp() - time(),
+            );
+        }
+
+        return new self(503, 'maintenance', $extra, $headers);
+    }
 }
