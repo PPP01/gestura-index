@@ -112,7 +112,7 @@ if [ ! -d "$SHARED" ]; then
     [ -d "$legacy/var/log" ] && cp -a "$legacy/var/log" "$SHARED/log"
     echo "shared/ neu angelegt und aus $legacy befüllt"
 fi
-mkdir -p "$SHARED/media" "$SHARED/log"
+mkdir -p "$SHARED/media" "$SHARED/log" "$SHARED/state"
 [ -f "$SHARED/.env.local" ] || { echo "FEHLER – $SHARED/.env.local fehlt (Secrets liegen nie im Repo)" >&2; exit 1; }
 # Warnung statt Abbruch: beim allerersten Deploy wurde die Datei Sekunden
 # zuvor erst angelegt und das Runbook ergänzt FRONTEND_BUILD_DIR erst im
@@ -128,6 +128,7 @@ fi
 ln -sfn "$SHARED/.env.local" "$RELEASE/backend/.env.local"
 rm -rf "$RELEASE/backend/public/media"; ln -sfn "$SHARED/media" "$RELEASE/backend/public/media"
 mkdir -p "$RELEASE/backend/var"; rm -rf "$RELEASE/backend/var/log"; ln -sfn "$SHARED/log" "$RELEASE/backend/var/log"
+rm -rf "$RELEASE/backend/var/state"; ln -sfn "$SHARED/state" "$RELEASE/backend/var/state"
 
 # vendor/ als echte Kopie übernehmen (keine Hardlinks: Composer schreibt
 # vendor/composer/* in place und würde das alte Release mitverändern).

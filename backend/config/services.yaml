@@ -9,6 +9,7 @@
 parameters:
     app.report_hide_threshold: '%env(int:REPORT_HIDE_THRESHOLD)%'
     app.trust_threshold: '%env(int:TRUST_THRESHOLD)%'
+    app.sync_maintenance_file: '%kernel.project_dir%/var/state/sync-maintenance'
     # Fallback-Absenderadresse für InviteMailer, falls MAILER_FROM nicht gesetzt ist.
     default_from: 'admin@gestura.eu'
     # Pfad zum prerenderten Frontend-Build, aus dem der MarketingPageController
@@ -35,11 +36,24 @@ services:
     # WebAuthn-Zeremonie: standardmäßig die echte Bundle-Implementierung.
     App\Service\WebAuthn\WebAuthnCeremony: '@App\Service\WebAuthn\BundleWebAuthnCeremony'
 
+    App\EventSubscriber\SyncMaintenanceSubscriber:
+        arguments:
+            $syncMaintenanceFile: '%app.sync_maintenance_file%'
+
+    App\Command\MaintenanceOnCommand:
+        arguments:
+            $syncMaintenanceFile: '%app.sync_maintenance_file%'
+
+    App\Command\MaintenanceOffCommand:
+        arguments:
+            $syncMaintenanceFile: '%app.sync_maintenance_file%'
+
 when@test:
     parameters:
         # Fixture-Verzeichnis statt echtem Frontend-Build – siehe
         # tests/Functional/MarketingPageControllerTest.php.
         app.frontend_build_dir: '%kernel.project_dir%/tests/fixtures/frontend-build'
+        app.sync_maintenance_file: '%kernel.project_dir%/var/test-sync-maintenance'
 
     services:
         # In Tests den deterministischen Fake statt der echten Zeremonie.

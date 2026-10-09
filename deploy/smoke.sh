@@ -98,6 +98,24 @@ else
     bad "GET /de/vergleich: Status $STATUS, Content-Type »$(header Content-Type)« – erwartet 200/404 als HTML"
 fi
 
+request ping "$ORIGIN/api/v1/sync/ping"
+# Verankerte Muster auf den ganzen Body (common.sh: PING_OK_PATTERN,
+# PING_MAINTENANCE_PATTERN, body_matches): JsonResponse liefert kompaktes JSON
+# ohne Whitespace und ohne Slash-Escaping (Standardflags).
+# 200: {"status":"ok","features":["sync-meta"]} (oder andere/leere Features)
+# 503: {"error":"maintenance"} oder {"error":"maintenance","until":"..."}
+if [ "$STATUS" = 200 ] && body_matches "$BODY" "$PING_OK_PATTERN"; then
+    ok "GET /api/v1/sync/ping: 200 mit gültigem Ping-Body"
+elif [ "$STATUS" = 503 ] && body_matches "$BODY" "$PING_MAINTENANCE_PATTERN"; then
+    echo "WARN  GET /api/v1/sync/ping: 503 maintenance – Wartungsmodus ist aktiv"
+elif [ "$STATUS" = 404 ] && [ "${SMOKE_LEGACY:-}" = 1 ]; then
+    echo "WARN  GET /api/v1/sync/ping: 404 – Rollback auf Release ohne Ping-Endpunkt (Legacy)"
+elif [ "$STATUS" = 404 ]; then
+    bad "GET /api/v1/sync/ping: 404 – Endpunkt fehlt im Release"
+else
+    bad "GET /api/v1/sync/ping: Status $STATUS, Body: $(head -c 200 "$BODY")"
+fi
+
 if [ "$fail" -ne 0 ]; then
     echo "== Smoke-Check FEHLGESCHLAGEN =="; exit 1
 fi

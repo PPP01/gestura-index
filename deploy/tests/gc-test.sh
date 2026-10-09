@@ -19,6 +19,8 @@ setup_shared() {
     echo "geheim" > "$1/shared/.env.local"
     echo "screenshot-bytes" > "$1/shared/media/beispiel.webp"
     echo "log-zeile" > "$1/shared/log/prod.log"
+    mkdir -p "$1/shared/state"
+    echo "2026-12-31T12:00:00+00:00" > "$1/shared/state/sync-maintenance"
 }
 # release_with_shared <root> <name> <epoch> – vollständiges Release, dessen
 # .env.local/public/media/var/log Symlinks in shared/ zeigen (echtes Layout).
@@ -28,12 +30,16 @@ release_with_shared() {
     ln -sfn "$1/shared/.env.local" "$1/releases/$2/backend/.env.local"
     ln -sfn "$1/shared/media" "$1/releases/$2/backend/public/media"
     ln -sfn "$1/shared/log" "$1/releases/$2/backend/var/log"
+    ln -sfn "$1/shared/state" "$1/releases/$2/backend/var/state"
 }
 # expect_shared_intact <root>    – shared/ und sein Inhalt müssen unversehrt sein,
 # auch wenn Releases, die per Symlink hineinzeigten, gerade gelöscht wurden.
 expect_shared_intact() {
     local root="$1"
-    if [ -f "$root/shared/.env.local" ] && [ -f "$root/shared/media/beispiel.webp" ] && [ -f "$root/shared/log/prod.log" ]; then
+    if [ -f "$root/shared/.env.local" ] \
+       && [ -f "$root/shared/media/beispiel.webp" ] \
+       && [ -f "$root/shared/log/prod.log" ] \
+       && [ -f "$root/shared/state/sync-maintenance" ]; then
         echo "OK    $CASE (shared/ intakt)"
     else
         echo "FEHLT $CASE (shared/ wurde durch rm -rf eines Releases beschädigt)"; fail=1

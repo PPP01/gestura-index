@@ -155,4 +155,56 @@ final class SyncContract
             ->setTimezone(new \DateTimeZone('UTC'))
             ->format(\DateTimeInterface::ATOM);
     }
+
+    /**
+     * Strikter ATOM-Parser: Gegenstück zu formatTimestamp(). Akzeptiert
+     * ausschließlich ISO-8601/ATOM mit Offset (auch Z). Lehnt ab:
+     * leere Strings, natürliche Ausdrücke (tomorrow), fehlenden Offset,
+     * unmögliche Daten (Feb 31 – createFromFormat normiert sie still,
+     * getLastErrors meldet die Warnung), Steuerzeichen (inkl.
+     * Nullbytes – PHP 8.5 wirft ValueError). Einzige Eingabeprüfung
+     * für until-Werte – Kommando UND Subscriber nutzen sie.
+     */
+    public static function parseAtomTimestamp(string $raw): ?\DateTimeImmutable
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        // Steuerzeichen (inkl. Nullbytes) vorab ablehnen:
+        // PHP 8.5 wirft bei Nullbytes einen ValueError in
+        // createFromFormat(), und andere Steuerzeichen haben in
+        // einem Zeitstempel nichts verloren.
+        if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $raw)) {
+            return null;
+        }
+
+        try {
+            $dt = \DateTimeImmutable::createFromFormat(
+                \DateTimeInterface::ATOM,
+                $raw,
+            );
+        } catch (\ValueError) {
+            // Sicherheitsnetz: falls ein künftiges PHP noch andere
+            // Eingaben per ValueError ablehnt.
+            return null;
+        }
+        if ($dt === false) {
+            return null;
+        }
+
+        // Unmögliche Daten (z. B. 2026-02-31) erzeugen Warnungen statt
+        // Fehler: createFromFormat gibt ein Objekt zurück, das den
+        // Überlauf still korrigiert hat (→ 2026-03-03). Solche
+        // Eingaben sind für until nicht akzeptabel.
+        $errors = \DateTimeImmutable::getLastErrors();
+        if ($errors !== false
+            && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)
+        ) {
+            return null;
+        }
+
+        return $dt;
+    }
 }

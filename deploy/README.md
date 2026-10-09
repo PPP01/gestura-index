@@ -8,7 +8,7 @@ Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Aktuelle Spec: `
 - `deploy.sh vX.Y.Z` – deployt einen **annotierten** Git-Tag als Release: Guards (Tag annotiert, Commit auf `origin/main`, Arbeitsbaum sauber), Preflight im Worktree des Tags (PHPUnit, `npm run build`), Upload nach `releases/<tag>/`, `shared/` verknüpfen, `php85 composer install --no-dev -o`, Migrationen, `cache:clear`, `RELEASE`-Datei, atomarer Tausch von `current`, `smoke.sh`, `gc.sh`. Leichtgewichtige Tags und Tags außerhalb von `main` werden mit Klartext abgelehnt. Braucht lokal `backend/.env.test.local` (Test-DB) für den Preflight.
 - `rollback.sh [vX.Y.Z]` – setzt `current` atomar auf ein früheres vollständiges Release (ohne Argument: das jüngste vor dem aktuellen), leert danach in einem eigenen Schritt den Cache – ein scheiterndes `cache:clear` meldet, dass `current` bereits auf dem Zielrelease steht, statt den Fehler zu verschlucken – und läuft abschließend `smoke.sh`. Migrationen bleiben vorwärtsgerichtet.
 - `smoke.sh [origin]` – prüft gegen `https://gestura.eu` (Default): Preflight und leere Antwort von `POST /api/v1/updates` ohne Umleitung, `GET /api/v1/entries` als JSON, `/de` als HTML, `/de/vergleich` erreicht Symfony. Nennt ein noch nicht umgestelltes KAS-Docroot ausdrücklich.
-  > **Bekannte Lücke:** Die `/api/v1/sync/*`-Endpunkte (apiLevel 3) prüft `smoke.sh` **noch nicht**. Sie gehören seit dem 2026-09-05 zum Release; bis das Skript nachgezogen ist, nach einem Deploy von Hand prüfen, dass `POST /api/v1/sync/list` mit einem gültigen Locator `200` liefert, `states` ein Array ist und `features` den Eintrag `sync-meta` enthält – und dass kein `3xx` dazwischen steht.
+  > **Teilweise geschlossen:** `smoke.sh` prüft jetzt `GET /api/v1/sync/ping` auf Erreichbarkeit, DB-Verbindung und Features. Die funktionalen Locator-Sync-Wege (`/sync/list`, `/sync/get`, `/sync/state`, `/sync/meta`, `/sync/delete`) bleiben außerhalb des Smoke-Checks und sind durch PHPUnit abgedeckt.
 - `gc.sh --root <pfad> [--dry-run]` – Garbage Collection der Releases (läuft auf dem Server per `ssh … 'bash -s' -- --root … < deploy/gc.sh`): `current` nie; die 5 jüngsten bleiben; zusätzlich immer das jüngste Release, das älter als heute ist, falls keines der 5 das schon ist; unvollständige Releases (ohne `RELEASE`) verschwinden. `--keep` und `--today-epoch` werden auf ganzzahlige Werte geprüft – ein fehlerhafter Wert bricht mit Exit-Code 2 ab, ohne etwas zu löschen. Regeln sind in `tests/gc-test.sh` fixiert.
 
 ## Server-Layout (versionierte Releases)
@@ -18,7 +18,7 @@ Deployment des gestura-index auf das Shared-Hosting (ALL-INKL). Aktuelle Spec: `
   releases/v1.0.3/backend/      public/ enthält den Frontend-Build
   releases/v1.0.3/schema/
   releases/v1.0.3/RELEASE       tag, commit, deployed_at, deployed_at_epoch, message – wird als LETZTER Schritt geschrieben
-  shared/.env.local  shared/media/  shared/log/
+  shared/.env.local  shared/media/  shared/log/  shared/state/
   current -> releases/v1.0.3
 ```
 
@@ -132,6 +132,29 @@ Anonym, cookielos, ohne Konto: adressiert wird über einen aus dem Nutzergeheimn
 - **Keine Weiterleitung auf `/api/v1/sync/*`.** Der Client schickt `redirect: "error"`; ein `307`/`308` erhielte Methode **und** Body und reichte den Locator an die Zielorigin weiter. Die `.htaccess`-Regel »`/api/…` immer an `index.php`« deckt das ab – siehe den Abschnitt zu den `.htaccess`-Regeln.
 
 **Edit-Token-Migration (Sub-Projekt C):** `submitter.account_id` trägt `ON DELETE SET NULL` – Konto-Löschung/-Prune lässt Einreichungen als anonyme Edit-Token-Submitter zurück (Regressionstest `AccountSubmitterCascadeTest`). Der Trust-Pfad (Sofort-Publish ab `TRUST_THRESHOLD = 3` aggregierten Freigaben) ist damit erstmals aktiv – ausschließlich für Konto-Einreichungen.
+
+### Wartungsmodus (Sync)
+
+Während einer geplanten Wartung (DB-Migration, längerer Ausfall) antwortet jeder `/api/v1/sync/*`-Endpunkt mit `503 {"error":"maintenance"}`. Der Modus wird über eine Flag-Datei in `shared/state/sync-maintenance` gesteuert, nicht über die Datenbank – so funktioniert er auch bei DB-Ausfall. Die Datei überlebt Deploys und Rollbacks (per Symlink in `shared/state/`).
+
+Ein-/Ausschalten per SSH:
+
+```bash
+# Wartungsmodus aktivieren (ohne Zeitangabe):
+cd ~/current/backend && php85 bin/console index:maintenance:on
+
+# Wartungsmodus aktivieren mit voraussichtlichem Ende:
+cd ~/current/backend && php85 bin/console index:maintenance:on --until='2026-10-09T14:00:00+00:00'
+
+# Wartungsmodus beenden:
+cd ~/current/backend && php85 bin/console index:maintenance:off
+```
+
+**Abgelaufenes `until`:** Die Wartung bleibt aktiv, auch wenn `until` in der Vergangenheit liegt – der Server antwortet dann weiterhin `503 maintenance`, aber ohne `until` und ohne `Retry-After`. Beendet wird sie nur durch `index:maintenance:off`.
+
+**Deploy während Wartung:** `smoke.sh` gibt bei aktivem Wartungsmodus eine Warnung aus, bricht aber NICHT ab (`fail` bleibt 0). Ein Deploy während einer geplanten DB-Migration ist damit möglich.
+
+**Rollback auf Vorfeature-Release:** Ein Rollback auf ein Release ohne den Ping-Endpunkt (vor diesem Feature) führt dazu, dass Subscriber und Symlink fehlen – die Wartung greift nicht, die Extension sieht `404` am Ping und meldet den Dienst als »nicht erreichbar«. `rollback.sh` setzt `SMOKE_LEGACY=1`, damit `smoke.sh` den `404` als Legacy-Warnung behandelt.
 
 ## Schaltbare Seiten (Admin-Seiten-Sichtbarkeit)
 

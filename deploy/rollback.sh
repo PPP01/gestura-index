@@ -58,6 +58,6 @@ remote "php85 '$RELEASES_DIR/$TARGET/backend/bin/console' cache:clear" \
     || die "current zeigt bereits auf $TARGET, aber cache:clear ist fehlgeschlagen – Cache manuell auf dem Server leeren"
 
 step "Smoke-Check"
-deploy/smoke.sh "$SITE_ORIGIN" || die "Smoke-Check nach Rollback fehlgeschlagen – current zeigt auf $TARGET"
+SMOKE_LEGACY=1 deploy/smoke.sh "$SITE_ORIGIN" || die "Smoke-Check nach Rollback fehlgeschlagen – current zeigt auf $TARGET"
 
 echo; echo "== Rollback auf $TARGET erfolgreich =="
