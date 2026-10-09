@@ -53,6 +53,70 @@ final class SyncContractTest extends TestCase
         yield 'leer' => [''];
     }
 
+    // --- parseAtomTimestamp (Task 8, sync-ping-wartung) ---
+
+    /**
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function atomTimestampProvider(): iterable
+    {
+        // --- gültig ---
+        yield 'UTC +00:00' => ['2026-10-09T12:00:00+00:00', true];
+        yield 'UTC Z' => ['2026-10-09T12:00:00Z', true];
+        yield 'anderer Offset +02:00' => ['2026-10-09T14:00:00+02:00', true];
+        yield 'Whitespace außen (wird getrimmt)' => [
+            '  2026-10-09T12:00:00+00:00  ', true,
+        ];
+
+        // --- ungültig ---
+        yield 'leer' => ['', false];
+        yield 'nur Whitespace' => ['   ', false];
+        yield 'fehlender Offset' => ['2026-10-09T12:00:00', false];
+        yield 'unmögliches Datum (Feb 31)' => [
+            '2026-02-31T12:00:00+00:00', false,
+        ];
+        yield 'natürliche Sprache (tomorrow)' => ['tomorrow', false];
+        yield 'angehängter Müll' => [
+            '2030-01-01T12:00:00+00:00junk', false,
+        ];
+        yield 'Nullbyte (PHP 8.5 ValueError)' => [
+            "2030-01-01T12:00:00+00:00\x00junk", false,
+        ];
+    }
+
+    #[DataProvider('atomTimestampProvider')]
+    public function testParseAtomTimestamp(
+        string $input,
+        bool $expectValid,
+    ): void {
+        $result = SyncContract::parseAtomTimestamp($input);
+        if ($expectValid) {
+            self::assertInstanceOf(
+                \DateTimeImmutable::class,
+                $result,
+                "Erwartet: gültig für »$input«",
+            );
+        } else {
+            self::assertNull(
+                $result,
+                "Erwartet: null für »$input«",
+            );
+        }
+    }
+
+    /** +02:00 → UTC-normierte Ausgabe über formatTimestamp(). */
+    public function testParseAtomTimestampNormalizesToUtc(): void
+    {
+        $dt = SyncContract::parseAtomTimestamp(
+            '2026-10-09T14:00:00+02:00',
+        );
+        self::assertNotNull($dt);
+        self::assertSame(
+            '2026-10-09T12:00:00+00:00',
+            SyncContract::formatTimestamp($dt),
+        );
+    }
+
     /** stateId ist clientseitig erzeugt: 16 Byte als Kleinbuchstaben-Hex. */
     public function testStateIdRegex(): void
     {
