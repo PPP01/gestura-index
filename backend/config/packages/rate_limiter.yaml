@@ -34,6 +34,9 @@ framework:
         # Stunde. Das ist der erste Hebel, wenn Missbrauch auftritt (Vertrag,
         # "What protects the quota").
         sync_v1_bytes: { policy: sliding_window, limit: 65536, interval: '1 hour' }
+        # Ping-Endpunkt (GET /api/v1/sync/ping): eigenes Per-IP-Limit,
+        # getrennt vom Schreib-Limit sync_v1 – der Ping ist read-only.
+        sync_ping: { policy: sliding_window, limit: 60, interval: '1 hour' }
 
 # Funktionstests feuern viele Requests von 127.0.0.1 — dort großzügige
 # Limits; die Drosselung selbst testet RateLimitGuardTest isoliert.
@@ -61,6 +64,7 @@ when@test:
             update_check: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             sync_v1: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             sync_v1_bytes: { policy: sliding_window, limit: 1048576, interval: '1 hour' }
+            sync_ping: { policy: sliding_window, limit: 1000, interval: '1 hour' }
 
 # Lokale Entwicklung: dieselben großzügigen Limits wie im Test, damit
 # manuelles Durchklicken (z. B. Passkey-Registrierung/Login mit mehreren
@@ -87,3 +91,4 @@ when@dev:
             update_check: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             sync_v1: { policy: sliding_window, limit: 1000, interval: '1 hour' }
             sync_v1_bytes: { policy: sliding_window, limit: 1048576, interval: '1 hour' }
+            sync_ping: { policy: sliding_window, limit: 1000, interval: '1 hour' }
