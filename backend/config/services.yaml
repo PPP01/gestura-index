@@ -40,6 +40,14 @@ services:
         arguments:
             $syncMaintenanceFile: '%app.sync_maintenance_file%'
 
+    App\Command\MaintenanceOnCommand:
+        arguments:
+            $syncMaintenanceFile: '%app.sync_maintenance_file%'
+
+    App\Command\MaintenanceOffCommand:
+        arguments:
+            $syncMaintenanceFile: '%app.sync_maintenance_file%'
+
 when@test:
     parameters:
         # Fixture-Verzeichnis statt echtem Frontend-Build – siehe
