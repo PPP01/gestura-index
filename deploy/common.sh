@@ -19,6 +19,18 @@ step() { echo; echo "== $* =="; }
 #   remote 'bash -s' <<'REMOTE' … REMOTE   (Variablen vorher als VAR=… voranstellen)
 remote() { ssh -o BatchMode=yes "$DEPLOY_HOST" "$@"; }
 
+# Erlaubte Bodies von GET /api/v1/sync/ping (smoke.sh, deploy/tests/smoke-body-test.sh).
+# JsonResponse liefert kompaktes JSON ohne Whitespace; die Muster gelten für
+# den GANZEN Body, nicht für einzelne Zeilen (siehe body_matches).
+PING_OK_PATTERN='^\{"status":"ok","features":\[("[a-z-]+"(,"[a-z-]+")*)?]\}$'
+PING_MAINTENANCE_PATTERN='^\{"error":"maintenance"(,"until":"[^"]+")?\}$'
+
+# body_matches <datei> <ERE> – wahr, wenn der Body genau EINE Zeile hat und sie
+# dem Muster entspricht. Ein nacktes »grep -Eq« prüft zeilenweise: eine passende
+# Zeile in einer mehrzeiligen Antwort (Proxy-Fehlerseite, zwei JSON-Objekte)
+# würde sonst genügen. »grep -c ''« zählt auch eine letzte Zeile ohne Zeilenumbruch.
+body_matches() { [ "$(grep -c '' "$1")" -eq 1 ] && grep -Eq "$2" "$1"; }
+
 # Erlaubte Release-Tags: vX.Y.Z. In deploy.sh und rollback.sh zugleich der
 # Injection-Guard, weil der Tag unquotiert in der ssh-Kommandozeile landet.
 # In [[ … =~ $TAG_PATTERN ]] UNQUOTIERT verwenden, sonst ist es ein Literal.

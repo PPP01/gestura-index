@@ -99,14 +99,14 @@ else
 fi
 
 request ping "$ORIGIN/api/v1/sync/ping"
-# Verankerte Muster (ganzer Body): JsonResponse liefert kompaktes JSON ohne
-# Whitespace und ohne Slash-Escaping (Standardflags). Die Muster sind
-# empirisch gegen die im Plan beschriebenen JsonResponse-Aufrufe verifiziert.
+# Verankerte Muster auf den ganzen Body (common.sh: PING_OK_PATTERN,
+# PING_MAINTENANCE_PATTERN, body_matches): JsonResponse liefert kompaktes JSON
+# ohne Whitespace und ohne Slash-Escaping (Standardflags).
 # 200: {"status":"ok","features":["sync-meta"]} (oder andere/leere Features)
 # 503: {"error":"maintenance"} oder {"error":"maintenance","until":"..."}
-if [ "$STATUS" = 200 ] && grep -Eq '^\{"status":"ok","features":\[("[a-z-]+"(,"[a-z-]+")*)?]\}$' "$BODY"; then
+if [ "$STATUS" = 200 ] && body_matches "$BODY" "$PING_OK_PATTERN"; then
     ok "GET /api/v1/sync/ping: 200 mit gültigem Ping-Body"
-elif [ "$STATUS" = 503 ] && grep -Eq '^\{"error":"maintenance"(,"until":"[^"]+")?\}$' "$BODY"; then
+elif [ "$STATUS" = 503 ] && body_matches "$BODY" "$PING_MAINTENANCE_PATTERN"; then
     echo "WARN  GET /api/v1/sync/ping: 503 maintenance – Wartungsmodus ist aktiv"
 elif [ "$STATUS" = 404 ] && [ "${SMOKE_LEGACY:-}" = 1 ]; then
     echo "WARN  GET /api/v1/sync/ping: 404 – Rollback auf Release ohne Ping-Endpunkt (Legacy)"
